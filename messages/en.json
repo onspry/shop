@@ -1,4 +1,10 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
-	"hello_world": "Hello, {name} from en!"
+	"hello_world": "Hello, {name} from en!",
+	"footer_text": "All rights reserved!",
+	"shop_title": "Keyboard Shop",
+	"nav_home": "Home",
+	"nav_shop": "Shop",
+	"nav_about": "About",
+	"nav_cart": "Cart"
 }

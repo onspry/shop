@@ -1,1 +1,51 @@
+@font-face {
+	font-family: 'Fira Sans';
+	src: url('/fonts/FiraSans-Regular.woff2') format('woff2');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Fira Sans';
+	src: url('/fonts/FiraSans-Medium.woff2') format('woff2');
+	font-weight: 500;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Fira Sans';
+	src: url('/fonts/FiraSans-SemiBold.woff2') format('woff2');
+	font-weight: 600;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Fira Sans';
+	src: url('/fonts/FiraSans-Bold.woff2') format('woff2');
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+}
+
 @import 'tailwindcss';
+
+:root {
+	--syntax-yellow: #f7df1e;
+	--syntax-black: #000000;
+	--font-fira: 'Fira Sans';
+}
+
+html {
+	scroll-behavior: smooth;
+}
+
+body {
+	background-color: black;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	text-rendering: optimizeLegibility;
+	font-family: var(--font-fira);
+}
