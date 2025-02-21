@@ -49,7 +49,7 @@
 		</div>
 
 		<div class="noise-wrapper fixed inset-0 z-[-2]">
-			<div class="noise" />
+			<div class="noise"></div>
 		</div>
 		<div class="loptech-bg bg-opacity-90 pointer-events-none absolute inset-0 z-[-1]"></div>
 		<div class="font-overpass flex min-h-screen flex-col bg-transparent text-gray-100 antialiased">
@@ -105,10 +105,6 @@
 			radial-gradient(circle at 30% 40%, rgba(255, 255, 255, 0.03) 0%, transparent 45%),
 			radial-gradient(circle at 70% 60%, rgba(255, 255, 255, 0.02) 0%, transparent 35%);
 		pointer-events: none;
-	}
-
-	:global(body) {
-		/* (Structured star grid removed – only random stars will be shown via the star-background markup) */
 	}
 
 	:global(body::after) {

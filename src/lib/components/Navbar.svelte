@@ -4,7 +4,9 @@
 	// Text content uses localization keys (e.g., $t('nav_home')) for multilingual support.
 </script>
 
-<nav class="flex w-full items-center justify-between bg-transparent px-8 py-5 text-white">
+<nav
+	class="relative z-20 flex w-full items-center justify-between bg-transparent px-8 py-5 text-white"
+>
 	<div class="text-xl font-semibold tracking-tight text-[#f7df1e] hover:text-white">
 		<a href="/" class="transition-colors duration-200">
 			{m.shop_title()}
