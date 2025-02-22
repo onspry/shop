@@ -34,10 +34,10 @@
 </script>
 
 <!-- Sticky Buy Button -->
-<div class="fixed top-24 right-4 z-50 md:right-8 lg:right-12">
+<div class="fixed top-24 right-4 z-20 md:right-8 lg:right-12">
 	<a
 		href="/shop"
-		class="inline-block rounded-full bg-yellow-500 px-6 py-3 text-base font-bold text-gray-900 shadow-lg transition-all duration-300 hover:bg-yellow-400 hover:shadow-xl md:px-8 md:py-4 md:text-lg"
+		class="used-look inline-block rounded-full bg-yellow-500 px-6 py-3 text-base font-bold text-gray-900 shadow-lg transition-all duration-300 hover:bg-yellow-400 hover:shadow-xl md:px-8 md:py-4 md:text-lg"
 	>
 		Buy Now
 	</a>
@@ -45,7 +45,7 @@
 
 <section class="relative px-4 pt-8 md:pt-12">
 	<div class="container mx-auto">
-		<h1 class="mb-12 text-center text-5xl font-bold text-yellow-500 md:text-6xl lg:text-7xl">
+		<h1 class="used-text mb-12 text-center text-5xl font-bold md:text-6xl lg:text-7xl">
 			{KEYBOARD_NAME}
 		</h1>
 
@@ -54,7 +54,7 @@
 			<img
 				src="/board.jpeg"
 				alt="Split Keyboard"
-				class="border-glow relative h-[500px] w-[1500px] max-w-full rounded-lg object-cover transition-transform duration-700 hover:scale-[1.02]"
+				class="border-glow relative h-[300px] w-[1500px] max-w-full rounded-lg object-cover transition-transform duration-700 hover:scale-[1.02]"
 			/>
 		</div>
 		<!-- Scroll indicator -->
@@ -84,7 +84,7 @@
 						class="group relative flex-1 rounded-xl bg-gray-900/50 p-6 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:bg-gray-900/70"
 					>
 						<div class="mb-4 text-4xl">{feature.icon}</div>
-						<h3 class="mb-2 text-xl font-bold text-yellow-500">{feature.title}</h3>
+						<h3 class="used-text mb-2 text-xl font-bold">{feature.title}</h3>
 						<p class="text-gray-400">{feature.desc}</p>
 						<div
 							class="absolute inset-0 rounded-xl ring-1 ring-white/10 transition-all duration-300 group-hover:ring-yellow-500/50"
@@ -116,7 +116,7 @@
 								class:active={index === currentFeature}
 							>
 								<div class="mb-4 text-4xl">{feature.icon}</div>
-								<h3 class="mb-2 text-xl font-bold text-yellow-500">{feature.title}</h3>
+								<h3 class="used-text mb-2 text-xl font-bold">{feature.title}</h3>
 								<p class="text-gray-400">{feature.desc}</p>
 								<div
 									class="absolute inset-0 rounded-xl ring-1 ring-white/10 transition-all duration-300 group-hover:ring-yellow-500/50"

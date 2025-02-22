@@ -8,7 +8,7 @@
 	import { i18n } from '$lib/i18n';
 
 	// Destructure the renderable children (avoid using <slot> per Svelte 5 guidelines).
-	let { children } = $props();
+	let { data, children } = $props();
 
 	// ★ Added star generation functions and array ★
 	function random(min: number, max: number) {
@@ -53,7 +53,7 @@
 		</div>
 		<div class="loptech-bg bg-opacity-90 pointer-events-none absolute inset-0 z-[-1]"></div>
 		<div class="font-overpass flex min-h-screen flex-col bg-transparent text-gray-100 antialiased">
-			<Navbar />
+			<Navbar user={data.user} />
 			<main class="container mx-auto flex-1 px-4 py-12 sm:px-6 lg:px-8">
 				<!-- Render the page content passed as children -->
 				{@render children()}

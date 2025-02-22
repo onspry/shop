@@ -75,7 +75,9 @@ export function setSessionTokenCookie(event: RequestEvent, token: string, expire
 }
 
 export function deleteSessionTokenCookie(event: RequestEvent) {
+    console.log('Deleting session cookie');
     event.cookies.delete(sessionCookieName, {
         path: '/'
     });
+    console.log('Session cookie deletion complete');
 }

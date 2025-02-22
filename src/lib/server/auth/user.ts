@@ -44,3 +44,11 @@ export async function getUserByProviderId(provider: string, providerId: string):
     return foundUser as User;
 }
 
+export async function getUserPasswordHash(userId: string): Promise<string | undefined> {
+    const [result] = await db
+        .select({ passwordHash: user.passwordHash })
+        .from(user)
+        .where(eq(user.id, userId));
+
+    return result.passwordHash;
+}
