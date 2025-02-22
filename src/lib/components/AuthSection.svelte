@@ -17,7 +17,7 @@
 		<button
 			type="button"
 			class="flex items-center gap-2"
-			on:click={() => (showDropdown = !showDropdown)}
+			on:mouseenter={() => (showDropdown = true)}
 		>
 			<div
 				class="used-look flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent)] text-sm font-bold text-gray-900"
@@ -33,7 +33,11 @@
 				tabindex="0"
 				class="ring-opacity-5 absolute top-full right-0 z-[1001] mt-2 w-48 origin-top-right rounded-lg bg-gray-900/95 py-1 ring-1 shadow-lg ring-black backdrop-blur-sm transition-all"
 				use:clickOutside={() => (showDropdown = false)}
-				on:mouseleave={() => (showDropdown = false)}
+				on:mouseleave={() => {
+					setTimeout(() => {
+						showDropdown = false;
+					}, 100);
+				}}
 			>
 				<a href="/profile" class="block px-4 py-2 text-sm hover:bg-gray-800 hover:text-white">
 					Profile

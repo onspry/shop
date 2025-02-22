@@ -60,7 +60,7 @@
 			class="mx-auto mt-12 flex cursor-pointer justify-center focus:outline-none"
 			aria-label="Scroll to features"
 		>
-			<div class="animate-bounce rounded-full border-2 border-yellow-500/50 p-2">
+			<div class="animate-bounce rounded-full border-2 border-[var(--color-accent)] p-2">
 				<svg class="h-6 w-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path
 						stroke-linecap="round"
@@ -83,7 +83,7 @@
 						<h3 class="used-text mb-2 text-xl font-bold">{feature.title}</h3>
 						<p class="text-gray-400">{feature.desc}</p>
 						<div
-							class="absolute inset-0 rounded-xl ring-1 ring-white/10 transition-all duration-300 group-hover:ring-yellow-500/50"
+							class="absolute inset-0 rounded-xl ring-1 ring-white/10 transition-all duration-300 group-hover:ring-[var(--color-accent)]"
 						></div>
 					</div>
 				{/each}
@@ -115,7 +115,7 @@
 								<h3 class="used-text mb-2 text-xl font-bold">{feature.title}</h3>
 								<p class="text-gray-400">{feature.desc}</p>
 								<div
-									class="absolute inset-0 rounded-xl ring-1 ring-white/10 transition-all duration-300 group-hover:ring-yellow-500/50"
+									class="absolute inset-0 rounded-xl ring-1 ring-white/10 transition-all duration-300 group-hover:ring-[var(--color-accent)]"
 								></div>
 							</div>
 						{/each}
