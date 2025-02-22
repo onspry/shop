@@ -71,6 +71,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
         email: primaryEmail,
         username: githubUsername,
         passwordHash: '',  // Empty for OAuth users
+        email_verified: 1,
         isAdmin: false,
         stripeCustomerId: `gh_${githubUserId}` // Prefix with gh_ for GitHub users
     });

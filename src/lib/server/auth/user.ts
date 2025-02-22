@@ -4,6 +4,9 @@ import type { Provider, User } from '$lib/server/db/schema';
 import { randomUUID } from 'crypto';
 import { eq, and } from 'drizzle-orm';
 
+export function verifyUsernameInput(username: string): boolean {
+    return username.length > 3 && username.length < 32 && username.trim() === username;
+}
 
 export async function createUser(userData: User): Promise<User> {
     const [newUser] = await db.insert(user)

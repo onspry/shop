@@ -17,6 +17,7 @@ export const user = t.sqliteTable('user', {
 	email: t.text('email', { length: 100 }).notNull().unique(),
 	username: t.text('username').notNull().unique(),
 	passwordHash: t.text('password_hash').notNull(),
+	email_verified: t.integer().notNull().default(0),
 	isAdmin: t.integer({ mode: 'boolean' }).notNull().default(false),
 	stripeCustomerId: t.text('stripe_customer_id', { length: 100 }).notNull().unique(),
 }, (table) => [
@@ -34,4 +35,12 @@ export const session = t.sqliteTable('session', {
 export type Session = typeof session.$inferSelect;
 
 export type User = typeof user.$inferSelect;
+
+export const emailVerificationRequest = t.sqliteTable('email_verification_request', {
+	id: t.text('id').notNull().primaryKey(),
+	userId: t.text('user_id').notNull().references(() => user.id),
+	email: t.text('email').notNull(),
+	code: t.text('code').notNull(),
+	expiresAt: t.integer('expires_at', { mode: 'timestamp' }).notNull()
+});
 
