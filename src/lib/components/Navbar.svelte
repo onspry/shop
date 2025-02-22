@@ -9,16 +9,16 @@
 </script>
 
 <nav class="w-full bg-transparent px-8 py-5">
-	<div class="flex items-center justify-between text-white">
-		<div class="text-xl font-semibold tracking-tight text-[var(--shop-yellow)] hover:text-white">
-			<a href="/" class="transition-colors duration-200">
+	<div class="relative z-10 flex items-center justify-between">
+		<div class="text-xl font-semibold tracking-tight">
+			<a href="/" class="block text-[var(--color-primary)]">
 				{m.shop_title()}
 			</a>
 		</div>
-		<div class="flex items-center space-x-8 text-gray-300">
+		<div class="flex items-center space-x-8 text-[var(--color-text)]">
 			<a
 				href="/cart"
-				class="flex items-center text-base font-medium transition-colors duration-200 hover:text-[var(--shop-yellow)]"
+				class="flex items-center text-base font-medium text-[var(--color-text)]"
 				aria-label={m.nav_cart()}
 			>
 				<svg
@@ -31,7 +31,7 @@
 					<path
 						stroke-linecap="round"
 						stroke-linejoin="round"
-						stroke-width="2"
+						stroke-width="1.5"
 						d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
 					/>
 				</svg>

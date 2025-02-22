@@ -20,11 +20,11 @@
 			on:click={() => (showDropdown = !showDropdown)}
 		>
 			<div
-				class="used-look flex h-8 w-8 items-center justify-center rounded-full bg-yellow-500 text-sm font-bold text-gray-900"
+				class="used-look flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-button)] text-sm font-bold text-gray-900"
 			>
 				{user.username[0].toUpperCase()}
 			</div>
-			<span class="hidden text-sm text-gray-300 md:inline">{user.username}</span>
+			<span class="text-[var(--color-text)]md:inline hidden text-sm">{user.username}</span>
 		</button>
 
 		{#if showDropdown}
@@ -37,13 +37,13 @@
 			>
 				<a
 					href="/profile"
-					class="block px-4 py-2 text-sm text-gray-300 transition-colors hover:bg-gray-800 hover:text-white"
+					class="text-[var(--color-text)]transition-colors block px-4 py-2 text-sm hover:bg-gray-800 hover:text-white"
 				>
 					Profile
 				</a>
 				<a
 					href="/settings"
-					class="block px-4 py-2 text-sm text-gray-300 transition-colors hover:bg-gray-800 hover:text-white"
+					class="text-[var(--color-text)]transition-colors block px-4 py-2 text-sm hover:bg-gray-800 hover:text-white"
 				>
 					Settings
 				</a>
@@ -60,7 +60,7 @@
 {:else}
 	<a
 		href="/auth/login"
-		class="used-look rounded-lg bg-yellow-500 px-4 py-2 text-sm font-semibold text-gray-900 transition-colors hover:bg-yellow-400"
+		class="used-look rounded-lg bg-[var(--color-button)] px-4 py-2 text-sm font-semibold text-gray-900 transition-colors hover:bg-[var(--color-button-hover)]"
 	>
 		Login
 	</a>

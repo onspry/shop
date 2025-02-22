@@ -33,8 +33,24 @@
 @import 'tailwindcss';
 
 :root {
-	--syntax-yellow: #f7df1e;
-	--syntax-black: #000000;
+	/* Primary Brand Colors */
+	--color-primary: #f7df1e;     /* Main yellow brand color */
+	--color-primary-hover: #facc15; /* Lighter yellow for hover (yellow-400) */
+
+	/* Button Colors */
+	--color-button: #eab308;      /* Button background (yellow-500) */
+	--color-button-hover: #facc15; /* Button hover (yellow-400) */
+
+	/* Text Colors */
+	--color-text: #d1d5db;        /* Default text (gray-300) */
+	--color-text-dark: #111827;   /* Dark text on light bg (gray-900) */
+	--color-text-light: #9ca3af;  /* Lighter text (gray-400) */
+
+	/* Misc */
+	--color-danger: #f87171;      /* Danger/error text (red-400) */
+	--color-danger-hover: #fca5a5; /* Danger hover (red-300) */
+
+	/* Fonts */
 	--font-fira: 'Fira Sans';
 }
 

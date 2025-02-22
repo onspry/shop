@@ -37,7 +37,7 @@
 <div class="fixed top-24 right-4 z-[500] md:right-8 lg:right-12">
 	<a
 		href="/shop"
-		class="used-look inline-block rounded-full bg-yellow-500 px-6 py-3 text-base font-bold text-gray-900 shadow-lg transition-all duration-300 hover:bg-yellow-400 hover:shadow-xl md:px-8 md:py-4 md:text-lg"
+		class="used-look inline-block rounded-full bg-[var(--color-button)] px-6 py-3 text-base font-bold text-gray-900 shadow-lg transition-all duration-300 hover:bg-[var(--color-button-hover)] hover:shadow-xl md:px-8 md:py-4 md:text-lg"
 	>
 		Buy Now
 	</a>

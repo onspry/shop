@@ -34,9 +34,9 @@
 </script>
 
 <ParaglideJS {i18n}>
-	<div class="relative">
-		<!-- ★ Added star background markup ★ -->
-		<div class="star-background pointer-events-none fixed inset-0">
+	<div class="relative min-h-screen overflow-hidden">
+		<!-- Star background layer -->
+		<div class="star-background pointer-events-none fixed inset-0 z-0">
 			{#each stars as star}
 				<div
 					class="star"
@@ -48,14 +48,15 @@
 			{/each}
 		</div>
 
-		<div class="noise-wrapper fixed inset-0">
+		<!-- Noise overlay layer -->
+		<div class="noise-wrapper pointer-events-none fixed inset-0 z-0">
 			<div class="noise"></div>
 		</div>
-		<div class="bg-opacity-90 pointer-events-none absolute inset-0"></div>
-		<div class="font-overpass flex min-h-screen flex-col bg-transparent text-gray-100 antialiased">
+
+		<!-- Content layer -->
+		<div class="font-overpass relative z-10 flex min-h-screen flex-col text-gray-100 antialiased">
 			<Navbar user={data.user} />
 			<main class="container mx-auto flex-1 px-4 py-12 sm:px-6 lg:px-8">
-				<!-- Render the page content passed as children -->
 				{@render children()}
 			</main>
 			<Footer />
