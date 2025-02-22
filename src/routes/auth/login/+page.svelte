@@ -109,7 +109,7 @@
 						type="submit"
 						class="used-look group relative flex w-full justify-center rounded-lg bg-yellow-500 px-4 py-2.5 text-sm font-semibold text-gray-900 transition-colors duration-200 hover:bg-yellow-400"
 					>
-						Sign in
+						Login
 					</button>
 				</div>
 			</form>

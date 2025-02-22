@@ -36,7 +36,7 @@
 <ParaglideJS {i18n}>
 	<div class="relative">
 		<!-- ★ Added star background markup ★ -->
-		<div class="star-background pointer-events-none fixed inset-0 -z-10">
+		<div class="star-background pointer-events-none fixed inset-0">
 			{#each stars as star}
 				<div
 					class="star"
@@ -48,10 +48,10 @@
 			{/each}
 		</div>
 
-		<div class="noise-wrapper fixed inset-0 z-[-2]">
+		<div class="noise-wrapper fixed inset-0">
 			<div class="noise"></div>
 		</div>
-		<div class="loptech-bg bg-opacity-90 pointer-events-none absolute inset-0 z-[-1]"></div>
+		<div class="bg-opacity-90 pointer-events-none absolute inset-0"></div>
 		<div class="font-overpass flex min-h-screen flex-col bg-transparent text-gray-100 antialiased">
 			<Navbar user={data.user} />
 			<main class="container mx-auto flex-1 px-4 py-12 sm:px-6 lg:px-8">

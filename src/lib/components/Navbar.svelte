@@ -8,39 +8,33 @@
 	export let user: User | null = null;
 </script>
 
-<nav class="fixed top-0 right-0 left-0 z-[1000] bg-black/50 backdrop-blur-sm">
-	<div
-		class="relative z-20 flex w-full items-center justify-between bg-transparent px-8 py-5 text-white"
-	>
-		<div class="text-xl font-semibold tracking-tight text-[#f7df1e] hover:text-white">
+<nav class="w-full bg-transparent px-8 py-5">
+	<div class="flex items-center justify-between text-white">
+		<div class="text-xl font-semibold tracking-tight text-[var(--shop-yellow)] hover:text-white">
 			<a href="/" class="transition-colors duration-200">
 				{m.shop_title()}
 			</a>
 		</div>
-		<div class="flex items-center space-x-8">
-			<a
-				href="/"
-				class="text-base font-medium text-gray-100 transition-colors duration-200 hover:text-[#f7df1e]"
-			>
-				{m.nav_home()}
-			</a>
-			<a
-				href="/shop"
-				class="text-base font-medium text-gray-100 transition-colors duration-200 hover:text-[#f7df1e]"
-			>
-				{m.nav_shop()}
-			</a>
-			<a
-				href="/about"
-				class="text-base font-medium text-gray-100 transition-colors duration-200 hover:text-[#f7df1e]"
-			>
-				{m.nav_about()}
-			</a>
+		<div class="flex items-center space-x-8 text-gray-300">
 			<a
 				href="/cart"
-				class="text-base font-medium text-gray-100 transition-colors duration-200 hover:text-[#f7df1e]"
+				class="flex items-center text-base font-medium transition-colors duration-200 hover:text-[var(--shop-yellow)]"
+				aria-label={m.nav_cart()}
 			>
-				{m.nav_cart()}
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					class="h-6 w-6"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke="currentColor"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+					/>
+				</svg>
 			</a>
 			<AuthSection {user} />
 		</div>
