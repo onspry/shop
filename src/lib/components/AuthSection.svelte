@@ -20,11 +20,11 @@
 			on:click={() => (showDropdown = !showDropdown)}
 		>
 			<div
-				class="used-look flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-button)] text-sm font-bold text-gray-900"
+				class="used-look flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent)] text-sm font-bold text-gray-900"
 			>
 				{user.username[0].toUpperCase()}
 			</div>
-			<span class="text-[var(--color-text)]md:inline hidden text-sm">{user.username}</span>
+			<span class="hidden text-sm md:inline">{user.username}</span>
 		</button>
 
 		{#if showDropdown}
@@ -35,16 +35,10 @@
 				use:clickOutside={() => (showDropdown = false)}
 				on:mouseleave={() => (showDropdown = false)}
 			>
-				<a
-					href="/profile"
-					class="text-[var(--color-text)]transition-colors block px-4 py-2 text-sm hover:bg-gray-800 hover:text-white"
-				>
+				<a href="/profile" class="block px-4 py-2 text-sm hover:bg-gray-800 hover:text-white">
 					Profile
 				</a>
-				<a
-					href="/settings"
-					class="text-[var(--color-text)]transition-colors block px-4 py-2 text-sm hover:bg-gray-800 hover:text-white"
-				>
+				<a href="/settings" class="block px-4 py-2 text-sm hover:bg-gray-800 hover:text-white">
 					Settings
 				</a>
 				<div class="my-1 border-t border-gray-800"></div>
@@ -60,7 +54,7 @@
 {:else}
 	<a
 		href="/auth/login"
-		class="used-look rounded-lg bg-[var(--color-button)] px-4 py-2 text-sm font-semibold text-gray-900 transition-colors hover:bg-[var(--color-button-hover)]"
+		class="used-look rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-gray-900 transition-colors hover:bg-[var(--color-accent-hover)]"
 	>
 		Login
 	</a>

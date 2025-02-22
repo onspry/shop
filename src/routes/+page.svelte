@@ -33,16 +33,6 @@
 	];
 </script>
 
-<!-- Sticky Buy Button -->
-<div class="fixed top-24 right-4 z-[500] md:right-8 lg:right-12">
-	<a
-		href="/shop"
-		class="used-look inline-block rounded-full bg-[var(--color-button)] px-6 py-3 text-base font-bold text-gray-900 shadow-lg transition-all duration-300 hover:bg-[var(--color-button-hover)] hover:shadow-xl md:px-8 md:py-4 md:text-lg"
-	>
-		Buy Now
-	</a>
-</div>
-
 <section class="relative px-4 pt-8 md:pt-12">
 	<div class="container mx-auto">
 		<h1 class="used-text mb-12 text-center text-5xl font-bold md:text-6xl lg:text-7xl">
@@ -50,12 +40,18 @@
 		</h1>
 
 		<!-- Main image with floating elements -->
-		<div class="relative mx-auto w-full max-w-3xl">
+		<div class="relative mx-auto flex w-full max-w-3xl flex-col items-center">
 			<img
 				src="/board.jpeg"
 				alt="Split Keyboard"
 				class="border-glow relative h-[300px] w-[1500px] max-w-full rounded-lg object-cover transition-transform duration-700 hover:scale-[1.02]"
 			/>
+			<a
+				href="/shop"
+				class="used-look mt-8 inline-block rounded-full bg-[var(--color-accent)] px-8 py-4 text-lg font-bold text-gray-900 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:bg-[var(--color-accent-hover)] hover:shadow-2xl md:px-12 md:py-5 md:text-xl"
+			>
+				Buy Now
+			</a>
 		</div>
 		<!-- Scroll indicator -->
 		<button

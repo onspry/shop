@@ -70,7 +70,7 @@
 
 			<button
 				type="button"
-				class="used-look w-full rounded-lg bg-[var(--color-button)] px-4 py-2.5 text-sm font-semibold text-gray-900 transition-colors duration-200 hover:bg-[var(--color-button-hover)]"
+				class="used-look w-full rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-sm font-semibold text-gray-900 transition-colors duration-200 hover:bg-[var(--color-accent-hover)]"
 				on:click={() => (showEmailForm = true)}
 			>
 				Email & Password
@@ -107,7 +107,7 @@
 				<div>
 					<button
 						type="submit"
-						class="used-look group relative flex w-full justify-center rounded-lg bg-[var(--color-button)] px-4 py-2.5 text-sm font-semibold text-gray-900 transition-colors duration-200 hover:bg-[var(--color-button-hover)]"
+						class="used-look group relative flex w-full justify-center rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-sm font-semibold text-gray-900 transition-colors duration-200 hover:bg-[var(--color-accent-hover)]"
 					>
 						Login
 					</button>

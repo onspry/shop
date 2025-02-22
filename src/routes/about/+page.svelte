@@ -3,7 +3,7 @@
 		{
 			title: 'Button Example',
 			element: 'button',
-			class: 'used-look bg-[var(--color-button)] px-6 py-3 rounded-lg font-bold'
+			class: 'used-look bg-[var(--color-accent)] px-6 py-3 rounded-lg font-bold'
 		},
 		{
 			title: 'Text Example',
@@ -13,12 +13,12 @@
 		{
 			title: 'Card Example',
 			element: 'div',
-			class: 'used-look bg-[var(--color-button)] p-8 rounded-xl'
+			class: 'used-look bg-[var(--color-accent)] p-8 rounded-xl'
 		},
 		{
 			title: 'Badge Example',
 			element: 'span',
-			class: 'used-look bg-[var(--color-button)] px-4 py-2 rounded-full text-sm font-semibold'
+			class: 'used-look bg-[var(--color-accent)] px-4 py-2 rounded-full text-sm font-semibold'
 		}
 	];
 </script>
@@ -66,12 +66,12 @@
 		<h2 class="mb-8 text-center text-3xl font-bold text-yellow-500">Interactive Demo</h2>
 		<div class="flex justify-center space-x-4">
 			<button
-				class="used-look rounded-lg bg-[var(--color-button)] px-6 py-3 font-bold transition-transform hover:scale-105"
+				class="used-look rounded-lg bg-[var(--color-accent)] px-6 py-3 font-bold transition-transform hover:scale-105"
 			>
 				Hover Me
 			</button>
 			<div
-				class="used-look cursor-pointer rounded-lg bg-[var(--color-button)] px-6 py-3 font-bold transition-all hover:-translate-y-1"
+				class="used-look cursor-pointer rounded-lg bg-[var(--color-accent)] px-6 py-3 font-bold transition-all hover:-translate-y-1"
 			>
 				Lift Effect
 			</div>

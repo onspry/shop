@@ -54,7 +54,7 @@
 		</div>
 
 		<!-- Content layer -->
-		<div class="font-overpass relative z-10 flex min-h-screen flex-col text-gray-100 antialiased">
+		<div class="font-overpass relative z-10 flex min-h-screen flex-col antialiased">
 			<Navbar user={data.user} />
 			<main class="container mx-auto flex-1 px-4 py-12 sm:px-6 lg:px-8">
 				{@render children()}
