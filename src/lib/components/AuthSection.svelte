@@ -2,7 +2,6 @@
 	import type { User } from '$lib/server/db/schema';
 	import { clickOutside } from '$lib/actions/clickOutside';
 	import { onNavigate } from '$app/navigation';
-	import { enhance } from '$app/forms';
 
 	export let user: User | null;
 	let showDropdown = false;
@@ -32,7 +31,7 @@
 			<div
 				role="menu"
 				tabindex="0"
-				class="ring-opacity-5 absolute top-full right-0 z-[200] mt-2 w-48 origin-top-right rounded-lg bg-gray-900/95 py-1 ring-1 shadow-lg ring-black backdrop-blur-sm transition-all"
+				class="ring-opacity-5 absolute top-full right-0 z-[1001] mt-2 w-48 origin-top-right rounded-lg bg-gray-900/95 py-1 ring-1 shadow-lg ring-black backdrop-blur-sm transition-all"
 				use:clickOutside={() => (showDropdown = false)}
 				on:mouseleave={() => (showDropdown = false)}
 			>
