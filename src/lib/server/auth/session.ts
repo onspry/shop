@@ -31,7 +31,7 @@ export async function validateSessionToken(token: string) {
     const [result] = await db
         .select({
             // Adjust user table here to tweak returned data
-            user: { id: table.user.id, username: table.user.username },
+            user: { id: table.user.id, username: table.user.username, email: table.user.email },
             session: table.session
         })
         .from(table.session)
@@ -66,6 +66,11 @@ export type SessionValidationResult = Awaited<ReturnType<typeof validateSessionT
 export async function invalidateSession(sessionId: string) {
     await db.delete(table.session).where(eq(table.session.id, sessionId));
 }
+
+export async function invalidateUserSessions(userId: string) {
+    await db.delete(table.session).where(eq(table.session.userId, userId));
+}
+
 
 export function setSessionTokenCookie(event: RequestEvent, token: string, expiresAt: Date) {
     event.cookies.set(sessionCookieName, token, {

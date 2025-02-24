@@ -1,7 +1,8 @@
 import { fail, redirect } from '@sveltejs/kit';
+import { randomUUID } from 'crypto';
 import { checkEmailAvailability, verifyEmailInput } from '$lib/server/auth/email';
-import { createUser, verifyUsernameInput } from '$lib/server/auth/user';
-import { verifyPasswordStrength } from '$lib/server/auth/password';
+import { createUser, verifyUsernameInput, isEmailTaken } from '$lib/server/auth/user';
+import { verifyPasswordStrength, hashPassword } from '$lib/server/auth/password';
 import { createSession, generateSessionToken, setSessionTokenCookie } from '$lib/server/auth/session';
 import {
     createEmailVerificationRequest,
@@ -15,13 +16,7 @@ import type { Actions, PageServerLoadEvent, RequestEvent } from "./$types";
 export function load(event: PageServerLoadEvent) {
     if (event.locals.session !== null && event.locals.user !== null) {
         if (!event.locals.user.emailVerified) {
-            return redirect(302, "/verify-email");
-        }
-        if (!event.locals.user.registered2FA) {
-            return redirect(302, "/2fa/setup");
-        }
-        if (!event.locals.session.twoFactorVerified) {
-            return redirect(302, "/2fa");
+            return redirect(302, "/auth/verify-email");
         }
         return redirect(302, "/");
     }
@@ -82,6 +77,15 @@ async function action(event: RequestEvent) {
         });
     }
 
+    // Check if email is already taken
+    if (await isEmailTaken(email)) {
+        return fail(400, {
+            message: 'This email is already registered',
+            username,
+            email
+        });
+    }
+
     const id = randomUUID();
     const user = await createUser(
         {
@@ -90,8 +94,8 @@ async function action(event: RequestEvent) {
             providerId: id,
             email: email,
             username: username,
-            passwordHash: '',  // Empty for OAuth users
-            email_verified: 1,
+            passwordHash: await hashPassword(password),  // Empty for OAuth users
+            email_verified: 0,
             isAdmin: false,
             stripeCustomerId: `e_${id}` // Prefix with gh_ for GitHub users
         }
@@ -100,12 +104,8 @@ async function action(event: RequestEvent) {
     sendVerificationEmail(emailVerificationRequest.email, emailVerificationRequest.code);
     setEmailVerificationRequestCookie(event, emailVerificationRequest);
 
-    const sessionToken = generateSessionToken();
+    const sessionToken = await generateSessionToken();
     const session = await createSession(sessionToken, user.id);
     setSessionTokenCookie(event, sessionToken, session.expiresAt);
-    throw redirect(302, "/");
-}
-
-function randomUUID(): string {
-    throw new Error('Function not implemented.');
+    throw redirect(302, "/auth/verify-email");
 }

@@ -19,6 +19,7 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 	}
 
 	event.locals.user = user;
+	console.log('User:', event.locals.user);
 	event.locals.session = session;
 
 	return resolve(event);

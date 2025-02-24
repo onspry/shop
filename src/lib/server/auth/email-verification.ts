@@ -1,9 +1,10 @@
-import { encodeBase32 } from "@oslojs/encoding";
 import { generateRandomOTP } from "./utils";
 import type { RequestEvent } from "@sveltejs/kit";
 import { db } from '$lib/server/db';
 import { emailVerificationRequest } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { sendEmail } from '$lib/server/email/send-email';
+import { randomUUID } from 'crypto';
 
 export async function getVerificationRequest(id: string, userId: string) {
     return await db
@@ -35,33 +36,30 @@ export async function deleteVerificationRequest(id: string) {
         .run();
 }
 
-export async function createEmailVerificationRequest(userId: string, email: string): Promise<EmailVerificationRequest> {
-    deleteUserEmailVerificationRequest(userId);
-    const idBytes = new Uint8Array(20);
-    crypto.getRandomValues(idBytes);
-    const id = encodeBase32(idBytes).toLowerCase();
+export async function createEmailVerificationRequest(userId: string, email: string) {
+    if (!email) {
+        throw new Error('Email is required for verification request');
+    }
 
+    const id = randomUUID();
     const code = generateRandomOTP();
-    const expiresAt = new Date(Date.now() + 1000 * 60 * 10);
-    await db.insert(emailVerificationRequest)
-        .values({
-            id,
-            userId,
-            code,
-            email,
-            expiresAt
-        })
-        .returning({ id: emailVerificationRequest.id })
-        .get();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    const request: EmailVerificationRequest = {
+    await createVerificationRequest({
         id,
         userId,
-        code,
         email,
+        code,
+        expiresAt
+    });
+
+    return {
+        id,
+        userId,
+        email,
+        code,
         expiresAt
     };
-    return request;
 }
 
 export async function deleteUserEmailVerificationRequest(userId: string): Promise<void> {
@@ -71,8 +69,15 @@ export async function deleteUserEmailVerificationRequest(userId: string): Promis
         .run();
 }
 
-export function sendVerificationEmail(email: string, code: string): void {
-    console.log(`To ${email}: Your verification code is ${code}`);
+export async function sendVerificationEmail(email: string, code: string): Promise<void> {
+    const subject = 'Verify your email address';
+    const body = `
+        <h1>Email Verification</h1>
+        <p>Your verification code is: <strong>${code}</strong></p>
+        <p>This code will expire in 10 minutes.</p>
+    `;
+
+    await sendEmail(email, subject, body, { from: 'noreply' });
 }
 
 export function setEmailVerificationRequestCookie(event: RequestEvent, request: EmailVerificationRequest): void {
@@ -96,15 +101,19 @@ export function deleteEmailVerificationRequestCookie(event: RequestEvent): void 
 }
 
 export async function getUserEmailVerificationRequestFromRequest(event: RequestEvent): Promise<EmailVerificationRequest | null> {
+    console.log('Getting user email verification request from request');
     if (event.locals.user === null) {
         return null;
     }
+    console.log('User is authenticated');
     const id = event.cookies.get("email_verification") ?? null;
     if (id === null) {
         return null;
     }
-    const request = await getVerificationRequest(event.locals.user.id, id);
+    console.log('ID is not null');
+    const request = await getVerificationRequest(id, event.locals.user.id);
     if (!request) {
+        console.log('Request is null');
         deleteEmailVerificationRequestCookie(event);
         return null;
     }

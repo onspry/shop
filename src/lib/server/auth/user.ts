@@ -1,8 +1,8 @@
 import { db } from '$lib/server/db';
 import { user } from '$lib/server/db/schema';
 import type { Provider, User } from '$lib/server/db/schema';
-import { randomUUID } from 'crypto';
 import { eq, and } from 'drizzle-orm';
+import { hashPassword } from './password';
 
 export function verifyUsernameInput(username: string): boolean {
     return username.length > 3 && username.length < 32 && username.trim() === username;
@@ -12,7 +12,6 @@ export async function createUser(userData: User): Promise<User> {
     const [newUser] = await db.insert(user)
         .values({
             ...userData,
-            id: randomUUID(),
         })
         .returning();
 
@@ -54,4 +53,33 @@ export async function getUserPasswordHash(userId: string): Promise<string | unde
         .where(eq(user.id, userId));
 
     return result.passwordHash;
+}
+
+export async function updateUserPassword(userId: string, password: string): Promise<void> {
+    const passwordHash = await hashPassword(password);
+    await db.update(user)
+        .set({
+            passwordHash
+        })
+        .where(eq(user.id, userId))
+        .run();
+}
+
+export async function updateUserEmailAndSetEmailAsVerified(userId: string, email: string): Promise<void> {
+    await db.update(user)
+        .set({
+            email,
+            email_verified: 1
+        })
+        .where(eq(user.id, userId))
+        .run();
+}
+
+export async function isEmailTaken(email: string): Promise<boolean> {
+    const existingUser = await db
+        .select({ id: user.id })
+        .from(user)
+        .where(eq(user.email, email))
+        .get();
+    return !!existingUser;
 }

@@ -2,9 +2,25 @@
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"hello_world": "Hello, {name} from en!",
 	"footer_text": "All rights reserved!",
-	"shop_title": "Keyboard Shop",
+	"shop_title": "lop-shop",
 	"nav_home": "Home",
 	"nav_shop": "Shop",
 	"nav_about": "About",
-	"nav_cart": "Cart"
+	"nav_cart": "Cart",
+
+	"verify_email_title": "Verify your email address",
+	"verify_email_description": "We sent an 8-digit code to {email}.",
+	"verify_email_code_label": "Code",
+	"verify_email_verify_button": "Verify",
+	"verify_email_resend_button": "Resend code",
+	"verify_email_resend_countdown": "Resend code in {seconds}s",
+	"verify_email_change_email_link": "Change your email",
+
+	"verify_email_error_expired": "Code expired. A new code has been sent.",
+	"verify_email_error_incorrect": "Incorrect code",
+	"verify_email_error_invalid_format": "Invalid verification code format",
+	"verify_email_error_too_many_attempts": "Too many attempts. Please try again in {seconds} seconds.",
+	"verify_email_error_wait": "Please wait {seconds} seconds before requesting another code.",
+	"verify_email_success_sent": "A new verification code has been sent to your email.",
+	"verify_email_code_validation": "Please enter an 8-digit verification code"
 }

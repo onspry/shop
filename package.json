@@ -45,8 +45,11 @@
 		"vitest": "^3.0.0"
 	},
 	"dependencies": {
+		"@azure/identity": "^4.7.0",
 		"@inlang/paraglide-sveltekit": "^0.15.5",
 		"@libsql/client": "^0.14.0",
+		"@microsoft/microsoft-graph-client": "^3.0.7",
+		"@microsoft/microsoft-graph-types": "^2.40.0",
 		"@node-rs/argon2": "^2.0.2",
 		"@oslojs/crypto": "^1.0.1",
 		"@oslojs/encoding": "^1.1.0",
