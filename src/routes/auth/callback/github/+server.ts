@@ -1,5 +1,5 @@
 import { generateSessionToken, createSession, setSessionTokenCookie } from "$lib/server/auth/session";
-import { getUserByProviderId, createUser } from "$lib/server/auth/user"
+import { getUserByProviderId, createUser, getUserByEmail } from "$lib/server/auth/user"
 import { github } from "$lib/server/auth/oauth";
 import { randomUUID } from 'crypto';
 import type { RequestEvent } from "@sveltejs/kit";
@@ -47,23 +47,39 @@ export async function GET(event: RequestEvent): Promise<Response> {
         email: primaryEmail
     });
 
-    // TODO: Replace this with your own DB query.
+    // First check for existing user by provider ID
     const existingUser = await getUserByProviderId(Providers.github, githubUserId.toString());
-    console.log('Existing User:', existingUser);
     if (existingUser) {
-        console.log('Existing User:', existingUser);
         const sessionToken = generateSessionToken();
         const session = await createSession(sessionToken, existingUser.id);
         setSessionTokenCookie(event, sessionToken, session.expiresAt);
         return new Response(null, {
             status: 302,
-            headers: {
-                Location: "/"
-            }
+            headers: { Location: "/" }
         });
     }
 
-    // TODO: Replace this with your own DB query.
+    // Then check if email is already in use by another account
+    if (primaryEmail) {
+        const existingUserWithEmail = await getUserByEmail(primaryEmail);
+        if (existingUserWithEmail) {
+            // Redirect with more detailed error information
+            const searchParams = new URLSearchParams({
+                error: 'email_exists',
+                email: primaryEmail,
+                provider: existingUserWithEmail.provider,
+                attempted_provider: 'github'
+            });
+
+            return new Response(null, {
+                status: 302,
+                headers: {
+                    Location: `/auth/error?${searchParams.toString()}`
+                }
+            });
+        }
+    }
+
     const user = await createUser({
         id: randomUUID(),
         provider: 'github',

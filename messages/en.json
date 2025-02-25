@@ -22,5 +22,14 @@
 	"verify_email_error_too_many_attempts": "Too many attempts. Please try again in {seconds} seconds.",
 	"verify_email_error_wait": "Please wait {seconds} seconds before requesting another code.",
 	"verify_email_success_sent": "A new verification code has been sent to your email.",
-	"verify_email_code_validation": "Please enter an 8-digit verification code"
+	"verify_email_code_validation": "Please enter an 8-digit verification code",
+
+	"auth_error_account_exists": "Account Already Exists",
+	"auth_error_email_associated": "The email {email} is already associated with a {provider} account.",
+	"auth_error_use_existing_provider": "Please use your {existing} account to sign in instead of {attempted}.",
+	"auth_error_return_to_login": "Return to Login",
+	"auth_error_go_to_homepage": "Go to Homepage",
+	"auth_error_generic_title": "Authentication Error",
+	"auth_error_generic_message": "An error occurred during authentication. Please try again.",
+	"auth_error_try_again": "Try Again"
 }

@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
 	import { Providers } from '$lib/constants';
+	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 
 	let showEmailForm = false;
+	let isLoading = false;
 
 	const socialProviders = [
 		{
@@ -39,6 +40,24 @@
 			textColor: 'text-gray-900'
 		}
 	];
+
+	async function handleSubmit(event: SubmitEvent) {
+		isLoading = true;
+		try {
+			const form = event.target as HTMLFormElement;
+			const response = await fetch(form.action, {
+				method: 'POST',
+				body: new FormData(form)
+			});
+
+			if (response.redirected) {
+				window.location.href = response.url;
+			}
+		} finally {
+			isLoading = false;
+		}
+		event.preventDefault();
+	}
 </script>
 
 <div class="flex min-h-[calc(100vh-200px)] items-center justify-center px-4">
@@ -78,7 +97,12 @@
 		</div>
 
 		{#if showEmailForm}
-			<form method="POST" action="?/login" class="mt-8 space-y-6" use:enhance>
+			<form
+				method="POST"
+				action="/auth/login/email"
+				class="mt-8 space-y-6"
+				on:submit={handleSubmit}
+			>
 				<div class="space-y-4 rounded-md">
 					<div>
 						<label for="email" class="sr-only">Email address</label>
@@ -108,8 +132,13 @@
 					<button
 						type="submit"
 						class="used-look group relative flex w-full justify-center rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-sm font-semibold text-gray-900 transition-colors duration-200 hover:bg-[var(--color-accent-hover)]"
+						disabled={isLoading}
 					>
-						Login
+						{#if isLoading}
+							<LoadingSpinner {isLoading} />
+						{:else}
+							Login
+						{/if}
 					</button>
 				</div>
 			</form>
