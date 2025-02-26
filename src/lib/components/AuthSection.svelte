@@ -13,25 +13,15 @@
 </script>
 
 {#if user}
-	<div class="relative">
-		<button
-			type="button"
-			class="flex items-center gap-2"
-			on:mouseenter={() => (showDropdown = true)}
-		>
-			<div
-				class="used-look flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent)] text-sm font-bold text-gray-900"
-			>
-				{user.username[0].toUpperCase()}
-			</div>
-			<span class="hidden text-sm md:inline">{user.username}</span>
+	<div>
+		<button on:mouseenter={() => (showDropdown = true)}>
+			<span>{user.username}</span>
 		</button>
 
 		{#if showDropdown}
 			<div
 				role="menu"
 				tabindex="0"
-				class="ring-opacity-5 absolute top-full right-0 z-[1001] mt-2 w-48 origin-top-right rounded-lg bg-gray-900/95 py-1 ring-1 shadow-lg ring-black backdrop-blur-sm transition-all"
 				use:clickOutside={() => (showDropdown = false)}
 				on:mouseleave={() => {
 					setTimeout(() => {
@@ -39,27 +29,13 @@
 					}, 100);
 				}}
 			>
-				<a href="/profile" class="block px-4 py-2 text-sm hover:bg-gray-800 hover:text-white">
-					Profile
-				</a>
-				<a href="/settings" class="block px-4 py-2 text-sm hover:bg-gray-800 hover:text-white">
-					Settings
-				</a>
-				<div class="my-1 border-t border-gray-800"></div>
-				<a
-					href="/auth/logout"
-					class="block px-4 py-2 text-left text-sm text-red-400 transition-colors hover:bg-gray-800 hover:text-red-300"
-				>
-					Logout
-				</a>
+				<a href="/profile">Profile</a>
+				<a href="/settings">Settings</a>
+				<div></div>
+				<a href="/auth/logout">Logout</a>
 			</div>
 		{/if}
 	</div>
 {:else}
-	<a
-		href="/auth/login"
-		class="used-look rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-gray-900 transition-colors hover:bg-[var(--color-accent-hover)]"
-	>
-		Login
-	</a>
+	<a href="/auth/login">Login</a>
 {/if}
