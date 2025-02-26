@@ -43,6 +43,13 @@
       "when": 1740295849736,
       "tag": "0005_sleepy_spectrum",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1740478528230,
+      "tag": "0006_glossy_impossible_man",
+      "breakpoints": true
     }
   ]
 }

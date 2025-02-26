@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Providers } from '$lib/constants';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
+	import * as m from '$lib/paraglide/messages.js';
 
 	let showEmailForm = false;
 	let isLoading = false;
@@ -126,6 +127,12 @@
 							placeholder="Password"
 						/>
 					</div>
+				</div>
+
+				<div class="mt-2 flex items-center justify-between">
+					<a href="/auth/forgot-password" class="text-sm text-gray-400 hover:text-gray-300">
+						{m.auth_forgot_password()}
+					</a>
 				</div>
 
 				<div>

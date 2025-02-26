@@ -31,5 +31,16 @@
 	"auth_error_go_to_homepage": "Go to Homepage",
 	"auth_error_generic_title": "Authentication Error",
 	"auth_error_generic_message": "An error occurred during authentication. Please try again.",
-	"auth_error_try_again": "Try Again"
+	"auth_error_try_again": "Try Again",
+	"auth_forgot_password": "Forgot your password?",
+	"auth_forgot_password_title": "Reset Password",
+	"auth_forgot_password_description": "Enter your email address and we'll send you a code to reset your password.",
+	"auth_forgot_password_email_placeholder": "Enter your email",
+	"auth_forgot_password_submit": "Send Reset Code",
+	"auth_forgot_password_remember": "Remember your password?",
+	"auth_forgot_password_login": "Sign in",
+	"reset_password_title": "Reset Password",
+	"reset_password_description": "Enter your new password",
+	"reset_password_new_password_label": "New Password",
+	"reset_password_submit": "Reset Password"
 }

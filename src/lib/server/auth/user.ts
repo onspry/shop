@@ -55,6 +55,16 @@ export async function getUserPasswordHash(userId: string): Promise<string | unde
     return result.passwordHash;
 }
 
+export async function setUserAsEmailVerifiedIfEmailMatches(userId: string, email: string): Promise<boolean> {
+    const result = await db.update(user)
+        .set({ email_verified: 1 })
+        .where(and(
+            eq(user.id, userId),
+            eq(user.email, email)
+        ));
+    return result.rowsAffected > 0;
+}
+
 export async function updateUserPassword(userId: string, password: string): Promise<void> {
     const passwordHash = await hashPassword(password);
     await db.update(user)
