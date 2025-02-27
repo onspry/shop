@@ -7,9 +7,21 @@
 	import { ParaglideJS } from '@inlang/paraglide-sveltekit';
 	import { i18n } from '$lib/i18n';
 	import { ModeWatcher } from 'mode-watcher';
+	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
 
 	// Destructure the renderable children (avoid using <slot> per Svelte 5 guidelines).
 	let { data, children } = $props();
+
+	onMount(() => {
+		// Check system preference or stored preference
+		const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+		const storedTheme = localStorage.getItem('theme');
+
+		if (storedTheme === 'dark' || (!storedTheme && isDark)) {
+			document.documentElement.classList.add('dark');
+		}
+	});
 </script>
 
 <ParaglideJS {i18n}>

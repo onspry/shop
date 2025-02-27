@@ -1,3 +1,19 @@
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/inter-v18-latin-regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Onest';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/onest-v16-latin-regular.woff2') format('woff2');
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -59,14 +75,14 @@
     
     --logo: url('/logo-light.svg') no-repeat; /* White text for dark mode */
   }
-}
 
-@layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
+
   body {
-    @apply bg-background text-foreground;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
   }
 }
 
