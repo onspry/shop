@@ -15,6 +15,7 @@ export const user = t.sqliteTable('user', {
 	provider: t.text('provider', { enum: Object.values(Providers) as [Provider, ...Provider[]] }).notNull(),
 	providerId: t.text('provider_id').notNull(),
 	email: t.text('email', { length: 100 }).notNull().unique(),
+	image: t.text('image', { length: 255 }),
 	username: t.text('username').notNull(),
 	passwordHash: t.text('password_hash').notNull(),
 	email_verified: t.integer().notNull().default(0),

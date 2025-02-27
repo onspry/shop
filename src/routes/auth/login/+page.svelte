@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Providers } from '$lib/constants';
-	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
+	import LoadingSpinner from '$lib/components/loading-spinner.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 
 	let showEmailForm = false;

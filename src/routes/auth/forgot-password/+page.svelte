@@ -1,29 +1,9 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
+	import LoadingSpinner from '$lib/components/loading-spinner.svelte';
 	import * as m from '$lib/paraglide/messages.js';
-	import type { ActionData } from './$types';
 
-	let { form } = $props<{ form: ActionData }>();
 	let isLoading = $state(false);
-
-	async function handleSubmit(event: SubmitEvent) {
-		isLoading = true;
-		try {
-			const form = event.target as HTMLFormElement;
-			const response = await fetch(form.action, {
-				method: 'POST',
-				body: new FormData(form)
-			});
-
-			if (response.redirected) {
-				window.location.href = response.url;
-			}
-		} finally {
-			isLoading = false;
-		}
-		event.preventDefault();
-	}
 </script>
 
 <div>
@@ -53,7 +33,7 @@
 			<div>
 				<button type="submit" disabled={isLoading}>
 					{#if isLoading}
-						<LoadingSpinner {isLoading} />
+						<LoadingSpinner />
 					{:else}
 						{m.auth_forgot_password_submit()}
 					{/if}
