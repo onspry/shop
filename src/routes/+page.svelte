@@ -1,28 +1,11 @@
 <script lang="ts">
-	// Keyboard name as a constant
-	const KEYBOARD_NAME = 'Typoono';
-
+	import * as m from '$lib/paraglide/messages.js';
 	// Scroll to features function
 	function scrollToFeatures() {
 		// Delay scrolling by 300ms to allow button animation to play
 		setTimeout(() => {
 			document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
 		}, 300);
-	}
-
-	// Add carousel logic for mobile rotator
-	let currentFeature = 0;
-
-	function prevFeature() {
-		if (currentFeature > 0) {
-			currentFeature--;
-		}
-	}
-
-	function nextFeature() {
-		if (currentFeature < features.length - 1) {
-			currentFeature++;
-		}
 	}
 
 	// Key features of the keyboard
@@ -35,7 +18,7 @@
 
 <section>
 	<div>
-		<h1>{KEYBOARD_NAME}</h1>
+		<h1>{m.keyboard_name()}</h1>
 
 		<div>
 			<img src="/board.jpeg" alt="Split Keyboard" />
@@ -62,26 +45,6 @@
 						<p>{feature.desc}</p>
 					</div>
 				{/each}
-			</div>
-
-			<div>
-				{#if currentFeature > 0}
-					<button type="button" on:click={prevFeature} aria-label="Previous feature">&lt;</button>
-				{/if}
-				<div>
-					<div style="transform: translateX(-{currentFeature * 100}%);">
-						{#each features as feature, index}
-							<div>
-								<div>{feature.icon}</div>
-								<h3>{feature.title}</h3>
-								<p>{feature.desc}</p>
-							</div>
-						{/each}
-					</div>
-				</div>
-				{#if currentFeature < features.length - 1}
-					<button type="button" on:click={nextFeature} aria-label="Next feature">&gt;</button>
-				{/if}
 			</div>
 		</div>
 	</div>
