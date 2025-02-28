@@ -9,7 +9,6 @@
 	import { ModeWatcher } from 'mode-watcher';
 	import { onMount } from 'svelte';
 
-	// Destructure the renderable children (avoid using <slot> per Svelte 5 guidelines).
 	let { children } = $props();
 
 	onMount(() => {
@@ -26,18 +25,20 @@
 <ParaglideJS {i18n}>
 	<div class="min-h-screen bg-background font-sans antialiased">
 		<header
-			class="fixed top-0 left-0 right-0 z-50 h-[var(--header-height)] border-b bg-background/80 px-4 backdrop-blur-sm"
+			class="fixed top-0 left-0 right-0 z-50 h-[var(--header-height)] border-b bg-background/80 backdrop-blur-sm"
 		>
-			<ModeWatcher />
-			<Navbar />
+			<div class="container mx-auto h-full px-4 md:px-6">
+				<ModeWatcher />
+				<Navbar />
+			</div>
 		</header>
 
-		<main class="main-container container px-4 py-6">
+		<main class="main-container container mx-auto px-4 md:px-6">
 			{@render children()}
 		</main>
 
 		<footer
-			class="fixed bottom-0 left-0 right-0 h-[var(--footer-height)] border-t bg-background/80 px-4 backdrop-blur-sm"
+			class="fixed bottom-0 left-0 right-0 h-[var(--footer-height)] border-t bg-background/80 backdrop-blur-sm"
 		>
 			<Footer />
 		</footer>
