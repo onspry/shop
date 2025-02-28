@@ -1,19 +1,12 @@
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('/fonts/inter-v18-latin-regular.woff2') format('woff2');
-}
+/* Import Inter variable font */
+@import '@fontsource-variable/inter';
 
-@font-face {
-  font-family: 'Onest';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('/fonts/onest-v16-latin-regular.woff2') format('woff2');
-}
-
+/* Import Onest with specific weights you need */
+@import '@fontsource/onest/400.css';
+@import '@fontsource/onest/500.css';
+@import '@fontsource/onest/600.css';
+@import '@fontsource/onest/700.css';
+@import '@fontsource/onest/300.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -83,6 +76,38 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+  }
+
+  /* Typography defaults */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-onest font-bold;
+  }
+
+  /* Specific heading styles */
+  h1 {
+    @apply text-4xl md:text-5xl;
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl;
+  }
+
+  h3 {
+    @apply text-2xl md:text-3xl;
+  }
+
+  h4 {
+    @apply text-xl md:text-2xl;
+  }
+
+  /* Body text defaults */
+  p, input, textarea, select, button, li, a {
+    @apply font-sans;
+  }
+
+  /* Optional: Set specific styles for body text */
+  p {
+    @apply text-base leading-relaxed;
   }
 }
 

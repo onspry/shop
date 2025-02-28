@@ -55,6 +55,10 @@
 	},
 	"dependencies": {
 		"@azure/identity": "^4.7.0",
+		"@fontsource-variable/inter": "^5.1.1",
+		"@fontsource-variable/onest": "^5.1.1",
+		"@fontsource/inter": "^5.1.1",
+		"@fontsource/onest": "^5.1.1",
 		"@inlang/paraglide-sveltekit": "^0.15.5",
 		"@libsql/client": "^0.14.0",
 		"@microsoft/microsoft-graph-client": "^3.0.7",
@@ -64,6 +68,7 @@
 		"@oslojs/encoding": "^1.1.0",
 		"arctic": "^3.3.0",
 		"drizzle-orm": "^0.39.3",
+		"light": "^2.0.0-alpha.26",
 		"mode-watcher": "^0.5.1"
 	}
 }

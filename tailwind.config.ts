@@ -5,30 +5,8 @@ export default {
     darkMode: 'class',
     theme: {
         fontFamily: {
-            sans: [
-                'Inter',
-                'ui-sans-serif',
-                'system-ui',
-                '-apple-system',
-                'BlinkMacSystemFont',
-                'Segoe UI',
-                'Roboto',
-                'Helvetica Neue',
-                'Arial',
-                'sans-serif'
-            ],
-            display: [
-                'Onest',
-                'ui-sans-serif',
-                'system-ui',
-                '-apple-system',
-                'BlinkMacSystemFont',
-                'Segoe UI',
-                'Roboto',
-                'Helvetica Neue',
-                'Arial',
-                'sans-serif'
-            ],
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            onest: ['Onest', 'system-ui', 'sans-serif'],
         },
         extend: {
             colors: {

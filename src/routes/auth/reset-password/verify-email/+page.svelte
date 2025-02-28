@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
+	import LoadingSpinner from '$lib/components/loading-spinner.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import type { ActionData } from './$types';
 
@@ -46,7 +46,7 @@
 			<div>
 				<button type="submit" disabled={isLoading || !code}>
 					{#if isLoading}
-						<LoadingSpinner {isLoading} />
+						<LoadingSpinner />
 					{:else}
 						{m.verify_email_verify_button()}
 					{/if}

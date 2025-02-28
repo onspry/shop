@@ -99,7 +99,7 @@
 				<div>
 					<button type="submit" disabled={isLoading}>
 						{#if isLoading}
-							<LoadingSpinner {isLoading} />
+							<LoadingSpinner />
 						{:else}
 							Login
 						{/if}

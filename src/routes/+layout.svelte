@@ -2,7 +2,7 @@
 	// Import the localization wrapper and i18n instance.
 	import '../app.css';
 	// Import global components.
-	import Footer from '$lib/components/Footer.svelte';
+	import Footer from '$lib/components/footer.svelte';
 	import Navbar from '$lib/components/navbar.svelte';
 	import { ParaglideJS } from '@inlang/paraglide-sveltekit';
 	import { i18n } from '$lib/i18n';
