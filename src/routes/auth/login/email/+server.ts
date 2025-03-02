@@ -3,6 +3,7 @@ import { createSession, generateSessionToken, setSessionTokenCookie } from "$lib
 import { verifyPasswordHash } from "$lib/server/auth/password";
 import { verifyEmailInput } from "$lib/server/auth/email";
 import type { RequestEvent } from "@sveltejs/kit";
+import { redirect } from "@sveltejs/kit";
 
 export async function POST(event: RequestEvent): Promise<Response> {
     const formData = await event.request.formData();
@@ -52,10 +53,5 @@ export async function POST(event: RequestEvent): Promise<Response> {
     const session = await createSession(sessionToken, user.id);
     setSessionTokenCookie(event, sessionToken, session.expiresAt);
 
-    return new Response(null, {
-        status: 302,
-        headers: {
-            Location: "/"
-        }
-    });
+    throw redirect(303, '/');
 } 

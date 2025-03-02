@@ -8,8 +8,16 @@
 	import { i18n } from '$lib/i18n';
 	import { ModeWatcher } from 'mode-watcher';
 	import { onMount } from 'svelte';
+	import { setUser } from '$lib/stores/auth';
+	import { setContext } from 'svelte';
 
-	let { children } = $props();
+	let { children, data } = $props();
+	console.log('Layout props data:', data);
+
+	// Update context when user changes
+	$effect(() => {
+		setUser(data.user);
+	});
 
 	onMount(() => {
 		// Check system preference or stored preference

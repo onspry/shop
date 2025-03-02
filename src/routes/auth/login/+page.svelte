@@ -2,9 +2,30 @@
 	import { Providers } from '$lib/constants';
 	import LoadingSpinner from '$lib/components/loading-spinner.svelte';
 	import * as m from '$lib/paraglide/messages.js';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
+	import { Separator } from '$lib/components/ui/separator';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardFooter,
+		CardHeader,
+		CardTitle
+	} from '$lib/components/ui/card';
+	import { onMount } from 'svelte';
 
 	let showEmailForm = false;
 	let isLoading = false;
+
+	function toggleEmailForm(show: boolean) {
+		showEmailForm = show;
+	}
+
+	onMount(() => {
+		showEmailForm = false;
+	});
 
 	const socialProviders = [
 		{
@@ -52,65 +73,89 @@
 	}
 </script>
 
-<div>
-	<div>
-		<div>
-			<h2>Welcome Back</h2>
-			<p>Sign in to your account</p>
-		</div>
+<div
+	class="container flex min-h-[calc(100vh-var(--header-height)-var(--footer-height))] items-center justify-center py-8"
+>
+	<Card class="w-full max-w-md">
+		<CardHeader>
+			<CardTitle>Welcome Back</CardTitle>
+			<CardDescription>Sign in to your account</CardDescription>
+		</CardHeader>
+		<CardContent class="space-y-4">
+			<div class="grid gap-4">
+				{#each socialProviders as provider}
+					<Button variant="outline" class="h-11 w-full p-0">
+						<a href="/auth/login/{provider.provider}">
+							<div class="flex h-full w-full items-center justify-center gap-3">
+								<div class="h-5 w-5 shrink-0">
+									{@html provider.logo}
+								</div>
+								<span>Continue with {provider.name}</span>
+							</div>
+						</a>
+					</Button>
+				{/each}
+			</div>
 
-		<div>
-			{#each socialProviders as provider}
-				<a href="/auth/login/{provider.provider}">
-					{@html provider.logo}
-					Continue with {provider.name}
-				</a>
-			{/each}
-
-			<div>
-				<div>
-					<div></div>
+			<div class="relative">
+				<div class="absolute inset-0 flex items-center">
+					<Separator class="w-full" />
 				</div>
-				<div>
-					<span>Or continue with</span>
+				<div class="relative flex justify-center text-xs uppercase">
+					<span class="bg-background px-2 text-muted-foreground">Or continue with</span>
 				</div>
 			</div>
 
-			<button type="button" on:click={() => (showEmailForm = true)}>Email & Password</button>
-		</div>
-
-		{#if showEmailForm}
-			<form method="POST" action="/auth/login/email" on:submit={handleSubmit}>
-				<div>
-					<div>
-						<label for="email">Email address</label>
-						<input id="email" name="email" type="email" required placeholder="Email address" />
+			{#if !showEmailForm}
+				<Button variant="outline" class="w-full" onclick={() => toggleEmailForm(true)}>
+					Email & Password
+				</Button>
+			{:else}
+				<form method="POST" action="/auth/login/email" onsubmit={handleSubmit} class="space-y-4">
+					<div class="grid gap-2">
+						<Label for="email">Email address</Label>
+						<Input
+							id="email"
+							name="email"
+							type="email"
+							required
+							placeholder="name@example.com"
+							autocomplete="email"
+						/>
 					</div>
-					<div>
-						<label for="password">Password</label>
-						<input id="password" name="password" type="password" required placeholder="Password" />
+					<div class="grid gap-2">
+						<Label for="password">Password</Label>
+						<Input
+							id="password"
+							name="password"
+							type="password"
+							required
+							placeholder="Enter your password"
+							autocomplete="current-password"
+						/>
 					</div>
-				</div>
 
-				<div>
-					<a href="/auth/forgot-password">{m.auth_forgot_password()}</a>
-				</div>
+					<div class="text-sm">
+						<a href="/auth/forgot-password" class="text-muted-foreground hover:text-primary">
+							{m.auth_forgot_password()}
+						</a>
+					</div>
 
-				<div>
-					<button type="submit" disabled={isLoading}>
+					<Button type="submit" class="w-full" disabled={isLoading}>
 						{#if isLoading}
 							<LoadingSpinner />
 						{:else}
 							Login
 						{/if}
-					</button>
-				</div>
-			</form>
-		{/if}
-
-		<p>
-			Don't have an account?
-			<a href="/auth/register">Sign up</a>
-		</p>
-	</div>
+					</Button>
+				</form>
+			{/if}
+		</CardContent>
+		<CardFooter>
+			<p class="text-sm text-muted-foreground">
+				Don't have an account?
+				<a href="/auth/register" class="font-medium hover:text-primary"> Sign up </a>
+			</p>
+		</CardFooter>
+	</Card>
 </div>

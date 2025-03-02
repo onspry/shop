@@ -14,13 +14,13 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 	const { session, user } = await validateSessionToken(sessionToken);
 	if (session) {
 		setSessionTokenCookie(event, sessionToken, session.expiresAt);
+		event.locals.user = user;
+		event.locals.session = session;
 	} else {
 		deleteSessionTokenCookie(event);
+		event.locals.user = null;
+		event.locals.session = null;
 	}
-
-	event.locals.user = user;
-	console.log('User:', event.locals.user);
-	event.locals.session = session;
 
 	return resolve(event);
 };
