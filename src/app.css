@@ -37,10 +37,25 @@
     /* Layout sizes */
     --header-height: 4rem; /* 64px */
     --footer-height: 3rem; /* 48px */
+    --page-padding-x: 2rem; /* 32px */
+    --content-max-width: 72rem; /* 1152px - optimal reading width */
     
     @screen md {
       --header-height: 5rem; /* 80px */
       --footer-height: 4rem; /* 64px */
+      --page-padding-x: 3rem; /* 48px */
+    }
+    
+    @screen lg {
+      --page-padding-x: 4rem; /* 64px */
+    }
+    
+    @screen xl {
+      --page-padding-x: 5rem; /* 80px - extra spacious on very large screens */
+    }
+    
+    @screen 2xl {
+      --page-padding-x: 6rem; /* 96px - maximum spacing for ultra-wide screens */
     }
     
     --logo: url('/logo-dark.svg') no-repeat; /* Dark text for light mode */
@@ -77,6 +92,22 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
   }
+  
+  /* Prevent SvelteKit from adding unwanted styles when dropdown is open */
+  body[style*="padding-right"] {
+    padding-right: 0 !important;
+    margin-right: 0 !important;
+    overflow: auto !important;
+    pointer-events: auto !important;
+  }
+  
+  /* Additional fix for the app-body class */
+  .app-body {
+    padding-right: 0 !important;
+    margin-right: 0 !important;
+    overflow: auto !important;
+    pointer-events: auto !important;
+  }
 
   /* Typography defaults */
   h1, h2, h3, h4, h5, h6 {
@@ -109,13 +140,29 @@
   p {
     @apply text-base leading-relaxed;
   }
+  
+  /* Fix for dropdown menu overlay */
+  [data-portal] {
+    position: fixed !important;
+    z-index: 50 !important;
+    pointer-events: none !important;
+  }
+  
+  /* Ensure dropdown content has pointer events */
+  [data-portal] > * {
+    pointer-events: auto !important;
+  }
 }
 
 @layer components {
-  .main-container {
-    min-height: calc(100vh - var(--header-height) - var(--footer-height));
-    margin-top: var(--header-height);
-    padding-bottom: var(--footer-height);
+  /* Layout container for consistent spacing */
+  .layout-container {
+    width: 100%;
+    max-width: var(--content-max-width);
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--page-padding-x);
+    padding-right: var(--page-padding-x);
   }
   
   .logo {

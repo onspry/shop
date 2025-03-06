@@ -4,9 +4,7 @@
 	const currentYear = new Date().getFullYear();
 </script>
 
-<div
-	class="container mx-auto flex h-[var(--footer-height)] items-center justify-between px-4 md:px-6"
->
+<div class="flex h-full items-center justify-between">
 	<p class="text-sm text-muted-foreground">
 		&copy; {currentYear} Onspry. {m.footer_text()}
 	</p>

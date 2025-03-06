@@ -1,20 +1,26 @@
 <script lang="ts">
 	import * as m from '$lib/paraglide/messages.js';
-	import { userStore } from '$lib/stores/auth';
+	import { userStore, authStore } from '$lib/stores/auth';
 	import { Button } from '$lib/components/ui/button';
 	import type { User } from '$lib/server/db/schema';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { User as UserIcon, Settings, Package, LogOut } from 'lucide-svelte';
+	import LoadingSpinner from '$lib/components/loading-spinner.svelte';
 </script>
 
-<div class="relative">
-	{#if $userStore}
+<div class="relative inline-block">
+	{#if $authStore.isLoading}
+		<!-- Show a placeholder while loading -->
+		<div class="h-10 w-10 flex items-center justify-center">
+			<LoadingSpinner size={20} />
+		</div>
+	{:else if $authStore.user}
 		<DropdownMenu.Root>
 			<DropdownMenu.Trigger>
 				<Avatar.Root>
-					<Avatar.Image src={$userStore.image ?? ''} alt={$userStore.firstname ?? ''} />
-					<Avatar.Fallback>{$userStore.firstname?.[0]?.toUpperCase() ?? 'U'}</Avatar.Fallback>
+					<Avatar.Image src={$authStore.user.image ?? ''} alt={$authStore.user.firstname ?? ''} />
+					<Avatar.Fallback>{$authStore.user.firstname?.[0]?.toUpperCase() ?? 'U'}</Avatar.Fallback>
 				</Avatar.Root>
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content class="w-48">

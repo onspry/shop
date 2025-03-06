@@ -9,13 +9,13 @@
 	import { ModeWatcher } from 'mode-watcher';
 	import { onMount } from 'svelte';
 	import { setUser } from '$lib/stores/auth';
-	import { setContext } from 'svelte';
 
 	let { children, data } = $props();
 	console.log('Layout props data:', data);
 
 	// Update context when user changes
 	$effect(() => {
+		// Set user data from server
 		setUser(data.user);
 	});
 
@@ -31,24 +31,24 @@
 </script>
 
 <ParaglideJS {i18n}>
-	<div class="min-h-screen bg-background font-sans antialiased">
+	<div class="layout-container flex min-h-screen flex-col bg-background font-sans antialiased">
 		<header
-			class="fixed top-0 left-0 right-0 z-50 h-[var(--header-height)] border-b bg-background/80 backdrop-blur-sm"
+			class="sticky top-0 z-50 h-[var(--header-height)] border-b bg-background/80 backdrop-blur-sm"
 		>
-			<div class="container mx-auto h-full px-4 md:px-6">
+			<div class="h-full">
 				<ModeWatcher />
 				<Navbar />
 			</div>
 		</header>
 
-		<main class="main-container container mx-auto px-4 md:px-6">
+		<main class="flex-1 py-8">
 			{@render children()}
 		</main>
 
-		<footer
-			class="fixed bottom-0 left-0 right-0 h-[var(--footer-height)] border-t bg-background/80 backdrop-blur-sm"
-		>
-			<Footer />
+		<footer class="h-[var(--footer-height)] border-t bg-background/80 backdrop-blur-sm">
+			<div class="h-full">
+				<Footer />
+			</div>
 		</footer>
 	</div>
 </ParaglideJS>
