@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { randomUUID } from 'crypto';
 import { checkEmailAvailability, verifyEmailInput } from '$lib/server/auth/email';
-import { createUser, verifyUsernameInput, isEmailTaken } from '$lib/server/auth/user';
+import { createUser, isEmailTaken } from '$lib/server/auth/user';
 import { verifyPasswordStrength, hashPassword } from '$lib/server/auth/password';
 import { createSession, generateSessionToken, setSessionTokenCookie } from '$lib/server/auth/session';
 import {
@@ -30,27 +30,32 @@ export const actions: Actions = {
 async function action(event: RequestEvent) {
     const formData = await event.request.formData();
     const email = formData.get("email");
-    const username = formData.get("username");
+    const firstName = formData.get("firstName");
+    const lastName = formData.get("lastName");
     const password = formData.get("password");
-    if (typeof email !== "string" || typeof username !== "string" || typeof password !== "string") {
+    if (typeof email !== "string" || typeof firstName !== "string" ||
+        typeof lastName !== "string" || typeof password !== "string") {
         return fail(400, {
             message: "Invalid or missing fields",
-            email: "",
-            username: ""
+            email: email || "",
+            firstName: firstName || "",
+            lastName: lastName || ""
         });
     }
-    if (email === "" || password === "" || username === "") {
+    if (email === "" || password === "" || firstName === "" || lastName === "") {
         return fail(400, {
-            message: "Please enter your username, email, and password",
+            message: "Please fill in all fields",
             email: "",
-            username: ""
+            firstName: "",
+            lastName: ""
         });
     }
     if (!verifyEmailInput(email)) {
         return fail(400, {
             message: "Invalid email",
             email,
-            username
+            firstName,
+            lastName
         });
     }
     const emailAvailable = checkEmailAvailability(email);
@@ -58,14 +63,8 @@ async function action(event: RequestEvent) {
         return fail(400, {
             message: "Email is already used",
             email,
-            username
-        });
-    }
-    if (!verifyUsernameInput(username)) {
-        return fail(400, {
-            message: "Invalid username",
-            email,
-            username
+            firstName,
+            lastName
         });
     }
     const strongPassword = await verifyPasswordStrength(password);
@@ -73,7 +72,8 @@ async function action(event: RequestEvent) {
         return fail(400, {
             message: "Weak password",
             email,
-            username
+            firstName,
+            lastName
         });
     }
 
@@ -81,25 +81,27 @@ async function action(event: RequestEvent) {
     if (await isEmailTaken(email)) {
         return fail(400, {
             message: 'This email is already registered',
-            username,
+            firstName,
+            lastName,
             email
         });
     }
 
     const id = randomUUID();
-    const user = await createUser(
-        {
-            id: id,
-            provider: 'email',
-            providerId: id,
-            email: email,
-            username: username,
-            passwordHash: await hashPassword(password),  // Empty for OAuth users
-            email_verified: 0,
-            isAdmin: false,
-            stripeCustomerId: `e_${id}` // Prefix with gh_ for GitHub users
-        }
-    );
+    const user = await createUser({
+        id: id,
+        provider: 'email',
+        providerId: id,
+        email: email,
+        image: null,
+        firstname: firstName,
+        lastname: lastName,
+        passwordHash: await hashPassword(password),
+        email_verified: true,
+        isAdmin: false,
+        stripeCustomerId: `e_${id}`
+    });
+
     const emailVerificationRequest = await createEmailVerificationRequest(user.id, user.email);
     sendVerificationEmail(emailVerificationRequest.email, emailVerificationRequest.code);
     setEmailVerificationRequestCookie(event, emailVerificationRequest);

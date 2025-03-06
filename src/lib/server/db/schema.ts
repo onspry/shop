@@ -16,9 +16,10 @@ export const user = t.sqliteTable('user', {
 	providerId: t.text('provider_id').notNull(),
 	email: t.text('email', { length: 100 }).notNull().unique(),
 	image: t.text('image', { length: 255 }),
-	username: t.text('username').notNull(),
+	firstname: t.text('firstname', { length: 100 }).notNull(),
+	lastname: t.text('lastname', { length: 100 }).notNull(),
 	passwordHash: t.text('password_hash').notNull(),
-	email_verified: t.integer().notNull().default(0),
+	email_verified: t.integer({ mode: 'boolean' }).notNull().default(false),
 	isAdmin: t.integer({ mode: 'boolean' }).notNull().default(false),
 	stripeCustomerId: t.text('stripe_customer_id', { length: 100 }).notNull().unique(),
 }, (table) => [

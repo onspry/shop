@@ -30,8 +30,15 @@ export async function validateSessionToken(token: string) {
     const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
     const [result] = await db
         .select({
-            // Adjust user table here to tweak returned data
-            user: { id: table.user.id, username: table.user.username, email: table.user.email },
+            user: {
+                id: table.user.id,
+                firstname: table.user.firstname,
+                lastname: table.user.lastname,
+                email: table.user.email,
+                email_verified: table.user.email_verified,
+                isAdmin: table.user.isAdmin,
+                image: table.user.image
+            },
             session: table.session
         })
         .from(table.session)

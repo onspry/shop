@@ -50,6 +50,41 @@
       "when": 1740478528230,
       "tag": "0006_glossy_impossible_man",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1740962470753,
+      "tag": "0007_cynical_alex_wilder",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1740962617062,
+      "tag": "0008_salty_fixer",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1740962671485,
+      "tag": "0009_strange_rhino",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1740962848410,
+      "tag": "0010_bumpy_lady_deathstrike",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1740963610815,
+      "tag": "0011_amazing_skrulls",
+      "breakpoints": true
     }
   ]
 }

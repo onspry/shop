@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
+	import type { ActionData } from './$types';
+	import type { SubmitFunction } from '@sveltejs/kit';
 	import { Providers } from '$lib/constants';
-	import LoadingSpinner from '$lib/components/loading-spinner.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -15,17 +17,33 @@
 		CardTitle
 	} from '$lib/components/ui/card';
 	import { onMount } from 'svelte';
+	import LoadingSpinner from '$lib/components/loading-spinner.svelte';
+	import { goto } from '$app/navigation';
+	import type { ActionResult } from '@sveltejs/kit';
 
-	let showEmailForm = false;
-	let isLoading = false;
+	let { form } = $props<{ form: ActionData }>();
+	let showEmailForm = $state(false);
+	let isLoading = $state(false);
 
 	function toggleEmailForm(show: boolean) {
 		showEmailForm = show;
 	}
 
 	onMount(() => {
-		showEmailForm = false;
+		showEmailForm = !!form?.error;
 	});
+
+	const handleSubmit: SubmitFunction = () => {
+		isLoading = true;
+		return async ({ result, update }) => {
+			if (result.type === 'error' || result.type === 'failure') {
+				isLoading = false;
+				await update();
+			} else if (result.type === 'redirect') {
+				await goto(result.location);
+			}
+		};
+	};
 
 	const socialProviders = [
 		{
@@ -53,24 +71,6 @@
 			</svg>`
 		}
 	];
-
-	async function handleSubmit(event: SubmitEvent) {
-		isLoading = true;
-		try {
-			const form = event.target as HTMLFormElement;
-			const response = await fetch(form.action, {
-				method: 'POST',
-				body: new FormData(form)
-			});
-
-			if (response.redirected) {
-				window.location.href = response.url;
-			}
-		} finally {
-			isLoading = false;
-		}
-		event.preventDefault();
-	}
 </script>
 
 <div
@@ -111,7 +111,7 @@
 					Email & Password
 				</Button>
 			{:else}
-				<form method="POST" action="/auth/login/email" onsubmit={handleSubmit} class="space-y-4">
+				<form method="POST" action="?/email" class="space-y-4" use:enhance={handleSubmit}>
 					<div class="grid gap-2">
 						<Label for="email">Email address</Label>
 						<Input
@@ -121,6 +121,7 @@
 							required
 							placeholder="name@example.com"
 							autocomplete="email"
+							disabled={isLoading}
 						/>
 					</div>
 					<div class="grid gap-2">
@@ -132,8 +133,15 @@
 							required
 							placeholder="Enter your password"
 							autocomplete="current-password"
+							disabled={isLoading}
 						/>
 					</div>
+
+					{#if form?.error}
+						<div class="text-sm text-destructive">
+							{form.error}
+						</div>
+					{/if}
 
 					<div class="text-sm">
 						<a href="/auth/forgot-password" class="text-muted-foreground hover:text-primary">
@@ -141,12 +149,11 @@
 						</a>
 					</div>
 
-					<Button type="submit" class="w-full" disabled={isLoading}>
+					<Button type="submit" variant="default" class="w-full" disabled={isLoading}>
 						{#if isLoading}
-							<LoadingSpinner />
-						{:else}
-							Login
+							<LoadingSpinner size={16} className="mr-2" />
 						{/if}
+						{m.sign_in()}
 					</Button>
 				</form>
 			{/if}

@@ -13,8 +13,8 @@
 		<DropdownMenu.Root>
 			<DropdownMenu.Trigger>
 				<Avatar.Root>
-					<Avatar.Image src={$userStore.image ?? ''} alt={$userStore.username ?? ''} />
-					<Avatar.Fallback>{$userStore.username?.[0]?.toUpperCase() ?? 'U'}</Avatar.Fallback>
+					<Avatar.Image src={$userStore.image ?? ''} alt={$userStore.firstname ?? ''} />
+					<Avatar.Fallback>{$userStore.firstname?.[0]?.toUpperCase() ?? 'U'}</Avatar.Fallback>
 				</Avatar.Root>
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content class="w-48">

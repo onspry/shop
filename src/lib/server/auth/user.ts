@@ -4,10 +4,6 @@ import type { Provider, User } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { hashPassword } from './password';
 
-export function verifyUsernameInput(username: string): boolean {
-    return username.length > 3 && username.length < 32 && username.trim() === username;
-}
-
 export async function createUser(userData: User): Promise<User> {
     const [newUser] = await db.insert(user)
         .values({
@@ -57,7 +53,7 @@ export async function getUserPasswordHash(userId: string): Promise<string | unde
 
 export async function setUserAsEmailVerifiedIfEmailMatches(userId: string, email: string): Promise<boolean> {
     const result = await db.update(user)
-        .set({ email_verified: 1 })
+        .set({ email_verified: true })
         .where(and(
             eq(user.id, userId),
             eq(user.email, email)
@@ -79,7 +75,7 @@ export async function updateUserEmailAndSetEmailAsVerified(userId: string, email
     await db.update(user)
         .set({
             email,
-            email_verified: 1
+            email_verified: true
         })
         .where(eq(user.id, userId))
         .run();

@@ -62,7 +62,9 @@ export async function validatePasswordResetSessionToken(token: string): Promise<
     const user: User = {
         id: dbUser.id,
         email: dbUser.email,
-        username: dbUser.username,
+        firstname: dbUser.firstname,
+        lastname: dbUser.lastname,
+        image: dbUser.image,
         email_verified: dbUser.email_verified,
         isAdmin: dbUser.isAdmin,
         provider: 'email',
