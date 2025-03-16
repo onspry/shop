@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import { superForm } from 'sveltekit-superforms';
+	import { zod } from 'sveltekit-superforms/adapters';
+	import { passwordResetSchema } from '$lib/schemas/auth';
 	import LoadingSpinner from '$lib/components/loading-spinner.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import { Button } from '$lib/components/ui/button';
@@ -14,7 +16,14 @@
 		CardTitle
 	} from '$lib/components/ui/card';
 
-	let isLoading = $state(false);
+	// Using $props() instead of export let for Svelte 5
+	let { data } = $props();
+
+	// Initialize the form with Superform
+	const { form, errors, enhance, submitting, message } = superForm(data.form, {
+		validators: zod(passwordResetSchema),
+		validationMethod: 'auto'
+	});
 </script>
 
 <div
@@ -27,24 +36,31 @@
 		</CardHeader>
 
 		<CardContent>
-			<form
-				method="POST"
-				class="space-y-4"
-				use:enhance={() => {
-					isLoading = true;
-					return async ({ update }) => {
-						await update();
-						isLoading = false;
-					};
-				}}
-			>
+			<form method="POST" class="space-y-4" use:enhance>
 				<div class="grid gap-2">
 					<Label for="email">{m.auth_forgot_password_email_placeholder()}</Label>
-					<Input id="email" name="email" type="email" required autocomplete="email" />
+					<Input
+						id="email"
+						name="email"
+						type="email"
+						bind:value={$form.email}
+						autocomplete="email"
+						aria-invalid={$errors.email ? 'true' : undefined}
+						disabled={$submitting}
+					/>
+					{#if $errors.email}
+						<p class="text-sm text-destructive">{$errors.email}</p>
+					{/if}
 				</div>
 
-				<Button type="submit" variant="default" class="w-full" disabled={isLoading}>
-					{#if isLoading}
+				{#if $message}
+					<div class="text-sm text-destructive">
+						{$message}
+					</div>
+				{/if}
+
+				<Button type="submit" variant="default" class="w-full" disabled={$submitting}>
+					{#if $submitting}
 						<LoadingSpinner size={16} className="mr-2" />
 					{/if}
 					{m.auth_forgot_password_submit()}

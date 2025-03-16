@@ -28,6 +28,7 @@
 	});
 
 	let showEmailForm = $state(false);
+	let loadingProvider = $state<string | null>(null);
 
 	function toggleEmailForm(show: boolean) {
 		showEmailForm = show;
@@ -41,6 +42,7 @@
 	});
 
 	function handleSocialLogin(provider: string) {
+		loadingProvider = provider;
 		window.location.href = `/auth/login/${provider}`;
 	}
 
@@ -87,12 +89,16 @@
 						variant="outline"
 						class="h-11 w-full"
 						onclick={() => handleSocialLogin(provider.provider)}
-						disabled={$submitting}
+						disabled={loadingProvider !== null}
 					>
 						<div class="flex h-full w-full items-center justify-center gap-3">
-							<div class="h-5 w-5 shrink-0">
-								{@html provider.logo}
-							</div>
+							{#if loadingProvider === provider.provider}
+								<LoadingSpinner size={20} />
+							{:else}
+								<div class="h-5 w-5 shrink-0">
+									{@html provider.logo}
+								</div>
+							{/if}
 							<span>Continue with {provider.name}</span>
 						</div>
 					</Button>
@@ -109,7 +115,12 @@
 			</div>
 
 			{#if !showEmailForm}
-				<Button variant="outline" class="w-full" onclick={() => toggleEmailForm(true)}>
+				<Button
+					variant="outline"
+					class="w-full"
+					onclick={() => toggleEmailForm(true)}
+					disabled={loadingProvider !== null}
+				>
 					Email & Password
 				</Button>
 			{:else}
@@ -124,7 +135,7 @@
 							placeholder="name@example.com"
 							autocomplete="email"
 							aria-invalid={$errors.email ? 'true' : undefined}
-							disabled={$submitting}
+							disabled={$submitting || loadingProvider !== null}
 						/>
 						{#if $errors.email}
 							<p class="text-sm text-destructive">{$errors.email}</p>
@@ -140,7 +151,7 @@
 							placeholder="Enter your password"
 							autocomplete="current-password"
 							aria-invalid={$errors.password ? 'true' : undefined}
-							disabled={$submitting}
+							disabled={$submitting || loadingProvider !== null}
 						/>
 						{#if $errors.password}
 							<p class="text-sm text-destructive">{$errors.password}</p>
@@ -159,7 +170,12 @@
 						</a>
 					</div>
 
-					<Button type="submit" variant="default" class="w-full" disabled={$submitting}>
+					<Button
+						type="submit"
+						variant="default"
+						class="w-full"
+						disabled={$submitting || loadingProvider !== null}
+					>
 						{#if $submitting}
 							<LoadingSpinner size={16} className="mr-2" />
 						{/if}

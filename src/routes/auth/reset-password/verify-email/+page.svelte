@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import { superForm } from 'sveltekit-superforms';
+	import { zod } from 'sveltekit-superforms/adapters';
+	import { verificationCodeSchema } from '$lib/schemas/auth';
 	import LoadingSpinner from '$lib/components/loading-spinner.svelte';
 	import * as m from '$lib/paraglide/messages.js';
-	import type { ActionData } from './$types';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -15,9 +16,14 @@
 		CardTitle
 	} from '$lib/components/ui/card';
 
-	let { data, form } = $props<{ form: ActionData }>();
-	let isLoading = $state(false);
-	let code = $state('');
+	// Using $props() instead of export let for Svelte 5
+	let { data } = $props();
+
+	// Initialize the form with Superform
+	const { form, errors, enhance, submitting, message } = superForm(data.form, {
+		validators: zod(verificationCodeSchema),
+		validationMethod: 'auto'
+	});
 </script>
 
 <div
@@ -30,36 +36,38 @@
 		</CardHeader>
 
 		<CardContent>
-			<form
-				method="POST"
-				class="space-y-4"
-				use:enhance={() => {
-					isLoading = true;
-					return async ({ update }) => {
-						await update();
-						isLoading = false;
-					};
-				}}
-			>
+			<form method="POST" class="space-y-4" use:enhance>
 				<div class="grid gap-2">
 					<Label for="code">{m.verify_email_code_label()}</Label>
 					<Input
 						id="code"
 						name="code"
 						type="text"
-						required
-						bind:value={code}
+						bind:value={$form.code}
 						placeholder="2DZEK3LV"
 						autocomplete="one-time-code"
 						inputmode="text"
+						aria-invalid={$errors.code ? 'true' : undefined}
+						disabled={$submitting}
 					/>
-					{#if form?.message}
-						<p class="text-sm text-destructive">{form.message}</p>
+					{#if $errors.code}
+						<p class="text-sm text-destructive">{$errors.code}</p>
 					{/if}
 				</div>
 
-				<Button type="submit" variant="default" class="w-full" disabled={isLoading || !code}>
-					{#if isLoading}
+				{#if $message}
+					<div class="text-sm text-destructive">
+						{$message}
+					</div>
+				{/if}
+
+				<Button
+					type="submit"
+					variant="default"
+					class="w-full"
+					disabled={$submitting || !$form.code}
+				>
+					{#if $submitting}
 						<LoadingSpinner size={16} className="mr-2" />
 					{/if}
 					{m.verify_email_verify_button()}

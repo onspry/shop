@@ -15,6 +15,7 @@
 		CardTitle
 	} from '$lib/components/ui/card';
 	import LoadingSpinner from '$lib/components/loading-spinner.svelte';
+	import PasswordStrengthIndicator from '$lib/components/password-strength-indicator.svelte';
 
 	// Using $props() instead of export let for Svelte 5
 	let { data } = $props();
@@ -24,41 +25,6 @@
 		validators: zod(registerSchema),
 		validationMethod: 'auto'
 	});
-
-	// Password strength calculation using Svelte 5 derived state
-	const passwordStrength = $derived(getPasswordStrength($form?.password || ''));
-	const passwordStrengthText = $derived(getPasswordStrengthText(passwordStrength));
-	const passwordStrengthColor = $derived(getPasswordStrengthColor(passwordStrength));
-
-	function getPasswordStrength(password: string): number {
-		if (!password) return 0;
-
-		let strength = 0;
-
-		// Length check
-		if (password.length >= 8) strength += 25;
-
-		// Character type checks
-		if (/[A-Z]/.test(password)) strength += 25;
-		if (/[a-z]/.test(password)) strength += 25;
-		if (/[0-9]/.test(password)) strength += 25;
-
-		return strength;
-	}
-
-	function getPasswordStrengthText(strength: number): string {
-		if (strength === 0) return 'Enter a password';
-		if (strength < 50) return 'Weak';
-		if (strength < 100) return 'Medium';
-		return 'Strong';
-	}
-
-	function getPasswordStrengthColor(strength: number): string {
-		if (strength === 0) return 'bg-gray-200';
-		if (strength < 50) return 'bg-red-500';
-		if (strength < 100) return 'bg-yellow-500';
-		return 'bg-green-500';
-	}
 </script>
 
 <div
@@ -131,19 +97,7 @@
 					/>
 
 					<!-- Password strength indicator -->
-					{#if $form.password}
-						<div class="mt-1">
-							<div class="h-1 w-full bg-gray-200 rounded-full overflow-hidden">
-								<div
-									class="h-full transition-all duration-300 {passwordStrengthColor}"
-									style="width: {passwordStrength}%"
-								></div>
-							</div>
-							<p class="text-xs mt-1 text-muted-foreground">
-								{passwordStrengthText}
-							</p>
-						</div>
-					{/if}
+					<PasswordStrengthIndicator password={$form.password} />
 
 					{#if $errors.password}
 						<p class="text-sm text-destructive">{$errors.password}</p>

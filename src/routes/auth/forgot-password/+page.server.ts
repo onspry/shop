@@ -8,24 +8,37 @@ import {
 } from "$lib/server/auth/password-reset"
 import { generateSessionToken } from "$lib/server/auth/session";
 import { fail, redirect } from "@sveltejs/kit";
+import { superValidate, message } from 'sveltekit-superforms';
+import { zod } from 'sveltekit-superforms/adapters';
+import { passwordResetSchema } from '$lib/schemas/auth';
 
-import type { Actions } from "./$types";
+import type { PageServerLoad, Actions } from "./$types";
+
+export const load: PageServerLoad = async () => {
+    // Create the form with Superform
+    const form = await superValidate(zod(passwordResetSchema));
+
+    return { form };
+};
 
 export const actions: Actions = {
     default: async (event) => {
         console.log("[Forgot Password] Starting password reset flow");
-        const formData = await event.request.formData();
-        const email = formData.get("email");
 
-        if (typeof email !== "string") {
-            console.log("[Forgot Password] Invalid email format");
-            return fail(400, { message: "Invalid email" });
+        // Validate the form with Superform and Zod
+        const form = await superValidate(event.request, zod(passwordResetSchema));
+
+        // Return validation errors if any
+        if (!form.valid) {
+            return fail(400, { form });
         }
+
+        const { email } = form.data;
 
         const user = await getUserByEmail(email);
         if (!user) {
             console.log("[Forgot Password] User not found:", email);
-            return fail(400, { message: "Account not found" });
+            return message(form, "Account not found", { status: 400 });
         }
 
         let sessionToken;
@@ -50,11 +63,11 @@ export const actions: Actions = {
             console.log("[Forgot Password] Cookie set:", !!cookieValue);
         } catch (error) {
             console.error("[Forgot Password] Error in reset flow:", error);
-            return fail(500, { message: "An error occurred. Please try again." });
+            return message(form, "An error occurred. Please try again.", { status: 500 });
         }
 
         // Redirect outside the try/catch block
         console.log("[Forgot Password] Redirecting to verify email");
-        throw redirect(303, "/auth/reset-password/verify-email");
+        redirect(303, "/auth/reset-password/verify-email");
     }
 };

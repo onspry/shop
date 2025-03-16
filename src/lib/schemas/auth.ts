@@ -28,6 +28,12 @@ export const passwordResetSchema = z.object({
 
 export type PasswordResetSchema = z.infer<typeof passwordResetSchema>;
 
+export const verificationCodeSchema = z.object({
+    code: z.string().min(1, { message: 'Verification code is required' })
+});
+
+export type VerificationCodeSchema = z.infer<typeof verificationCodeSchema>;
+
 export const passwordUpdateSchema = z.object({
     password: z
         .string()

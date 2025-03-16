@@ -1,8 +1,11 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import { superForm } from 'sveltekit-superforms';
+	import { zod } from 'sveltekit-superforms/adapters';
+	import { passwordUpdateSchema } from '$lib/schemas/auth';
 	import LoadingSpinner from '$lib/components/loading-spinner.svelte';
+	import PasswordStrengthIndicator from '$lib/components/password-strength-indicator.svelte';
+	import PasswordInput from '$lib/components/password-input.svelte';
 	import * as m from '$lib/paraglide/messages.js';
-	import type { ActionData } from './$types';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -15,9 +18,24 @@
 		CardTitle
 	} from '$lib/components/ui/card';
 
-	let { form } = $props<{ form: ActionData }>();
-	let isLoading = $state(false);
-	let password = $state('');
+	// Using $props() instead of export let for Svelte 5
+	let { data } = $props();
+
+	// Initialize the form with Superform
+	const { form, errors, enhance, submitting, message } = superForm(data.form, {
+		validators: zod(passwordUpdateSchema),
+		validationMethod: 'auto'
+	});
+
+	// Handle password input changes
+	function handlePasswordInput(value: string) {
+		$form.password = value;
+	}
+
+	// Handle confirm password input changes
+	function handleConfirmPasswordInput(value: string) {
+		$form.confirmPassword = value;
+	}
 </script>
 
 <div
@@ -30,35 +48,53 @@
 		</CardHeader>
 
 		<CardContent>
-			<form
-				method="POST"
-				class="space-y-4"
-				use:enhance={() => {
-					isLoading = true;
-					return async ({ update }) => {
-						await update();
-						isLoading = false;
-					};
-				}}
-			>
+			<form method="POST" class="space-y-4" use:enhance>
 				<div class="grid gap-2">
 					<Label for="password">{m.reset_password_new_password_label()}</Label>
-					<Input
+					<PasswordInput
 						id="password"
 						name="password"
-						type="password"
-						required
-						bind:value={password}
+						value={$form.password}
+						oninput={handlePasswordInput}
 						placeholder={m.reset_password_new_password_label()}
 						autocomplete="new-password"
+						ariaInvalid={$errors.password ? 'true' : undefined}
+						disabled={$submitting}
 					/>
-					{#if form?.message}
-						<p class="text-sm text-destructive">{form.message}</p>
+
+					<!-- Password strength indicator -->
+					<PasswordStrengthIndicator password={$form.password} />
+
+					{#if $errors.password}
+						<p class="text-sm text-destructive">{$errors.password}</p>
 					{/if}
 				</div>
 
-				<Button type="submit" variant="default" class="w-full" disabled={isLoading || !password}>
-					{#if isLoading}
+				<div class="grid gap-2">
+					<Label for="confirmPassword">{m.reset_password_confirm_password_label()}</Label>
+					<PasswordInput
+						id="confirmPassword"
+						name="confirmPassword"
+						value={$form.confirmPassword}
+						oninput={handleConfirmPasswordInput}
+						placeholder={m.reset_password_confirm_password_label()}
+						autocomplete="new-password"
+						ariaInvalid={$errors.confirmPassword ? 'true' : undefined}
+						disabled={$submitting}
+					/>
+					{#if $errors.confirmPassword}
+						<p class="text-sm text-destructive">{$errors.confirmPassword}</p>
+					{/if}
+				</div>
+
+				{#if $message}
+					<div class="text-sm text-destructive">
+						{$message}
+					</div>
+				{/if}
+
+				<Button type="submit" variant="default" class="w-full" disabled={$submitting}>
+					{#if $submitting}
 						<LoadingSpinner size={16} className="mr-2" />
 					{/if}
 					{m.reset_password_submit()}
