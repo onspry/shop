@@ -20,6 +20,7 @@
 	import LoadingSpinner from '$lib/components/loading-spinner.svelte';
 	import { goto } from '$app/navigation';
 	import type { ActionResult } from '@sveltejs/kit';
+	import { invalidateAll } from '$app/navigation';
 
 	let { form } = $props<{ form: ActionData }>();
 	let showEmailForm = $state(false);
@@ -40,10 +41,16 @@
 				isLoading = false;
 				await update();
 			} else if (result.type === 'redirect') {
+				await invalidateAll();
 				await goto(result.location);
 			}
 		};
 	};
+
+	function handleSocialLogin(provider: string) {
+		isLoading = true;
+		window.location.href = `/auth/login/${provider}`;
+	}
 
 	const socialProviders = [
 		{
@@ -84,15 +91,18 @@
 		<CardContent class="space-y-4">
 			<div class="grid gap-4">
 				{#each socialProviders as provider}
-					<Button variant="outline" class="h-11 w-full p-0">
-						<a href="/auth/login/{provider.provider}">
-							<div class="flex h-full w-full items-center justify-center gap-3">
-								<div class="h-5 w-5 shrink-0">
-									{@html provider.logo}
-								</div>
-								<span>Continue with {provider.name}</span>
+					<Button
+						variant="outline"
+						class="h-11 w-full"
+						onclick={() => handleSocialLogin(provider.provider)}
+						disabled={isLoading}
+					>
+						<div class="flex h-full w-full items-center justify-center gap-3">
+							<div class="h-5 w-5 shrink-0">
+								{@html provider.logo}
 							</div>
-						</a>
+							<span>Continue with {provider.name}</span>
+						</div>
 					</Button>
 				{/each}
 			</div>

@@ -1,56 +1,73 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-
 	import type { ActionData } from './$types';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardFooter,
+		CardHeader,
+		CardTitle
+	} from '$lib/components/ui/card';
+	import { Separator } from '$lib/components/ui/separator';
 
 	export let form: ActionData;
 </script>
 
-<div>
-	<div>
-		<h2>Account Settings</h2>
+<div class="container py-8">
+	<div class="mb-6">
+		<h1 class="text-3xl font-bold">Account Settings</h1>
 	</div>
 
-	<div>
-		<div>
-			<form method="post" action="?/password" use:enhance>
-				<h3>Change Password</h3>
-				<div>
-					<label for="password">Current Password</label>
-					<div>
-						<input id="password" name="password" type="password" required />
+	<div class="grid gap-6 md:grid-cols-2">
+		<Card>
+			<CardHeader>
+				<CardTitle>Change Password</CardTitle>
+				<CardDescription>Update your account password</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<form method="post" action="?/password" use:enhance class="space-y-4">
+					<div class="grid gap-2">
+						<Label for="password">Current Password</Label>
+						<Input id="password" name="password" type="password" required />
 					</div>
-				</div>
 
-				<div>
-					<label for="new_password">New Password</label>
-					<div>
-						<input id="new_password" name="new_password" type="password" required />
+					<div class="grid gap-2">
+						<Label for="new_password">New Password</Label>
+						<Input id="new_password" name="new_password" type="password" required />
 					</div>
-				</div>
 
-				<button type="submit">Update Password</button>
+					{#if form?.password?.message}
+						<p class="text-sm text-destructive">{form.password.message}</p>
+					{/if}
 
-				{#if form?.password?.message}
-					<p>{form.password.message}</p>
-				{/if}
-			</form>
+					<Button type="submit" variant="default" class="w-full">Update Password</Button>
+				</form>
+			</CardContent>
+		</Card>
 
-			<form method="post" action="?/email" use:enhance>
-				<h3>Change Email</h3>
-				<div>
-					<label for="email">New Email</label>
-					<div>
-						<input id="email" name="email" type="email" required />
+		<Card>
+			<CardHeader>
+				<CardTitle>Change Email</CardTitle>
+				<CardDescription>Update your email address</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<form method="post" action="?/email" use:enhance class="space-y-4">
+					<div class="grid gap-2">
+						<Label for="email">New Email</Label>
+						<Input id="email" name="email" type="email" required />
 					</div>
-				</div>
 
-				<button type="submit">Update Email</button>
+					{#if form?.email?.message}
+						<p class="text-sm text-destructive">{form.email.message}</p>
+					{/if}
 
-				{#if form?.email?.message}
-					<p>{form.email.message}</p>
-				{/if}
-			</form>
-		</div>
+					<Button type="submit" variant="default" class="w-full">Update Email</Button>
+				</form>
+			</CardContent>
+		</Card>
 	</div>
 </div>
