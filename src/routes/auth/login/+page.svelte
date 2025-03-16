@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
-	import type { ActionData } from './$types';
-	import type { SubmitFunction } from '@sveltejs/kit';
+	import { superForm } from 'sveltekit-superforms';
+	import { zod } from 'sveltekit-superforms/adapters';
+	import { loginSchema } from '$lib/schemas/auth';
 	import { Providers } from '$lib/constants';
 	import * as m from '$lib/paraglide/messages.js';
 	import { Button } from '$lib/components/ui/button';
@@ -16,39 +16,31 @@
 		CardHeader,
 		CardTitle
 	} from '$lib/components/ui/card';
-	import { onMount } from 'svelte';
 	import LoadingSpinner from '$lib/components/loading-spinner.svelte';
-	import { goto } from '$app/navigation';
-	import type { ActionResult } from '@sveltejs/kit';
-	import { invalidateAll } from '$app/navigation';
 
-	let { form } = $props<{ form: ActionData }>();
+	// Using $props() instead of export let for Svelte 5
+	let { data } = $props();
+
+	// Initialize the form with Superform
+	const { form, errors, enhance, submitting, message } = superForm(data.form, {
+		validators: zod(loginSchema),
+		validationMethod: 'auto'
+	});
+
 	let showEmailForm = $state(false);
-	let isLoading = $state(false);
 
 	function toggleEmailForm(show: boolean) {
 		showEmailForm = show;
 	}
 
-	onMount(() => {
-		showEmailForm = !!form?.error;
+	// Show email form if there are validation errors
+	$effect(() => {
+		if ($errors.email || $errors.password || $message) {
+			showEmailForm = true;
+		}
 	});
 
-	const handleSubmit: SubmitFunction = () => {
-		isLoading = true;
-		return async ({ result, update }) => {
-			if (result.type === 'error' || result.type === 'failure') {
-				isLoading = false;
-				await update();
-			} else if (result.type === 'redirect') {
-				await invalidateAll();
-				await goto(result.location);
-			}
-		};
-	};
-
 	function handleSocialLogin(provider: string) {
-		isLoading = true;
 		window.location.href = `/auth/login/${provider}`;
 	}
 
@@ -95,7 +87,7 @@
 						variant="outline"
 						class="h-11 w-full"
 						onclick={() => handleSocialLogin(provider.provider)}
-						disabled={isLoading}
+						disabled={$submitting}
 					>
 						<div class="flex h-full w-full items-center justify-center gap-3">
 							<div class="h-5 w-5 shrink-0">
@@ -121,18 +113,22 @@
 					Email & Password
 				</Button>
 			{:else}
-				<form method="POST" action="?/email" class="space-y-4" use:enhance={handleSubmit}>
+				<form method="POST" action="?/email" class="space-y-4" use:enhance>
 					<div class="grid gap-2">
 						<Label for="email">Email address</Label>
 						<Input
 							id="email"
 							name="email"
 							type="email"
-							required
+							bind:value={$form.email}
 							placeholder="name@example.com"
 							autocomplete="email"
-							disabled={isLoading}
+							aria-invalid={$errors.email ? 'true' : undefined}
+							disabled={$submitting}
 						/>
+						{#if $errors.email}
+							<p class="text-sm text-destructive">{$errors.email}</p>
+						{/if}
 					</div>
 					<div class="grid gap-2">
 						<Label for="password">Password</Label>
@@ -140,16 +136,20 @@
 							id="password"
 							name="password"
 							type="password"
-							required
+							bind:value={$form.password}
 							placeholder="Enter your password"
 							autocomplete="current-password"
-							disabled={isLoading}
+							aria-invalid={$errors.password ? 'true' : undefined}
+							disabled={$submitting}
 						/>
+						{#if $errors.password}
+							<p class="text-sm text-destructive">{$errors.password}</p>
+						{/if}
 					</div>
 
-					{#if form?.error}
+					{#if $message}
 						<div class="text-sm text-destructive">
-							{form.error}
+							{$message}
 						</div>
 					{/if}
 
@@ -159,8 +159,8 @@
 						</a>
 					</div>
 
-					<Button type="submit" variant="default" class="w-full" disabled={isLoading}>
-						{#if isLoading}
+					<Button type="submit" variant="default" class="w-full" disabled={$submitting}>
+						{#if $submitting}
 							<LoadingSpinner size={16} className="mr-2" />
 						{/if}
 						{m.sign_in()}

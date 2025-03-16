@@ -1,6 +1,8 @@
 import { redirect, fail } from "@sveltejs/kit";
+import { superValidate, message } from 'sveltekit-superforms';
+import { zod } from 'sveltekit-superforms/adapters';
+import { loginSchema } from '$lib/schemas/auth';
 import type { PageServerLoad, Actions } from "./$types";
-import { verifyEmailInput } from "$lib/server/auth/email";
 import { getUserByEmail, getUserPasswordHash } from "$lib/server/auth/user";
 import { verifyPasswordHash } from "$lib/server/auth/password";
 import { createSession, generateSessionToken, setSessionTokenCookie } from "$lib/server/auth/session";
@@ -9,41 +11,67 @@ export const load: PageServerLoad = async ({ locals }) => {
     if (locals.session !== null && locals.user !== null) {
         throw redirect(302, "/");
     }
-    return {};
+
+    // Create the form with Superform
+    const form = await superValidate(zod(loginSchema));
+
+    return { form };
 };
 
 export const actions: Actions = {
     email: async (event) => {
         const { request } = event;
-        const data = await request.formData();
-        const email = data.get("email");
-        const password = data.get("password");
 
-        if (typeof email !== "string" || typeof password !== "string") {
-            return { error: "Invalid or missing fields" };
+        // Validate the form with Superform and Zod
+        const form = await superValidate(request, zod(loginSchema));
+
+        // Return validation errors if any
+        if (!form.valid) {
+            return fail(400, { form });
         }
 
-        if (email === "" || password === "") {
-            return fail(400, { error: "Please enter your email and password." });
-        }
-
-        if (!verifyEmailInput(email)) {
-            return fail(400, { error: "Invalid email" });
-        }
+        const { email, password } = form.data;
 
         const user = await getUserByEmail(email);
         if (!user) {
-            return fail(400, { error: "Account does not exist" });
+            const errorForm = await superValidate(
+                { ...form.data, password: '' }, // Clear password for security
+                zod(loginSchema)
+            );
+
+            return message(
+                errorForm,
+                'Invalid email or password',
+                { status: 400 }
+            );
         }
 
         const passwordHash = await getUserPasswordHash(user.id);
         if (!passwordHash) {
-            return fail(400, { error: "Invalid user" });
+            const errorForm = await superValidate(
+                { ...form.data, password: '' }, // Clear password for security
+                zod(loginSchema)
+            );
+
+            return message(
+                errorForm,
+                'Invalid email or password',
+                { status: 400 }
+            );
         }
 
         const validPassword = await verifyPasswordHash(passwordHash, password);
         if (!validPassword) {
-            return fail(400, { error: "Invalid password" });
+            const errorForm = await superValidate(
+                { ...form.data, password: '' }, // Clear password for security
+                zod(loginSchema)
+            );
+
+            return message(
+                errorForm,
+                'Invalid email or password',
+                { status: 400 }
+            );
         }
 
         const sessionToken = generateSessionToken();
