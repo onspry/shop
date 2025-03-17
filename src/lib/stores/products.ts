@@ -1,32 +1,43 @@
 import type { Product, ProductVariant, ProductImage } from '$lib/server/db/schema';
 import { writable, derived } from 'svelte/store';
 
-// Create writable stores for the base state
-const productsStore = writable<Product[]>([]);
-const variantsStore = writable<ProductVariant[]>([]);
-const imagesStore = writable<ProductImage[]>([]);
-const selectedProductStore = writable<Product | null>(null);
-const loadingStore = writable(false);
-const errorStore = writable<string | null>(null);
+// Create writable store with persistent tracking
+const store = writable({
+    products: [] as Product[],
+    variants: [] as ProductVariant[],
+    images: [] as ProductImage[],
+    loadedKeyboards: new Set<string>(), // Track which keyboards we've loaded accessories for
+    selectedProduct: null as Product | null,
+    loading: false,
+    error: null as string | null
+});
+
+// Derived stores for access to individual parts of the store
+export const products = derived(store, $store => $store.products);
+export const variants = derived(store, $store => $store.variants);
+export const images = derived(store, $store => $store.images);
+export const selectedProduct = derived(store, $store => $store.selectedProduct);
+export const loading = derived(store, $store => $store.loading);
+export const error = derived(store, $store => $store.error);
 
 // Derived stores for product categories
-const keyboardProduct = derived(productsStore, $products =>
+export const keyboardProduct = derived(products, $products =>
     $products.find(p => !p.isAccessory && p.category?.toUpperCase() === 'KEYBOARD')
 );
 
-const switchesProduct = derived(productsStore, $products =>
+export const switchesProduct = derived(products, $products =>
     $products.find(p => p.category?.toUpperCase() === 'SWITCHES')
 );
 
-const keycapsProduct = derived(productsStore, $products =>
+export const keycapsProduct = derived(products, $products =>
     $products.find(p => p.category?.toUpperCase() === 'KEYCAPS')
 );
 
-const accessories = derived(productsStore, $products =>
+export const accessories = derived(products, $products =>
     $products.filter(p => p.isAccessory)
 );
 
-const accessoryCategories = derived(accessories, $accessories => {
+export const accessoryCategories = derived(accessories, $accessories => {
     const groups = new Map<string, Product[]>();
     $accessories.forEach((product) => {
         const category = product.category;
@@ -39,20 +50,29 @@ const accessoryCategories = derived(accessories, $accessories => {
 });
 
 // Setter functions
-function setProducts(newProducts: Product[]) {
-    productsStore.set(newProducts);
+export function setProducts(newProducts: Product[]) {
+    store.update(state => ({
+        ...state,
+        products: newProducts
+    }));
 }
 
-function setVariants(newVariants: ProductVariant[]) {
-    variantsStore.set(newVariants);
+export function setVariants(newVariants: ProductVariant[]) {
+    store.update(state => ({
+        ...state,
+        variants: newVariants
+    }));
 }
 
-function setImages(newImages: ProductImage[]) {
-    imagesStore.set(newImages);
+export function setImages(newImages: ProductImage[]) {
+    store.update(state => ({
+        ...state,
+        images: newImages
+    }));
 }
 
-// Repository-aware actions
-function loadKeyboardWithAccessories(
+// Repository-aware actions with persistence
+export function loadKeyboardWithAccessories(
     keyboard: Product,
     keyboardVariants: ProductVariant[],
     keyboardImages: ProductImage[],
@@ -60,175 +80,198 @@ function loadKeyboardWithAccessories(
     accessoryVariants: ProductVariant[],
     accessoryImages: ProductImage[]
 ) {
-    // Load everything into the store at once
-    setProducts([keyboard, ...accessories]);
-    setVariants([...keyboardVariants, ...accessoryVariants]);
-    setImages([...keyboardImages, ...accessoryImages]);
-}
-
-function addProduct(product: Product) {
-    productsStore.update($products => {
-        // Don't add duplicates
-        if ($products.some(p => p.id === product.id)) {
-            return $products;
+    store.update(state => {
+        // If we've already loaded this keyboard and its accessories, don't reload
+        if (state.loadedKeyboards.has(keyboard.id)) {
+            return state;
         }
-        return [...$products, product];
+
+        // Add products without duplicates
+        const allProducts = [keyboard, ...accessories];
+        const existingIds = new Set(state.products.map(p => p.id));
+        const newProducts = allProducts.filter(p => !existingIds.has(p.id));
+
+        // Add variants without duplicates
+        const allVariants = [...keyboardVariants, ...accessoryVariants];
+        const existingVariantIds = new Set(state.variants.map(v => v.id));
+        const newVariants = allVariants.filter(v => !existingVariantIds.has(v.id));
+
+        // Add images without duplicates
+        const allImages = [...keyboardImages, ...accessoryImages];
+        const existingImageIds = new Set(state.images.map(i => i.id));
+        const newImages = allImages.filter(i => !existingImageIds.has(i.id));
+
+        // Mark this keyboard as loaded
+        const updatedLoadedKeyboards = new Set(state.loadedKeyboards);
+        updatedLoadedKeyboards.add(keyboard.id);
+
+        return {
+            ...state,
+            products: [...state.products, ...newProducts],
+            variants: [...state.variants, ...newVariants],
+            images: [...state.images, ...newImages],
+            loadedKeyboards: updatedLoadedKeyboards
+        };
     });
 }
 
-function addVariants(productVariants: ProductVariant[]) {
-    variantsStore.update($variants => {
+export function addProduct(product: Product) {
+    store.update(state => {
+        // Don't add duplicates
+        if (state.products.some(p => p.id === product.id)) {
+            return state;
+        }
+        return {
+            ...state,
+            products: [...state.products, product]
+        };
+    });
+}
+
+export function addVariants(productVariants: ProductVariant[]) {
+    store.update(state => {
         // Filter out duplicates
         const newVariants = productVariants.filter(v =>
-            !$variants.some(existing => existing.id === v.id)
+            !state.variants.some(existing => existing.id === v.id)
         );
-        return [...$variants, ...newVariants];
+        return {
+            ...state,
+            variants: [...state.variants, ...newVariants]
+        };
     });
 }
 
-function addImages(productImages: ProductImage[]) {
-    imagesStore.update($images => {
+export function addImages(productImages: ProductImage[]) {
+    store.update(state => {
         // Filter out duplicates
         const newImages = productImages.filter(i =>
-            !$images.some(existing => existing.id === i.id)
+            !state.images.some(existing => existing.id === i.id)
         );
-        return [...$images, ...newImages];
+        return {
+            ...state,
+            images: [...state.images, ...newImages]
+        };
     });
 }
 
 // Category-based selectors
-function getProductsByCategory(category: string) {
+export function getProductsByCategory(category: string) {
     let result: Product[] = [];
-    productsStore.subscribe($products => {
+    products.subscribe($products => {
         result = $products.filter(p => p.category?.toUpperCase() === category.toUpperCase());
-    });
+    })();
     return result;
 }
 
-function getVariantsByCategory(category: string) {
+export function getVariantsByCategory(category: string) {
     let categoryProducts: Product[] = [];
     let result: ProductVariant[] = [];
 
-    productsStore.subscribe($products => {
+    products.subscribe($products => {
         categoryProducts = $products.filter(p =>
             p.category?.toUpperCase() === category.toUpperCase()
         );
-    });
+    })();
 
     const productIds = categoryProducts.map(p => p.id);
 
-    variantsStore.subscribe($variants => {
+    variants.subscribe($variants => {
         result = $variants.filter(v => productIds.includes(v.productId));
-    });
+    })();
 
     return result;
 }
 
-function getImagesByCategory(category: string) {
+export function getImagesByCategory(category: string) {
     let categoryProducts: Product[] = [];
     let result: ProductImage[] = [];
 
-    productsStore.subscribe($products => {
+    products.subscribe($products => {
         categoryProducts = $products.filter(p =>
             p.category?.toUpperCase() === category.toUpperCase()
         );
-    });
+    })();
 
     const productIds = categoryProducts.map(p => p.id);
 
-    imagesStore.subscribe($images => {
+    images.subscribe($images => {
         result = $images.filter(i => productIds.includes(i.productId));
-    });
+    })();
 
     return result;
 }
 
 // Actions
-async function fetchProducts() {
-    loadingStore.set(true);
-    errorStore.set(null);
+export function fetchProducts() {
+    store.update(state => ({
+        ...state,
+        loading: true,
+        error: null
+    }));
+
     try {
         // Just a placeholder - data will come from the page
+        return store.update(state => ({
+            ...state,
+            loading: false
+        }));
     } catch (e) {
-        errorStore.set(e instanceof Error ? e.message : 'An error occurred');
-    } finally {
-        loadingStore.set(false);
+        return store.update(state => ({
+            ...state,
+            loading: false,
+            error: e instanceof Error ? e.message : 'An error occurred'
+        }));
     }
 }
 
-function selectProduct(productId: string) {
-    productsStore.update($products => {
-        const selected = $products.find(p => p.id === productId) ?? null;
-        selectedProductStore.set(selected);
-        return $products;
+export function selectProduct(productId: string) {
+    store.update(state => {
+        const selected = state.products.find(p => p.id === productId) ?? null;
+        return {
+            ...state,
+            selectedProduct: selected
+        };
     });
 }
 
-function getCompatibleAccessories(productId: string) {
+export function getCompatibleAccessories(productId: string) {
     let result: Product[] = [];
-    accessories.subscribe($accessories => {
-        productsStore.subscribe($products => {
-            const product = $products.find(p => p.id === productId);
-            if (product) {
-                result = $accessories;
-            }
-        });
-    });
+
+    store.subscribe(state => {
+        const product = state.products.find(p => p.id === productId);
+        if (product) {
+            result = state.products.filter(p => p.isAccessory);
+        }
+    })();
+
     return result;
 }
 
-function getProductVariants(productId: string) {
+export function getProductVariants(productId: string) {
     let result: ProductVariant[] = [];
-    variantsStore.subscribe($variants => {
+
+    variants.subscribe($variants => {
         result = $variants.filter(v => v.productId === productId);
-    });
+    })();
+
     return result;
 }
 
-function getProductImages(productId: string) {
+export function getProductImages(productId: string) {
     let result: ProductImage[] = [];
-    imagesStore.subscribe($images => {
+
+    images.subscribe($images => {
         result = $images.filter(i => i.productId === productId);
-    });
+    })();
+
     return result;
 }
 
-// Export the stores and functions
-export {
-    productsStore as products,
-    variantsStore as variants,
-    imagesStore as images,
-    selectedProductStore as selectedProduct,
-    loadingStore as loading,
-    errorStore as error,
-
-    // Derived stores
-    keyboardProduct,
-    switchesProduct,
-    keycapsProduct,
-    accessories,
-    accessoryCategories,
-
-    // Basic setter functions
-    setProducts,
-    setVariants,
-    setImages,
-
-    // Repository-aware actions
-    loadKeyboardWithAccessories,
-    addProduct,
-    addVariants,
-    addImages,
-
-    // Category-based selectors
-    getProductsByCategory,
-    getVariantsByCategory,
-    getImagesByCategory,
-
-    // Original functions
-    fetchProducts,
-    selectProduct,
-    getCompatibleAccessories,
-    getProductVariants,
-    getProductImages
-}; 
+// Check if a keyboard has been loaded already
+export function isKeyboardLoaded(keyboardId: string) {
+    let loaded = false;
+    store.subscribe(state => {
+        loaded = state.loadedKeyboards.has(keyboardId);
+    })();
+    return loaded;
+} 

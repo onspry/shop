@@ -1,7 +1,7 @@
 import { db } from '../index';
 import { product, productVariant, productImage } from '../index';
 import type { Product, ProductVariant, ProductImage } from '../schema';
-import { eq, asc, like, inArray } from 'drizzle-orm';
+import { eq, asc, like, inArray, or } from 'drizzle-orm';
 
 /**
  * Repository for handling product operations
@@ -91,6 +91,24 @@ export const productRepo = {
     },
 
     /**
+     * Get products by category (case-insensitive)
+     */
+    async getByCategory(category: string): Promise<Product[]> {
+        const results = await db.select()
+            .from(product)
+            .where(
+                or(
+                    eq(product.category, category.toUpperCase()),
+                    eq(product.category, category.toLowerCase()),
+                    eq(product.category, category)
+                )
+            )
+            .orderBy(asc(product.name));
+
+        return results;
+    },
+
+    /**
      * Search products by name
      */
     async searchByName(name: string) {
@@ -140,5 +158,75 @@ export const productRepo = {
             .from(productImage)
             .where(inArray(productImage.productId, productIds))
             .orderBy(asc(productImage.position));
+    },
+
+    /**
+     * Get variants by attribute value for products in specific category
+     */
+    async getVariantsByAttribute(attribute: string, value: string, category?: string): Promise<ProductVariant[]> {
+        // First get products, optionally filtered by category
+        let products: Product[] = [];
+
+        if (category) {
+            products = await this.getByCategory(category);
+        } else {
+            products = await this.getAll();
+        }
+
+        const productIds = products.map(p => p.id);
+
+        if (productIds.length === 0) {
+            return [];
+        }
+
+        // Then get all variants for those products
+        const variants = await db.select()
+            .from(productVariant)
+            .where(inArray(productVariant.productId, productIds));
+
+        // Filter variants by attribute value
+        return variants.filter(variant => {
+            if (!variant.attributes) return false;
+
+            const attributes = variant.attributes as Record<string, string>;
+            return attributes[attribute] === value;
+        });
+    },
+
+    /**
+     * Get variants by multiple attributes for products in specific category
+     */
+    async getVariantsByAttributes(attributeFilters: Record<string, string>, category?: string): Promise<ProductVariant[]> {
+        // First get products, optionally filtered by category
+        let products: Product[] = [];
+
+        if (category) {
+            products = await this.getByCategory(category);
+        } else {
+            products = await this.getAll();
+        }
+
+        const productIds = products.map(p => p.id);
+
+        if (productIds.length === 0) {
+            return [];
+        }
+
+        // Then get all variants for those products
+        const variants = await db.select()
+            .from(productVariant)
+            .where(inArray(productVariant.productId, productIds));
+
+        // Filter variants by attribute values
+        return variants.filter(variant => {
+            if (!variant.attributes) return false;
+
+            const attributes = variant.attributes as Record<string, string>;
+
+            // Check if all filters match
+            return Object.entries(attributeFilters).every(
+                ([key, value]) => attributes[key] === value
+            );
+        });
     }
 }; 

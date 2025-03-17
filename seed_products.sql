@@ -71,3 +71,24 @@ INSERT INTO "product_image" (id, product_id, url, alt, position) VALUES
 ('f47ac10b-58cc-4372-a567-0e02b2c3d487', '550e8400-e29b-41d4-a716-446655440002', '/images/products/keycaps/tht-characters.jpg', 'THT Low Profile Keycap Set - Characters', 2),
 ('f47ac10b-58cc-4372-a567-0e02b2c3d488', '550e8400-e29b-41d4-a716-446655440002', '/images/products/keycaps/tht-dots.jpg', 'THT Low Profile Keycap Set - Dots', 3),
 ('f47ac10b-58cc-4372-a567-0e02b2c3d489', '550e8400-e29b-41d4-a716-446655440002', '/images/products/keycaps/tht-blank.jpg', 'THT Low Profile Keycap Set - Blank', 4);
+
+-- Case product
+INSERT INTO "product" (id, slug, category, name, description, features, specifications, is_accessory) VALUES
+('550e8400-e29b-41d4-a716-446655440003',
+'thypoono-commute-case',
+'CASE',
+'Thypoono Commute Case',
+'Protective carrying case designed specifically for the Thypoono keyboard. Perfect for commuting or travel, keeping your keyboard safe and secure.',
+'["Custom fit for Thypoono keyboard", "Shock-absorbing padding", "Water-resistant exterior", "Compact design", "Cable compartment", "Reinforced zipper", "Carrying handle"]',
+'{"Material": "Ballistic nylon exterior, EVA foam interior", "Dimensions": "310 x 190 x 40 mm", "Weight": "250g", "Color": "Black", "Compatibility": "Thypoono keyboard", "Water resistance": "Splash-proof"}',
+1);
+
+-- Case variant
+INSERT INTO "product_variant" (id, product_id, sku, name, price, stock_quantity, attributes) VALUES
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a23', '550e8400-e29b-41d4-a716-446655440003', 'CASE-THYP-BLK', 'Thypoono Travel Case - Black', 3500, 40, '{"color": "Black", "material": "Ballistic nylon", "interior_padding": "EVA foam"}');
+
+-- Case images
+INSERT INTO "product_image" (id, product_id, url, alt, position) VALUES
+('f47ac10b-58cc-4372-a567-0e02b2c3d490', '550e8400-e29b-41d4-a716-446655440003', '/images/products/case/thypoono-case-main.jpg', 'Thypoono Travel Case - Main View', 1),
+('f47ac10b-58cc-4372-a567-0e02b2c3d491', '550e8400-e29b-41d4-a716-446655440003', '/images/products/case/thypoono-case-open.jpg', 'Thypoono Travel Case - Open View', 2),
+('f47ac10b-58cc-4372-a567-0e02b2c3d492', '550e8400-e29b-41d4-a716-446655440003', '/images/products/case/thypoono-case-with-keyboard.jpg', 'Thypoono Travel Case - With Keyboard', 3);

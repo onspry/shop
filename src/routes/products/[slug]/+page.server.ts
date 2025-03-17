@@ -1,59 +1,52 @@
-import type { PageServerLoad } from './$types';
-import { error } from '@sveltejs/kit';
 import { productRepo } from '$lib/server/db/repositories/productRepo';
-import { switchRepo } from '$lib/server/db/repositories/switchRepo';
-import { keycapRepo } from '$lib/server/db/repositories/keycapRepo';
+import { error } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types';
 import type { Product, ProductVariant, ProductImage } from '$lib/server/db/schema';
 
 export const load: PageServerLoad = async ({ params }) => {
     const { slug } = params;
 
-    // Get the main product by slug
+    // Get the main product with variants and images
     const productData = await productRepo.getBySlug(slug);
 
     if (!productData) {
-        error(404, 'Product not found');
+        error(404, { message: 'Product not found' });
     }
 
-    // Initialize empty arrays for accessories with proper typing
+    // Get accessory products based on the main product's category
     const accessoryProducts: Product[] = [];
-    const accessoryVariants: ProductVariant[] = [];
-    const accessoryImages: ProductImage[] = [];
+    let accessoryVariants: ProductVariant[] = [];
+    let accessoryImages: ProductImage[] = [];
 
-    // Only fetch accessories if this is a keyboard product
-    if (productData.category.toUpperCase() === 'KEYBOARD') {
-        console.log('Fetching accessories for keyboard product');
+    // If it's a keyboard, load switches and keycaps as accessories
+    if (productData.category?.toUpperCase() === 'KEYBOARD') {
+        // Get switch products
+        const switchProducts = await productRepo.getByCategory('SWITCHES');
+        // Get keycap products
+        const keycapProducts = await productRepo.getByCategory('KEYCAPS');
 
-        // Get switch products and their variants
-        const switchProducts = await switchRepo.getAll();
-        const switchVariants = await switchRepo.getAllVariants();
+        // Combine accessory products
+        accessoryProducts.push(...switchProducts, ...keycapProducts);
 
-        // Get keycap products and their variants
-        const keycapProducts = await keycapRepo.getAll();
-        const keycapVariants = await keycapRepo.getAllVariants();
-
-        // Add switch and keycap products to accessory arrays
-        accessoryProducts.push(...switchProducts);
-        accessoryProducts.push(...keycapProducts);
-        accessoryVariants.push(...switchVariants);
-        accessoryVariants.push(...keycapVariants);
-
-        // Get images for all accessory products
-        const accessoryProductIds = accessoryProducts.map(p => p.id);
-        if (accessoryProductIds.length > 0) {
-            const images = await productRepo.getImagesForProducts(accessoryProductIds);
-            accessoryImages.push(...images);
+        // If we have accessory products, get their variants and images
+        if (accessoryProducts.length > 0) {
+            const accessoryProductIds = accessoryProducts.map(p => p.id);
+            accessoryVariants = await productRepo.getVariantsForProducts(accessoryProductIds);
+            accessoryImages = await productRepo.getImagesForProducts(accessoryProductIds);
         }
-
-        console.log('Found accessory products:', accessoryProducts);
-        console.log('Found accessory variants:', accessoryVariants);
-        console.log('Found accessory images:', accessoryImages);
     }
 
     return {
         product: productData,
+        variants: productData.variants || [],
+        images: productData.images || [],
         accessoryProducts,
         accessoryVariants,
-        accessoryImages
+        accessoryImages,
+        // For client-side store subscription
+        storePayload: {
+            mainProduct: productData,
+            accessories: accessoryProducts
+        }
     };
 }; 
