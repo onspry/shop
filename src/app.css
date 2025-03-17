@@ -158,7 +158,6 @@
   /* Layout container for consistent spacing */
   .layout-container {
     width: 100%;
-    max-width: var(--content-max-width);
     margin-left: auto;
     margin-right: auto;
     padding-left: var(--page-padding-x);

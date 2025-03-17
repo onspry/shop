@@ -43,43 +43,41 @@
 	];
 </script>
 
-<section class="flex flex-col gap-24">
+<section class="flex flex-col gap-8 w-full">
 	<Hero />
 
 	<div class="flex justify-center">
 		<button
 			type="button"
 			class="group cursor-pointer p-2 transition-colors hover:text-primary"
-			on:click={scrollToFeatures}
+			onclick={scrollToFeatures}
 			aria-label="Scroll to features"
 		>
 			<ChevronsDown class="h-10 w-10 animate-bounce transition-transform group-hover:scale-110" />
 		</button>
 	</div>
 
-	<div id="features" class="w-full">
-		<div class="mx-auto max-w-7xl px-6">
-			<Carousel opts={{ align: 'start', loop: true }}>
-				<CarouselContent class="-ml-2 md:-ml-4">
-					{#each features as feature}
-						<CarouselItem class="pl-2 md:basis-1/2 lg:basis-1/3 md:pl-4">
-							<Card class="h-full bg-card">
-								<CardHeader>
-									<div class="flex items-start gap-4">
-										<svelte:component this={feature.icon} class="h-6 w-6 text-primary" />
-										<CardTitle class="text-xl font-semibold">{feature.title}</CardTitle>
-									</div>
-								</CardHeader>
-								<CardContent>
-									<CardDescription class="text-base">{feature.description}</CardDescription>
-								</CardContent>
-							</Card>
-						</CarouselItem>
-					{/each}
-				</CarouselContent>
-				<CarouselPrevious />
-				<CarouselNext />
-			</Carousel>
-		</div>
+	<div id="features" class="w-full pt-8">
+		<Carousel opts={{ align: 'start', loop: true }}>
+			<CarouselContent class="-ml-2 md:-ml-4">
+				{#each features as feature}
+					<CarouselItem class="pl-2 md:basis-1/2 lg:basis-1/3 md:pl-4">
+						<Card class="h-full bg-card">
+							<CardHeader>
+								<div class="flex items-start gap-4">
+									<svelte:component this={feature.icon} class="h-6 w-6 text-primary" />
+									<CardTitle class="text-xl font-semibold">{feature.title}</CardTitle>
+								</div>
+							</CardHeader>
+							<CardContent>
+								<CardDescription class="text-base">{feature.description}</CardDescription>
+							</CardContent>
+						</Card>
+					</CarouselItem>
+				{/each}
+			</CarouselContent>
+			<CarouselPrevious />
+			<CarouselNext />
+		</Carousel>
 	</div>
 </section>

@@ -2,17 +2,24 @@
 	import * as m from '$lib/paraglide/messages.js';
 </script>
 
-<div class="flex h-[600px] w-full flex-col items-center">
-	<div class="flex flex-col items-center gap-12 pt-12">
-		<div class="font-onest text-6xl font-light text-primary md:text-8xl">
+<div class="relative w-full overflow-hidden">
+	<div class="flex flex-col items-center justify-center py-12 w-full">
+		<h1 class="font-onest text-6xl font-light text-primary md:text-8xl mb-8">
 			{m.keyboard_name()}
-		</div>
-		<div class="flex items-center justify-center">
+		</h1>
+
+		<div class="w-full max-w-4xl mx-auto px-4">
 			<img
-				src="/board.jpeg"
-				class="h-[400px] max-w-[1400px] object-contain opacity-20"
+				src="/board_grey.png"
+				class="w-full h-auto object-contain dark:opacity-90"
 				alt={m.keyboard_name()}
 			/>
 		</div>
+
+		<p
+			class="max-w-2xl mx-auto text-xl text-foreground/80 dark:text-foreground/90 mt-8 px-4 text-center"
+		>
+			Ergonomic design meets refined craftsmanship.
+		</p>
 	</div>
 </div>

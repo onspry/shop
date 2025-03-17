@@ -6,11 +6,16 @@
 	// Text content uses localization keys (e.g., $t('nav_home')) for multilingual support.
 </script>
 
-<nav class="h-full">
-	<div class="flex h-full items-center justify-between">
-		<a href="/" class="flex h-full items-center" aria-label={m.shop_title()}>
-			<div class="logo" aria-label={m.shop_title()}></div>
-		</a>
+<nav class="h-full w-full">
+	<div class="flex h-full w-full items-center justify-between">
+		<div class="flex items-center gap-8">
+			<a href="/" class="flex h-full items-center" aria-label={m.shop_title()}>
+				<div class="logo" aria-label={m.shop_title()}></div>
+			</a>
+			<div class="hidden md:flex items-center gap-6">
+				<a href="/about" class="text-sm font-medium hover:text-primary transition-colors">About</a>
+			</div>
+		</div>
 		<div class="flex items-center gap-4">
 			<DarkmodeToggle />
 			<AuthSection />

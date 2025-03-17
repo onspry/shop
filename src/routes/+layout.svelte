@@ -31,22 +31,24 @@
 </script>
 
 <ParaglideJS {i18n}>
-	<div class="layout-container flex min-h-screen flex-col bg-background font-sans antialiased">
+	<div class="flex min-h-screen w-full flex-col bg-background font-sans antialiased">
 		<header
-			class="sticky top-0 z-50 h-[var(--header-height)] border-b bg-background/80 backdrop-blur-sm"
+			class="sticky top-0 z-50 w-full h-[var(--header-height)] border-b bg-background/80 backdrop-blur-sm"
 		>
-			<div class="h-full">
+			<div class="layout-container h-full">
 				<ModeWatcher />
 				<Navbar />
 			</div>
 		</header>
 
-		<main class="flex-1 py-8">
-			{@render children()}
+		<main class="flex-1 w-full py-8">
+			<div class="layout-container">
+				{@render children()}
+			</div>
 		</main>
 
-		<footer class="h-[var(--footer-height)] border-t bg-background/80 backdrop-blur-sm">
-			<div class="h-full">
+		<footer class="w-full h-[var(--footer-height)] border-t bg-background/80 backdrop-blur-sm">
+			<div class="layout-container h-full">
 				<Footer />
 			</div>
 		</footer>
