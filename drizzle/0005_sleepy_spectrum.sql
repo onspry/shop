@@ -1,1 +1,0 @@
-DROP INDEX `user_username_unique`;

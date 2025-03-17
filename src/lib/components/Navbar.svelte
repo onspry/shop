@@ -15,6 +15,11 @@
 			<div class="hidden md:flex items-center gap-6">
 				<a href="/about" class="text-sm font-medium hover:text-primary transition-colors">About</a>
 			</div>
+			<div class="hidden md:flex items-center gap-6">
+				<a href="/products" class="text-sm font-medium hover:text-primary transition-colors"
+					>Products</a
+				>
+			</div>
 		</div>
 		<div class="flex items-center gap-4">
 			<DarkmodeToggle />

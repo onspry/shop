@@ -1,1 +1,0 @@
-ALTER TABLE `session` ADD `created_at` integer NOT NULL;

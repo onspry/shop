@@ -47,5 +47,20 @@
 	"reset_password_description": "Enter your new password",
 	"reset_password_new_password_label": "New Password",
 	"reset_password_confirm_password_label": "Confirm Password",
-	"reset_password_submit": "Reset Password"
+	"reset_password_submit": "Reset Password",
+
+    "product_starting_at": "Starting at",
+    "product_view_details": "View Details",
+    "product_accessory": "Accessory",
+    "product_add_to_cart": "Add to Cart",
+    "product_out_of_stock": "Out of Stock",
+    "product_in_stock": "In Stock",
+    "product_quantity": "Quantity",
+    "product_total": "Total",
+    "product_specifications": "Specifications",
+    "product_features": "Features",
+    "product_related": "Related Products",
+    "product_compatible": "Compatible with",
+    "product_section_keyboard": "Our Keyboard",
+    "product_section_accessories": "Accessories"
 }

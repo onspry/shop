@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import * as t from "drizzle-orm/sqlite-core";
 
 export const Providers = {
@@ -55,3 +56,44 @@ export const passwordResetSession = t.sqliteTable('password_reset_session', {
 	email_verified: t.integer('email_verified', { mode: 'boolean' }).notNull().default(false),
 	twoFactorVerified: t.integer('two_factor_verified', { mode: 'boolean' }).notNull().default(false)
 });
+
+// Product-related schemas
+export const product = t.sqliteTable('product', {
+	id: t.text('id').primaryKey(),
+	slug: t.text('slug').notNull().unique(),
+	category: t.text('category').notNull(),
+	name: t.text('name').notNull(),
+	description: t.text('description').notNull(),
+	features: t.text('features', { mode: 'json' }).$type<string[]>().default([]),
+	specifications: t.text('specifications', { mode: 'json' }).$type<Record<string, string>>().default({}),
+	isAccessory: t.integer('is_accessory', { mode: 'boolean' }).notNull().default(false),
+	createdAt: t.integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+	updatedAt: t.integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+});
+
+export const productVariant = t.sqliteTable('product_variant', {
+	id: t.text('id').primaryKey(),
+	productId: t.text('product_id')
+		.notNull()
+		.references(() => product.id),
+	sku: t.text('sku').notNull().unique(),
+	name: t.text('name').notNull(),
+	price: t.integer('price').notNull(), // Store price in cents
+	stockQuantity: t.integer('stock_quantity').notNull(),
+	attributes: t.text('attributes', { mode: 'json' }).$type<Record<string, string>>().default({})
+});
+
+export const productImage = t.sqliteTable('product_image', {
+	id: t.text('id').primaryKey(),
+	productId: t.text('product_id')
+		.notNull()
+		.references(() => product.id),
+	url: t.text('url').notNull(),
+	alt: t.text('alt').notNull(),
+	position: t.integer('position').notNull()
+});
+
+// Export types
+export type Product = typeof product.$inferSelect;
+export type ProductVariant = typeof productVariant.$inferSelect;
+export type ProductImage = typeof productImage.$inferSelect;

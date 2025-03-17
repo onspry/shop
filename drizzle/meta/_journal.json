@@ -5,85 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1740013766915,
-      "tag": "0000_many_dreadnoughts",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1740055062838,
-      "tag": "0001_harsh_sphinx",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1740101449319,
-      "tag": "0002_nostalgic_sabretooth",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1740217172829,
-      "tag": "0003_lowly_blue_blade",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1740217852402,
-      "tag": "0004_wooden_mattie_franklin",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1740295849736,
-      "tag": "0005_sleepy_spectrum",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "6",
-      "when": 1740478528230,
-      "tag": "0006_glossy_impossible_man",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "6",
-      "when": 1740962470753,
-      "tag": "0007_cynical_alex_wilder",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "6",
-      "when": 1740962617062,
-      "tag": "0008_salty_fixer",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "6",
-      "when": 1740962671485,
-      "tag": "0009_strange_rhino",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "6",
-      "when": 1740962848410,
-      "tag": "0010_bumpy_lady_deathstrike",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "6",
-      "when": 1740963610815,
-      "tag": "0011_amazing_skrulls",
+      "when": 1742189716551,
+      "tag": "0000_watery_ted_forrester",
       "breakpoints": true
     }
   ]
