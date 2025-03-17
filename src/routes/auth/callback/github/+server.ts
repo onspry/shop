@@ -36,17 +36,9 @@ export async function GET(event: RequestEvent): Promise<Response> {
         }
     });
     const githubUser = await githubUserResponse.json();
-    console.log('GitHub User Response:', githubUser);
     const githubUserId = githubUser.id;
     const githubUsername = githubUser.login;
     const primaryEmail = githubUser.email;
-
-    console.log('GitHub User Response:', {
-        fullResponse: githubUser,
-        id: githubUserId,
-        username: githubUsername,
-        email: primaryEmail
-    });
 
     // First check for existing user by provider ID
     const existingUser = await getUserByProviderId(Providers.github, githubUserId.toString());

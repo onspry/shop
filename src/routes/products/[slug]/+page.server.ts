@@ -18,15 +18,16 @@ export const load: PageServerLoad = async ({ params }) => {
     let accessoryVariants: ProductVariant[] = [];
     let accessoryImages: ProductImage[] = [];
 
-    // If it's a keyboard, load switches and keycaps as accessories
+    // If it's a keyboard, load all relevant accessories (switches, keycaps, case)
     if (productData.category?.toUpperCase() === 'KEYBOARD') {
-        // Get switch products
-        const switchProducts = await productRepo.getByCategory('SWITCHES');
-        // Get keycap products
-        const keycapProducts = await productRepo.getByCategory('KEYCAPS');
+        // Get all accessory categories instead of hardcoding specific ones
+        const accessoryCategories = await productRepo.getAccessoryCategories();
 
-        // Combine accessory products
-        accessoryProducts.push(...switchProducts, ...keycapProducts);
+        // Fetch products for each accessory category
+        for (const category of accessoryCategories) {
+            const categoryProducts = await productRepo.getByCategory(category);
+            accessoryProducts.push(...categoryProducts);
+        }
 
         // If we have accessory products, get their variants and images
         if (accessoryProducts.length > 0) {

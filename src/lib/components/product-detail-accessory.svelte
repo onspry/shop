@@ -45,7 +45,6 @@
 	// Add to cart function
 	function addToCart() {
 		// Implementation would depend on your cart store/system
-		console.log('Adding to cart:', selectedVariant);
 		alert(`Added ${selectedVariant.name} to cart`);
 	}
 

@@ -10,11 +10,11 @@
 	let { data } = $props<{ data: PageData }>();
 
 	// Log the product data for debugging
-	console.log('Product data:', data.product);
-	console.log('Category:', data.product.category);
-	console.log('Variants:', data.product.variants);
-	console.log('Accessory Products:', data.accessoryProducts);
-	console.log('Accessory Variants:', data.accessoryVariants);
+	// console.log('Product data:', data.product);
+	// console.log('Category:', data.product.category);
+	// console.log('Variants:', data.product.variants);
+	// console.log('Accessory Products:', data.accessoryProducts);
+	// console.log('Accessory Variants:', data.accessoryVariants);
 
 	// Load the data into the store for persistence
 	onMount(() => {

@@ -228,5 +228,21 @@ export const productRepo = {
                 ([key, value]) => attributes[key] === value
             );
         });
+    },
+
+    /**
+     * Get all accessory categories
+     * @returns Array of category names
+     */
+    async getAccessoryCategories(): Promise<string[]> {
+        // Get products that are accessories
+        const accessories = await db.select()
+            .from(product)
+            .where(eq(product.isAccessory, true));
+
+        // Extract unique categories
+        const categories = [...new Set(accessories.map(p => p.category?.toUpperCase()).filter(Boolean))];
+
+        return categories as string[];
     }
 }; 

@@ -11,7 +11,6 @@
 	import { setUser } from '$lib/stores/auth';
 
 	let { children, data } = $props();
-	console.log('Layout props data:', data);
 
 	// Update context when user changes
 	$effect(() => {

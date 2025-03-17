@@ -22,7 +22,7 @@
 	// Initialize the store with data from the page load function
 	onMount(() => {
 		if (data.products) {
-			console.log('Products from server:', data.products);
+			// console.log('Products from server:', data.products);
 			// Extract flat arrays of products, variants, and images
 			const products = data.products.map(
 				(
@@ -59,9 +59,9 @@
 				}
 			);
 
-			console.log('Processed products:', products);
-			console.log('Processed variants:', variants);
-			console.log('Processed images:', images);
+			// console.log('Processed products:', products);
+			// console.log('Processed variants:', variants);
+			// console.log('Processed images:', images);
 
 			productStore.setProducts(products);
 			productStore.setVariants(variants);
@@ -102,11 +102,6 @@
 		const filteredVariants = allVariants.filter((v) => productIds.includes(v.productId));
 		console.log(`Variants for category ${category}:`, filteredVariants);
 		return filteredVariants;
-	};
-
-	// Helper function to get placeholder image URL
-	const getPlaceholderImage = (category: string) => {
-		return `/images/placeholder-${category.toLowerCase()}.jpg`;
 	};
 
 	// Helper function to get variant attribute value

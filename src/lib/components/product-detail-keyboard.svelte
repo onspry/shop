@@ -4,8 +4,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';
-	import VariantCard from '$lib/components/ui/variant-card.svelte';
-	import { onMount } from 'svelte';
 
 	let {
 		product,
@@ -24,19 +22,7 @@
 	}>();
 
 	// State management for selected options
-	let selectedKeyboardVariant = $state<string | null>(null);
-	let selectedSwitchType = $state<string | null>(null);
-	let selectedKeycapStyle = $state<string | null>(null);
-
-	// Debug logging
-	onMount(() => {
-		console.log('Product Detail Keyboard Component Mounted');
-		console.log('Product:', product);
-		console.log('Variants:', variants);
-		console.log('Images:', images);
-		console.log('Accessory Products:', accessoryProducts);
-		console.log('Accessory Variants:', accessoryVariants);
-	});
+	const selectedOptions = $state<Record<string, string>>({});
 
 	// Loading state
 	const isLoading = $state(false);
@@ -51,107 +37,92 @@
 		return [...variants, ...accessoryVariants];
 	});
 
-	// Get all products categories for debugging
-	const allProductCategories = $derived(() => {
-		return allProducts().map((p: Product) => p.category);
-	});
-
-	// Get switch product from accessory products
-	const switchesProduct = $derived(() => {
-		return accessoryProducts.find((p: Product) => p.category?.toUpperCase() === 'SWITCHES');
-	});
-
-	// Get keycap product from accessory products
-	const keycapsProduct = $derived(() => {
-		return accessoryProducts.find((p: Product) => p.category?.toUpperCase() === 'KEYCAPS');
+	// Group accessory products by category
+	const accessoryCategories = $derived(() => {
+		const groupedProducts = new Map<string, Product[]>();
+		accessoryProducts.forEach((product: Product) => {
+			const category = product.category?.toUpperCase() || 'OTHER';
+			if (!groupedProducts.has(category)) {
+				groupedProducts.set(category, []);
+			}
+			groupedProducts.get(category)?.push(product);
+		});
+		return Array.from(groupedProducts.entries());
 	});
 
 	// Get keyboard variants from the passed variants prop
 	const keyboardVariants = $derived(() => {
-		// Filter variants that belong to the keyboard product
 		return variants.filter((v: ProductVariant) => v.productId === product.id);
 	});
 
-	// Get switch variants from accessory variants
-	const switchVariants = $derived(() => {
-		const switchProduct = switchesProduct();
-		if (!switchProduct || !switchProduct.id) return [];
-		return accessoryVariants.filter((v: ProductVariant) => v.productId === switchProduct.id);
-	});
+	// Get accessory variants for a specific category
+	function getAccessoryVariantsForCategory(category: string): ProductVariant[] {
+		const productsInCategory = accessoryProducts.filter(
+			(p: Product) => p.category?.toUpperCase() === category.toUpperCase()
+		);
+		const productIds = productsInCategory.map((p: Product) => p.id);
 
-	// Get keycap variants from accessory variants
-	const keycapVariants = $derived(() => {
-		const keycapProduct = keycapsProduct();
-		if (!keycapProduct || !keycapProduct.id) return [];
-		return accessoryVariants.filter((v: ProductVariant) => v.productId === keycapProduct.id);
-	});
-
-	// Debug logging for derived values
-	$effect(() => {
-		console.log('All Products:', allProducts());
-		console.log('All Products Categories:', allProductCategories());
-		console.log('Switches Product:', switchesProduct());
-		console.log('Keycaps Product:', keycapsProduct());
-		console.log('Keyboard Variants:', keyboardVariants());
-		console.log('Switch Variants:', switchVariants());
-		console.log('Keycap Variants:', keycapVariants());
-	});
+		return accessoryVariants.filter((v: ProductVariant) => productIds.includes(v.productId));
+	}
 
 	// Set default selected options
 	$effect(() => {
-		if (!selectedKeyboardVariant && keyboardVariants().length > 0) {
-			selectedKeyboardVariant = keyboardVariants()[0].id;
+		// Set default keyboard variant
+		if (!selectedOptions['KEYBOARD'] && keyboardVariants().length > 0) {
+			selectedOptions['KEYBOARD'] = keyboardVariants()[0].id;
 		}
 
-		if (!selectedSwitchType && switchVariants().length > 0) {
-			const redSwitch = switchVariants().find(
-				(v: ProductVariant) =>
-					v.attributes && typeof v.attributes === 'object' && v.attributes.color === 'Red'
-			);
-			selectedSwitchType = redSwitch ? redSwitch.id : switchVariants()[0].id;
+		// Set default options for each accessory category
+		accessoryCategories().forEach(([category, products]) => {
+			if (!selectedOptions[category]) {
+				const variants = getAccessoryVariantsForCategory(category);
+				if (variants.length > 0) {
+					selectedOptions[category] = variants[0].id;
+				}
+			}
+		});
+
+		console.log('All accessory products:', accessoryProducts);
+		console.log('Accessory categories found:', accessoryCategories());
+		console.log('Accessory products by category:');
+		accessoryCategories().forEach(([category, products]) => {
+			console.log(`- ${category}:`, products);
+		});
+	});
+
+	// Helper to get the selected variant for any category (including keyboard)
+	function getSelectedVariant(category: string): ProductVariant | null {
+		const selectedId = selectedOptions[category];
+		if (!selectedId) return null;
+
+		// For keyboard category, look in keyboard variants
+		if (category === 'KEYBOARD') {
+			return keyboardVariants().find((v: ProductVariant) => v.id === selectedId) || null;
 		}
 
-		if (!selectedKeycapStyle && keycapVariants().length > 0) {
-			const characterKeycaps = keycapVariants().find(
-				(v: ProductVariant) =>
-					v.attributes &&
-					typeof v.attributes === 'object' &&
-					v.attributes.legend_type === 'Characters'
-			);
-			selectedKeycapStyle = characterKeycaps ? characterKeycaps.id : keycapVariants()[0].id;
-		}
-	});
-
-	// Get the selected keyboard, switch and keycap options
-	const selectedKeyboard = $derived(() => {
-		return (
-			keyboardVariants().find((k: ProductVariant) => k.id === selectedKeyboardVariant) ||
-			(keyboardVariants().length > 0 ? keyboardVariants()[0] : null)
-		);
-	});
-
-	const selectedSwitch = $derived(() => {
-		return (
-			switchVariants().find((s: ProductVariant) => s.id === selectedSwitchType) ||
-			(switchVariants().length > 0 ? switchVariants()[0] : null)
-		);
-	});
-
-	const selectedKeycap = $derived(() => {
-		return (
-			keycapVariants().find((k: ProductVariant) => k.id === selectedKeycapStyle) ||
-			(keycapVariants().length > 0 ? keycapVariants()[0] : null)
-		);
-	});
+		// For accessory categories, look in accessory variants
+		return accessoryVariants.find((v: ProductVariant) => v.id === selectedId) || null;
+	}
 
 	// Calculate total price
 	const totalPrice = $derived(() => {
-		let baseKeyboardPrice = product.price || 0;
-		const keyboardVariantPrice = selectedKeyboard()?.price || 0;
-		const switchPrice = selectedSwitch()?.price || 0;
-		const keycapPrice = selectedKeycap()?.price || 0;
+		let basePrice = product.price || 0;
 
-		return baseKeyboardPrice + keyboardVariantPrice + switchPrice + keycapPrice;
+		// Add keyboard variant price
+		const keyboardVariant = getSelectedVariant('KEYBOARD');
+		if (keyboardVariant) {
+			basePrice += keyboardVariant.price;
+		}
+
+		// Add all accessory prices
+		accessoryCategories().forEach(([category]) => {
+			const selectedVariant = getSelectedVariant(category);
+			if (selectedVariant) {
+				basePrice += selectedVariant.price;
+			}
+		});
+
+		return basePrice;
 	});
 
 	// Format price for display
@@ -160,30 +131,37 @@
 	}
 
 	// Handle option selection
-	function selectKeyboardVariant(variant: string) {
-		selectedKeyboardVariant = variant;
-	}
-
-	function selectSwitchType(type: string) {
-		selectedSwitchType = type;
-	}
-
-	function selectKeycapStyle(style: string) {
-		selectedKeycapStyle = style;
+	function selectOption(category: string, variantId: string) {
+		selectedOptions[category] = variantId;
 	}
 
 	// Add to cart function
 	function addToCart() {
-		// Implementation would depend on your cart store/system
-		console.log('Adding to cart:', {
+		// Create a configuration object with all selected options
+		const configuration: Record<string, any> = {
 			keyboard: product,
-			keyboardVariant: selectedKeyboard(),
-			switch: selectedSwitch(),
-			keycap: selectedKeycap()
+			keyboardVariant: getSelectedVariant('KEYBOARD')
+		};
+
+		// Add all accessory selections
+		accessoryCategories().forEach(([category]) => {
+			configuration[category.toLowerCase()] = getSelectedVariant(category);
 		});
-		alert(
-			`Added ${product.name} (${selectedKeyboard()?.name || 'Standard'}) with ${selectedSwitch()?.name || 'No switch'} and ${selectedKeycap()?.name || 'No keycap'} to cart`
-		);
+
+		// Build confirmation message
+		let confirmationMessage = `Added ${product.name}`;
+		if (getSelectedVariant('KEYBOARD')) {
+			confirmationMessage += ` (${getSelectedVariant('KEYBOARD')?.name || 'Standard'})`;
+		}
+
+		accessoryCategories().forEach(([category]) => {
+			const variant = getSelectedVariant(category);
+			if (variant) {
+				confirmationMessage += ` with ${variant.name}`;
+			}
+		});
+
+		alert(confirmationMessage + ' to cart');
 	}
 
 	// Add this function to handle image loading errors
@@ -203,38 +181,113 @@
 		}
 	}
 
-	// Helper function to get switch color class
-	function getSwitchColorClass(variant: ProductVariant | null): string {
-		if (!variant) return 'bg-gray-500';
+	// Helper function to render the accessory variant UI based on attributes only
+	function renderAccessoryVariantUI(
+		category: string,
+		variant: ProductVariant
+	): { icon: string; content: string } {
+		// Get the variant attributes
+		const attributes = (variant.attributes as Record<string, string>) || {};
+		const variantName = variant.name.split(' - ')[1] || variant.name;
 
-		const color = getVariantAttribute(variant, 'color').toLowerCase();
-		switch (color) {
-			case 'red':
-				return 'bg-red-500';
-			case 'blue':
-				return 'bg-blue-500';
-			case 'brown':
-				return 'bg-amber-700';
-			default:
-				return 'bg-gray-500';
+		// Extract common attributes that might be used for visualization
+		const color = (attributes.color || '').toLowerCase();
+		const type = (attributes.type || '').toLowerCase();
+		const material = attributes.material || '';
+		const legendType = attributes.legend_type || '';
+
+		// Default content is either a specific attribute or the variant name
+		const content = type || legendType || color || variantName;
+
+		// Generate icon based on available attributes
+		let icon = '';
+
+		// If we have legend_type, show a grid of keys
+		if (legendType) {
+			let keysHtml = '';
+			for (let i = 0; i < 9; i++) {
+				let keyContent = '';
+				if (legendType === 'Blank') {
+					keyContent = '';
+				} else if (legendType === 'Dots') {
+					keyContent = '•';
+				} else {
+					keyContent = String.fromCharCode(65 + i);
+				}
+
+				keysHtml += `
+					<div class="w-6 h-6 bg-gray-800 rounded-sm shadow-md flex items-center justify-center text-white text-xs">
+						${keyContent}
+					</div>
+				`;
+			}
+
+			icon = `
+				<div class="grid grid-cols-3 gap-1 mb-2">
+					${keysHtml}
+				</div>
+			`;
 		}
-	}
+		// If we have type (like switch type) and color, show a colored box with type indicator
+		else if (type && color) {
+			// Map common colors to Tailwind classes
+			let colorClass = 'bg-gray-500';
+			if (color === 'red') colorClass = 'bg-red-500';
+			else if (color === 'blue') colorClass = 'bg-blue-500';
+			else if (color === 'brown') colorClass = 'bg-amber-700';
+			else if (color === 'black') colorClass = 'bg-black';
+			else if (color === 'white') colorClass = 'bg-white border border-gray-300';
+			else if (color === 'green') colorClass = 'bg-green-500';
+			else if (color === 'yellow') colorClass = 'bg-yellow-500';
+			else if (color === 'purple') colorClass = 'bg-purple-500';
+			else if (color === 'pink') colorClass = 'bg-pink-500';
 
-	// Helper function to get switch type display
-	function getSwitchTypeDisplay(variant: ProductVariant | null): string {
-		if (!variant) return '•';
+			let typeSymbol = '•';
+			if (type === 'linear') typeSymbol = '→';
+			else if (type === 'tactile') typeSymbol = '↗';
+			else if (type === 'clicky') typeSymbol = '↑';
 
-		const type = getVariantAttribute(variant, 'type').toLowerCase();
-		switch (type) {
-			case 'linear':
-				return '→';
-			case 'tactile':
-				return '↗';
-			case 'clicky':
-				return '↑';
-			default:
-				return '•';
+			icon = `
+				<div class="relative w-16 h-16 mb-2">
+					<div class="absolute inset-0 flex items-center justify-center">
+						<div class="w-12 h-12 ${colorClass} rounded-md shadow-lg flex items-center justify-center text-white font-bold text-xl">
+							${typeSymbol}
+						</div>
+					</div>
+					<div class="absolute bottom-0 left-0 right-0 h-3 bg-gray-800 rounded-b-md"></div>
+				</div>
+			`;
 		}
+		// If we only have color (like for cases)
+		else if (color) {
+			// Map common colors to Tailwind classes
+			let colorClass = 'bg-gray-500';
+			if (color === 'red') colorClass = 'bg-red-500';
+			else if (color === 'blue') colorClass = 'bg-blue-500';
+			else if (color === 'brown') colorClass = 'bg-amber-700';
+			else if (color === 'black') colorClass = 'bg-black';
+			else if (color === 'white') colorClass = 'bg-white border border-gray-300';
+			else if (color === 'green') colorClass = 'bg-green-500';
+			else if (color === 'yellow') colorClass = 'bg-yellow-500';
+			else if (color === 'purple') colorClass = 'bg-purple-500';
+			else if (color === 'pink') colorClass = 'bg-pink-500';
+
+			icon = `
+				<div class="w-16 h-16 ${colorClass} rounded-md flex items-center justify-center mb-2 shadow-md">
+					<span class="text-xs text-white">${material || category.substring(0, 4)}</span>
+				</div>
+			`;
+		}
+		// Default icon for variants without specific styling attributes
+		else {
+			icon = `
+				<div class="w-16 h-16 bg-gray-700 rounded-md flex items-center justify-center mb-2">
+					<span class="text-xs text-white">${category.substring(0, 4)}</span>
+				</div>
+			`;
+		}
+
+		return { icon, content };
 	}
 </script>
 
@@ -299,11 +352,11 @@
 								{#each keyboardVariants() as keyboardOption}
 									<div
 										class={`relative rounded-lg border p-4 transition-all ${
-											selectedKeyboardVariant === keyboardOption.id
+											selectedOptions['KEYBOARD'] === keyboardOption.id
 												? 'border-primary bg-primary/5 shadow-md'
 												: 'border-muted hover:border-primary/50'
 										}`}
-										onclick={() => selectKeyboardVariant(keyboardOption.id)}
+										onclick={() => selectOption('KEYBOARD', keyboardOption.id)}
 									>
 										<div class="flex flex-col h-full">
 											<div class="mb-3 flex justify-center">
@@ -319,7 +372,7 @@
 											<div class="text-sm font-bold mb-2">
 												${(keyboardOption.price / 100).toFixed(2)}
 											</div>
-											{#if selectedKeyboardVariant === keyboardOption.id}
+											{#if selectedOptions['KEYBOARD'] === keyboardOption.id}
 												<div class="absolute top-2 right-2">
 													<div class="w-4 h-4 bg-primary rounded-full"></div>
 												</div>
@@ -332,116 +385,72 @@
 					</div>
 				{/if}
 
-				<!-- Switch Type Selection -->
-				<div class="space-y-4">
-					<div>
-						<Label for="switch-type">Switch Type</Label>
-						{#if isLoading || switchVariants().length === 0}
-							<div class="p-4 bg-muted rounded-md mt-2">
-								<p class="text-sm text-muted-foreground">Loading switch options...</p>
-							</div>
-						{:else}
-							<div class="grid grid-cols-3 gap-3 mt-2" id="switch-type">
-								{#each switchVariants() as switchOption}
-									<div
-										class={`relative rounded-lg border p-4 transition-all ${
-											selectedSwitchType === switchOption.id
-												? 'border-primary bg-primary/5 shadow-md'
-												: 'border-muted hover:border-primary/50'
-										}`}
-										onclick={() => selectSwitchType(switchOption.id)}
-									>
-										<div class="flex flex-col h-full">
-											<div class="mb-3 flex justify-center">
-												<div class="flex flex-col items-center justify-center">
-													<div class="relative w-16 h-16 mb-2">
-														<div class="absolute inset-0 flex items-center justify-center">
-															<div
-																class={`w-12 h-12 ${getSwitchColorClass(switchOption)} rounded-md shadow-lg flex items-center justify-center text-white font-bold text-xl`}
-															>
-																{getSwitchTypeDisplay(switchOption)}
-															</div>
-														</div>
-														<div
-															class="absolute bottom-0 left-0 right-0 h-3 bg-gray-800 rounded-b-md"
-														></div>
-													</div>
-												</div>
-											</div>
-											<h3 class="text-sm font-medium mb-1 line-clamp-2">
-												{switchOption.name.split(' - ')[1] || switchOption.name}
-											</h3>
-											<div class="text-sm font-bold mb-2">
-												${(switchOption.price / 100).toFixed(2)}
-											</div>
-											{#if selectedSwitchType === switchOption.id}
-												<div class="absolute top-2 right-2">
-													<div class="w-4 h-4 bg-primary rounded-full"></div>
-												</div>
-											{/if}
-										</div>
-									</div>
-								{/each}
-							</div>
-						{/if}
-					</div>
-				</div>
+				<!-- Dynamic Accessory Categories -->
+				{#each accessoryCategories() as [category]}
+					<div class="space-y-4">
+						<div>
+							<Label for={`category-${category.toLowerCase()}`}
+								>{category.charAt(0) + category.slice(1).toLowerCase()} Type</Label
+							>
 
-				<!-- Keycap Style Selection -->
-				<div class="space-y-4">
-					<div>
-						<Label for="keycap-style">Keycap Style</Label>
-						{#if isLoading || keycapVariants().length === 0}
-							<div class="p-4 bg-muted rounded-md mt-2">
-								<p class="text-sm text-muted-foreground">Loading keycap options...</p>
-							</div>
-						{:else}
-							<div class="grid grid-cols-3 gap-3 mt-2" id="keycap-style">
-								{#each keycapVariants() as keycapOption}
+							{#if isLoading}
+								<div class="p-4 bg-muted rounded-md mt-2">
+									<p class="text-sm text-muted-foreground">
+										Loading {category.toLowerCase()} options...
+									</p>
+								</div>
+							{:else}
+								{@const categoryVariants = getAccessoryVariantsForCategory(category)}
+
+								{#if categoryVariants.length > 0}
 									<div
-										class={`relative rounded-lg border p-4 transition-all ${
-											selectedKeycapStyle === keycapOption.id
-												? 'border-primary bg-primary/5 shadow-md'
-												: 'border-muted hover:border-primary/50'
-										}`}
-										onclick={() => selectKeycapStyle(keycapOption.id)}
+										class="grid grid-cols-3 gap-3 mt-2"
+										id={`category-${category.toLowerCase()}`}
 									>
-										<div class="flex flex-col h-full">
-											<div class="mb-3 flex justify-center">
-												<div class="flex flex-col items-center justify-center">
-													<div class="grid grid-cols-3 gap-1 mb-2">
-														{#each Array(9) as _, i}
-															<div
-																class="w-6 h-6 bg-gray-800 rounded-sm shadow-md flex items-center justify-center text-white text-xs"
-															>
-																{getVariantAttribute(keycapOption, 'legend_type') === 'Blank'
-																	? ''
-																	: getVariantAttribute(keycapOption, 'legend_type') === 'Dots'
-																		? '•'
-																		: String.fromCharCode(65 + i)}
-															</div>
-														{/each}
+										{#each categoryVariants as variantOption}
+											{@const rendering = renderAccessoryVariantUI(category, variantOption)}
+
+											<div
+												class={`relative rounded-lg border p-4 transition-all ${
+													selectedOptions[category] === variantOption.id
+														? 'border-primary bg-primary/5 shadow-md'
+														: 'border-muted hover:border-primary/50'
+												}`}
+												onclick={() => selectOption(category, variantOption.id)}
+											>
+												<div class="flex flex-col h-full">
+													<div class="mb-3 flex justify-center">
+														<div class="flex flex-col items-center justify-center">
+															{@html rendering.icon}
+															<span class="text-sm font-medium">{rendering.content}</span>
+														</div>
 													</div>
+													<h3 class="text-sm font-medium mb-1 line-clamp-2">
+														{variantOption.name.split(' - ')[1] || variantOption.name}
+													</h3>
+													<div class="text-sm font-bold mb-2">
+														${(variantOption.price / 100).toFixed(2)}
+													</div>
+													{#if selectedOptions[category] === variantOption.id}
+														<div class="absolute top-2 right-2">
+															<div class="w-4 h-4 bg-primary rounded-full"></div>
+														</div>
+													{/if}
 												</div>
 											</div>
-											<h3 class="text-sm font-medium mb-1 line-clamp-2">
-												{keycapOption.name.split(' - ')[1] || keycapOption.name}
-											</h3>
-											<div class="text-sm font-bold mb-2">
-												${(keycapOption.price / 100).toFixed(2)}
-											</div>
-											{#if selectedKeycapStyle === keycapOption.id}
-												<div class="absolute top-2 right-2">
-													<div class="w-4 h-4 bg-primary rounded-full"></div>
-												</div>
-											{/if}
-										</div>
+										{/each}
 									</div>
-								{/each}
-							</div>
-						{/if}
+								{:else}
+									<div class="p-4 bg-muted rounded-md mt-2">
+										<p class="text-sm text-muted-foreground">
+											No {category.toLowerCase()} options available
+										</p>
+									</div>
+								{/if}
+							{/if}
+						</div>
 					</div>
-				</div>
+				{/each}
 
 				<div class="bg-muted p-4 rounded-md">
 					<h3 class="font-medium mb-2">Selected Configuration</h3>
@@ -452,17 +461,19 @@
 						{#if keyboardVariants().length > 0}
 							<div>Variant:</div>
 							<div>
-								{selectedKeyboard()?.name?.split(' - ')[1] ||
-									selectedKeyboard()?.name ||
+								{getSelectedVariant('KEYBOARD')?.name?.split(' - ')[1] ||
+									getSelectedVariant('KEYBOARD')?.name ||
 									'Standard'}
 							</div>
 						{/if}
 
-						<div>Switch Type:</div>
-						<div>{selectedSwitch()?.name || 'Loading...'}</div>
-
-						<div>Keycap Style:</div>
-						<div>{selectedKeycap()?.name || 'Loading...'}</div>
+						<!-- Dynamic accessory selections -->
+						{#each accessoryCategories() as [category]}
+							<div>{category.charAt(0) + category.slice(1).toLowerCase()}:</div>
+							<div>
+								{getSelectedVariant(category)?.name || `No ${category.toLowerCase()} selected`}
+							</div>
+						{/each}
 
 						<div>Total Price:</div>
 						<div>${formatPrice(totalPrice())}</div>
