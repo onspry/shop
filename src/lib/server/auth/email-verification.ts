@@ -1,7 +1,7 @@
 import { generateRandomOTP } from "./utils";
 import type { RequestEvent } from "@sveltejs/kit";
 import { db } from '$lib/server/db';
-import { emailVerificationRequest } from '$lib/server/db/schema';
+import { emailVerificationRequest } from '$lib/server/db';
 import { eq, and } from 'drizzle-orm';
 import { sendEmail } from '$lib/server/email/send-email';
 import { randomUUID } from 'crypto';

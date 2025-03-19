@@ -61,6 +61,12 @@
     "product_features": "Features",
     "product_related": "Related Products",
     "product_compatible": "Compatible with",
-    "product_section_keyboard": "Our Keyboard",
-    "product_section_accessories": "Accessories"
+    "product_section_keyboard": "Keyboard",
+    "product_section_accessories": "Accessories",
+    "required": "Required",
+    "optional": "Optional",
+    "included": "Included",
+    "notIncluded": "Not Included",
+    "total": "Total",
+    "addToCart": "Add to Cart"
 }

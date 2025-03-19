@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import type { User } from '$lib/server/db/schema';
+import type { User } from '$lib/server/db';
 
 // Create a store with loading state
 interface AuthState {

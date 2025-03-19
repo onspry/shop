@@ -9,14 +9,13 @@ VALUES (
   'Thypoono',
   'Ergonomic split keyboard with 46 keys featuring Kailh Choc hot-swappable sockets. Perfect for programmers and writers who value comfort and customization.',
   '["Split ergonomic design", "46 keys layout", "Hot-swappable Kailh Choc sockets", "USB-C connection", "Compact and portable", "Fully programmable", "Low profile design"]',
-  '{"Layout": "46 keys split", "Switches": "Kailh Choc hot-swappable", "Connection": "USB-C", "Dimensions": "290 x 120 x 15 mm per half", "Weight": "400g total", "Compatibility": "Windows, macOS, Linux"}',
+  '{"Layout": "46 keys split", "Switches": "Kailh Choc hot-swappable", "Connection": "USB-C", "Dimensions": "290 x 120 x 15 mm per half", "Weight": "400g total", "OS": "Windows, macOS, Linux"}',
   0
 );
 
 -- Keyboard variants
 INSERT INTO "product_variant" (id, product_id, sku, name, price, stock_quantity, attributes) VALUES
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', '550e8400-e29b-41d4-a716-446655440000', 'KB-THYP-STD', 'Thypoono - Standard Layout', 0, 50, '{"layout": "QWERTY", "keyboard_variant": "standard"}'),
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', '550e8400-e29b-41d4-a716-446655440000', 'KB-THYP-ERG', 'Thypoono - Ergonomic Layout', 2000, 30, '{"layout": "Split", "keyboard_variant": "ergonomic"}');
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', '550e8400-e29b-41d4-a716-446655440000', 'KB-THYP-ERG', 'Thypoono - Ergonomic Layout', 11900, 50, '{"layout": "Split", "keyboard_variant": "ergonomic", "compatibleWith": {"stemType": ["Kailh Choc V1", "Kailh Choc V2"]}, "requiredAccessories": ["SWITCHES", "KEYCAPS"]}');
 
 -- Keyboard images
 INSERT INTO "product_image" (id, product_id, url, alt, position) VALUES
@@ -37,9 +36,9 @@ INSERT INTO "product" (id, slug, category, name, description, features, specific
 
 -- Switch variants
 INSERT INTO "product_variant" (id, product_id, sku, name, price, stock_quantity, attributes) VALUES
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a17', '550e8400-e29b-41d4-a716-446655440001', 'SW-CHOC-RED', 'Kailh Choc V2 Red Switch', 1200, 100, '{"type": "Linear", "actuation_force": "43g", "color": "Red", "feel": "Smooth"}'),
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a18', '550e8400-e29b-41d4-a716-446655440001', 'SW-CHOC-BLUE', 'Kailh Choc V2 Blue Switch', 1200, 100, '{"type": "Clicky", "actuation_force": "50g", "color": "Blue", "feel": "Tactile with click"}'),
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a19', '550e8400-e29b-41d4-a716-446655440001', 'SW-CHOC-BROWN', 'Kailh Choc V2 Brown Switch', 1200, 100, '{"type": "Tactile", "actuation_force": "45g", "color": "Brown", "feel": "Tactile bump"}');
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a17', '550e8400-e29b-41d4-a716-446655440001', 'SW-CHOC-RED', 'Kailh Choc V2 Red Switch', 1900, 50, '{"type": "Linear", "actuation_force": "43g", "color": "Red", "feel": "Smooth", "compatibleWith": {"stemType": ["Kailh Choc V2"]}}'),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a18', '550e8400-e29b-41d4-a716-446655440001', 'SW-CHOC-BLUE', 'Kailh Choc V2 Blue Switch', 1900, 50, '{"type": "Clicky", "actuation_force": "50g", "color": "Blue", "feel": "Tactile with click", "compatibleWith": {"stemType": ["Kailh Choc V2"]}}'),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a19', '550e8400-e29b-41d4-a716-446655440001', 'SW-CHOC-BROWN', 'Kailh Choc V2 Brown Switch', 1900, 50, '{"type": "Tactile", "actuation_force": "45g", "color": "Brown", "feel": "Tactile bump", "compatibleWith": {"stemType": ["Kailh Choc V2"]}}');
 
 -- Switch images
 INSERT INTO "product_image" (id, product_id, url, alt, position) VALUES
@@ -55,22 +54,20 @@ INSERT INTO "product" (id, slug, category, name, description, features, specific
 'KEYCAPS',
 'THT Low Profile Keycap Set',
 'Premium PBT backlit keycap set designed specifically for low profile mechanical keyboards. Available with different legend styles to match your aesthetic preference.',
-'["PBT material", "Backlit compatible", "46 keys set", "Low profile design", "Cherry MX compatible", "Durable construction"]',
-'{"Material": "PBT", "Profile": "Low Profile", "Color": "Black", "Compatibility": "Cherry MX", "Number of Keys": "46", "Backlit": "Yes"}',
+'["PBT material", "Backlit compatible", "46 keys set", "Low profile design", "Kailh Choc compatible", "Durable construction"]',
+'{"Material": "PBT", "Profile": "Low Profile", "Color": "Black", "Number of Keys": "46", "Backlit": "Yes"}',
 1);
 
 -- Keycap variants
 INSERT INTO "product_variant" (id, product_id, sku, name, price, stock_quantity, attributes) VALUES
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a20', '550e8400-e29b-41d4-a716-446655440002', 'KC-THT-CHAR', 'THT Low Profile Keycap Set - Characters', 4900, 75, '{"legend_type": "Characters", "color": "Black", "material": "PBT"}'),
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a21', '550e8400-e29b-41d4-a716-446655440002', 'KC-THT-DOTS', 'THT Low Profile Keycap Set - Dots', 4900, 75, '{"legend_type": "Dots", "color": "Black", "material": "PBT"}'),
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', '550e8400-e29b-41d4-a716-446655440002', 'KC-THT-BLANK', 'THT Low Profile Keycap Set - Blank', 4500, 50, '{"legend_type": "Blank", "color": "Black", "material": "PBT"}');
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a20', '550e8400-e29b-41d4-a716-446655440002', 'KC-THT-CHAR', 'THT Low Profile Keycap Set - Characters', 2900, 50, '{"legend_type": "Characters", "color": "Black", "material": "PBT", "compatibleWith": {"stemType": ["Kailh Choc V2", "MX"]}}'),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a21', '550e8400-e29b-41d4-a716-446655440002', 'KC-THT-DOTS', 'THT Low Profile Keycap Set - Dots', 2900, 50, '{"legend_type": "Dots", "color": "Black", "material": "PBT", "compatibleWith": {"stemType": ["Kailh Choc V2", "MX"]}}');
 
 -- Keycap images
 INSERT INTO "product_image" (id, product_id, url, alt, position) VALUES
 ('f47ac10b-58cc-4372-a567-0e02b2c3d486', '550e8400-e29b-41d4-a716-446655440002', '/images/products/keycaps/tht-main.jpg', 'THT Low Profile Keycap Set - Main View', 1),
 ('f47ac10b-58cc-4372-a567-0e02b2c3d487', '550e8400-e29b-41d4-a716-446655440002', '/images/products/keycaps/tht-characters.jpg', 'THT Low Profile Keycap Set - Characters', 2),
-('f47ac10b-58cc-4372-a567-0e02b2c3d488', '550e8400-e29b-41d4-a716-446655440002', '/images/products/keycaps/tht-dots.jpg', 'THT Low Profile Keycap Set - Dots', 3),
-('f47ac10b-58cc-4372-a567-0e02b2c3d489', '550e8400-e29b-41d4-a716-446655440002', '/images/products/keycaps/tht-blank.jpg', 'THT Low Profile Keycap Set - Blank', 4);
+('f47ac10b-58cc-4372-a567-0e02b2c3d488', '550e8400-e29b-41d4-a716-446655440002', '/images/products/keycaps/tht-dots.jpg', 'THT Low Profile Keycap Set - Dots', 3);
 
 -- Case product
 INSERT INTO "product" (id, slug, category, name, description, features, specifications, is_accessory) VALUES
@@ -80,12 +77,12 @@ INSERT INTO "product" (id, slug, category, name, description, features, specific
 'Thypoono Commute Case',
 'Protective carrying case designed specifically for the Thypoono keyboard. Perfect for commuting or travel, keeping your keyboard safe and secure.',
 '["Custom fit for Thypoono keyboard", "Shock-absorbing padding", "Water-resistant exterior", "Compact design", "Cable compartment", "Reinforced zipper", "Carrying handle"]',
-'{"Material": "Ballistic nylon exterior, EVA foam interior", "Dimensions": "310 x 190 x 40 mm", "Weight": "250g", "Color": "Black", "Compatibility": "Thypoono keyboard", "Water resistance": "Splash-proof"}',
+'{"Material": "Ballistic nylon exterior, EVA foam interior", "Dimensions": "310 x 190 x 40 mm", "Weight": "250g", "Color": "Black", "Water resistance": "Splash-proof"}',
 1);
 
 -- Case variant
 INSERT INTO "product_variant" (id, product_id, sku, name, price, stock_quantity, attributes) VALUES
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a23', '550e8400-e29b-41d4-a716-446655440003', 'CASE-THYP-BLK', 'Thypoono Travel Case - Black', 3500, 40, '{"color": "Black", "material": "Ballistic nylon", "interior_padding": "EVA foam"}');
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a23', '550e8400-e29b-41d4-a716-446655440003', 'CASE-THYP-BLK', 'Thypoono Travel Case - Black', 3499, 50, '{"color": "Black", "material": "Ballistic nylon", "interior_padding": "EVA foam", "compatibleWith": {"layout": "split"}}');
 
 -- Case images
 INSERT INTO "product_image" (id, product_id, url, alt, position) VALUES

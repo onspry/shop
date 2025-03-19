@@ -1,4 +1,4 @@
-import type { Product, ProductVariant, ProductImage } from '$lib/server/db/schema';
+import type { Product, ProductVariant, ProductImage } from '$lib/server/db';
 import { writable, derived } from 'svelte/store';
 
 // Create writable store with persistent tracking

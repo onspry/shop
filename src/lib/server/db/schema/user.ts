@@ -22,11 +22,9 @@ export const user = t.sqliteTable('user', {
     email_verified: t.integer({ mode: 'boolean' }).notNull().default(false),
     isAdmin: t.integer({ mode: 'boolean' }).notNull().default(false),
     stripeCustomerId: t.text('stripe_customer_id', { length: 100 }).notNull().unique(),
-}, (table) => ({
-    emailIdx: t.index('user_email_idx').on(table.email),
-    providerIdIdx: t.index('user_provider_id_idx').on(table.providerId),
-    primaryKey: t.primaryKey({ columns: [table.provider, table.providerId] })
-}));
+}, (table) => [
+    t.primaryKey({ columns: [table.provider, table.providerId] })
+]);
 
 export const session = t.sqliteTable('session', {
     id: t.text('id').primaryKey(),

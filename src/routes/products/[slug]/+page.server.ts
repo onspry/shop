@@ -1,53 +1,40 @@
-import { productRepo } from '$lib/server/db/repositories/productRepo';
-import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import type { Product, ProductVariant, ProductImage } from '$lib/server/db/schema';
+import { productRepo } from '$lib/server/db/repositories';
+import { error } from '@sveltejs/kit';
+import type { Product, ProductVariant, ProductImage } from '$lib/server/db';
 
-export const load: PageServerLoad = async ({ params }) => {
-    const { slug } = params;
+interface CompatibilityResult {
+    readonly product: Product;
+    readonly variants: readonly ProductVariant[];
+    readonly images: readonly ProductImage[];
+}
 
-    // Get the main product with variants and images
-    const productData = await productRepo.getBySlug(slug);
+interface ProductPageData {
+    readonly product: Product;
+    readonly variants: readonly ProductVariant[];
+    readonly images: readonly ProductImage[];
+    readonly requiredAccessories: Readonly<Record<string, readonly CompatibilityResult[]>>;
+    readonly optionalAccessories: Readonly<Record<string, readonly CompatibilityResult[]>>;
+    readonly requiredAccessoryCategories: readonly string[];
+    readonly optionalAccessoryCategories: readonly string[];
+}
 
-    if (!productData) {
-        error(404, { message: 'Product not found' });
+export const load: PageServerLoad = async ({ params }): Promise<ProductPageData> => {
+    // Use the single repository method that handles all filtering and compatibility logic
+    const productDetails = await productRepo.getCompleteProductDetails(params.slug);
+
+    if (!productDetails) {
+        error(404, 'Product not found');
     }
 
-    // Get accessory products based on the main product's category
-    const accessoryProducts: Product[] = [];
-    let accessoryVariants: ProductVariant[] = [];
-    let accessoryImages: ProductImage[] = [];
-
-    // If it's a keyboard, load all relevant accessories (switches, keycaps, case)
-    if (productData.category?.toUpperCase() === 'KEYBOARD') {
-        // Get all accessory categories instead of hardcoding specific ones
-        const accessoryCategories = await productRepo.getAccessoryCategories();
-
-        // Fetch products for each accessory category
-        for (const category of accessoryCategories) {
-            const categoryProducts = await productRepo.getByCategory(category);
-            accessoryProducts.push(...categoryProducts);
-        }
-
-        // If we have accessory products, get their variants and images
-        if (accessoryProducts.length > 0) {
-            const accessoryProductIds = accessoryProducts.map(p => p.id);
-            accessoryVariants = await productRepo.getVariantsForProducts(accessoryProductIds);
-            accessoryImages = await productRepo.getImagesForProducts(accessoryProductIds);
-        }
-    }
-
-    return {
-        product: productData,
-        variants: productData.variants || [],
-        images: productData.images || [],
-        accessoryProducts,
-        accessoryVariants,
-        accessoryImages,
-        // For client-side store subscription
-        storePayload: {
-            mainProduct: productData,
-            accessories: accessoryProducts
-        }
-    };
+    // Return the pre-filtered data with proper immutability
+    return Object.freeze({
+        product: productDetails.product,
+        variants: Object.freeze(productDetails.variants),
+        images: Object.freeze(productDetails.images),
+        requiredAccessories: Object.freeze(productDetails.requiredAccessories),
+        optionalAccessories: Object.freeze(productDetails.optionalAccessories),
+        requiredAccessoryCategories: Object.freeze(productDetails.requiredAccessoryCategories),
+        optionalAccessoryCategories: Object.freeze(productDetails.optionalAccessoryCategories)
+    }) as ProductPageData;
 }; 

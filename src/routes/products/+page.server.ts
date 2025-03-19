@@ -1,7 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
-import { product, productVariant, productImage } from '$lib/server/db/schema';
-import type { Product, ProductVariant, ProductImage } from '$lib/server/db/schema';
+import { product, productVariant, productImage } from '$lib/server/db';
+import type { Product, ProductVariant, ProductImage } from '$lib/server/db';
 import { eq, asc } from 'drizzle-orm';
 
 type ProductWithRelations = Product & {

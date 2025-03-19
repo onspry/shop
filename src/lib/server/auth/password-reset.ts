@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import * as table from '$lib/server/db/schema';
+import * as table from '$lib/server/db';
 
 import { encodeHexLowerCase } from "@oslojs/encoding";
 import { generateRandomOTP } from "./utils";
@@ -7,7 +7,7 @@ import { sha256 } from "@oslojs/crypto/sha2";
 import { eq } from 'drizzle-orm';
 import { sendVerificationEmail } from './email-verification';
 
-import type { User } from '$lib/server/db/schema';
+import type { User } from '$lib/server/db';
 
 import type { RequestEvent } from "@sveltejs/kit";
 

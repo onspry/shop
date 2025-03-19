@@ -1,17 +1,20 @@
 <script lang="ts">
-	import type { ProductVariant } from '$lib/server/db/schema';
+	import type { ProductVariant } from '$lib/server/db';
+	import { Card } from '$lib/components/ui/card';
 
-	let { variant, isSelected, onClick } = $props<{
+	let { variant, isSelected, onClick, showPrice } = $props<{
 		variant: ProductVariant;
 		isSelected: boolean;
 		onClick: () => void;
+		showPrice?: boolean;
 	}>();
 
 	// Helper function to get variant attribute value
 	const getVariantAttribute = (key: string): string => {
 		try {
-			const attributes = variant.attributes as Record<string, string>;
-			return attributes[key] || '';
+			const attributes = variant.attributes as Record<string, unknown>;
+			const value = attributes[key];
+			return typeof value === 'string' ? value : '';
 		} catch (e) {
 			return '';
 		}
@@ -30,6 +33,9 @@
 	const legendType = $derived(
 		getVariantAttribute('legend_type') || getVariantAttribute('keycap_style') || ''
 	);
+
+	// Check if variant is out of stock
+	const isOutOfStock = $derived(variant.stock_quantity === 0);
 
 	// Helper function to get color class based on switch type
 	const getSwitchColorClass = (): string => {
@@ -62,15 +68,31 @@
 				return '•';
 		}
 	};
+
+	// Handle click with stock check
+	function handleClick() {
+		if (!isOutOfStock) {
+			onClick();
+		}
+	}
 </script>
 
-<div
+<Card
 	class={`relative rounded-lg border p-4 transition-all ${
 		isSelected ? 'border-primary bg-primary/5 shadow-md' : 'border-muted hover:border-primary/50'
-	}`}
-	onclick={onClick}
+	} ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+	onclick={handleClick}
 >
 	<div class="flex flex-col h-full">
+		<!-- Out of Stock Badge -->
+		{#if isOutOfStock}
+			<div
+				class="absolute top-2 left-2 bg-destructive text-destructive-foreground text-xs px-2 py-1 rounded"
+			>
+				Out of Stock
+			</div>
+		{/if}
+
 		<!-- Variant Visual -->
 		<div class="mb-3 flex justify-center">
 			{#if switchType}
@@ -79,7 +101,9 @@
 					<div class="relative w-16 h-16 mb-2">
 						<div class="absolute inset-0 flex items-center justify-center">
 							<div
-								class={`w-12 h-12 ${getSwitchColorClass()} rounded-md shadow-lg flex items-center justify-center text-white font-bold text-xl`}
+								class={`w-12 h-12 ${getSwitchColorClass()} rounded-md shadow-lg flex items-center justify-center text-white font-bold text-xl ${
+									isOutOfStock ? 'opacity-50' : ''
+								}`}
 							>
 								{getSwitchTypeDisplay()}
 							</div>
@@ -93,7 +117,9 @@
 					<div class="grid grid-cols-3 gap-1 mb-2">
 						{#each Array(9) as _, i}
 							<div
-								class="w-6 h-6 bg-gray-800 rounded-sm shadow-md flex items-center justify-center text-white text-xs"
+								class="w-6 h-6 bg-gray-800 rounded-sm shadow-md flex items-center justify-center text-white text-xs ${isOutOfStock
+									? 'opacity-50'
+									: ''}"
 							>
 								{legendType === 'Blank'
 									? ''
@@ -118,7 +144,26 @@
 		</h3>
 
 		<!-- Variant Price -->
-		<div class="text-sm font-bold mb-2">${formattedPrice}</div>
+		{#if showPrice !== false}
+			<div class="flex justify-between items-center text-sm mb-2">
+				<span class="font-bold">${formattedPrice}</span>
+				<span class="text-muted-foreground">Stock: {variant.stock_quantity}</span>
+			</div>
+		{/if}
+
+		<!-- Selected Attributes -->
+		{#if variant.attributes}
+			<div class="mt-4 text-sm">
+				{#each Object.entries(variant.attributes as Record<string, unknown>) as [key, value]}
+					{#if !['compatibleWith', 'compatibility'].includes(key) && typeof value === 'string'}
+						<div class="grid grid-cols-2 gap-1">
+							<span class="text-muted-foreground capitalize">{key.replace(/_/g, ' ')}:</span>
+							<span>{value}</span>
+						</div>
+					{/if}
+				{/each}
+			</div>
+		{/if}
 
 		<!-- Selected Indicator -->
 		{#if isSelected}
@@ -127,4 +172,4 @@
 			</div>
 		{/if}
 	</div>
-</div>
+</Card>

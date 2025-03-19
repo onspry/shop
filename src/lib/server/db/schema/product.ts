@@ -12,11 +12,11 @@ export const product = t.sqliteTable('product', {
     isAccessory: t.integer('is_accessory', { mode: 'boolean' }).notNull().default(false),
     createdAt: t.integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
     updatedAt: t.integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
-}, (table) => ({
-    categoryIdx: t.index('product_category_idx').on(table.category),
-    slugIdx: t.index('product_slug_idx').on(table.slug),
-    nameIdx: t.index('product_name_idx').on(table.name)
-}));
+}, (table) => [
+    t.index('product_category_idx').on(table.category),
+    t.index('product_slug_idx').on(table.slug),
+    t.index('product_name_idx').on(table.name)
+]);
 
 // Export types
 export type Product = typeof product.$inferSelect; 

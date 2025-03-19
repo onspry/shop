@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
-import { user } from '$lib/server/db/schema';
-import type { Provider, User } from '$lib/server/db/schema';
+import { user } from '$lib/server/db';
+import type { Provider, User } from '$lib/server/db';
 import { eq, and } from 'drizzle-orm';
 import { hashPassword } from './password';
 
