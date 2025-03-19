@@ -197,6 +197,7 @@
 								{variant}
 								isSelected={selectedOptions['KEYBOARD'] === variant.id}
 								onClick={() => selectOption('KEYBOARD', variant.id)}
+								showPrice={true}
 							/>
 						{/each}
 					</div>
@@ -217,6 +218,7 @@
 										{variant}
 										isSelected={selectedOptions[upperCategory] === variant.id}
 										onClick={() => selectOption(category, variant.id)}
+										showPrice={true}
 									/>
 								{/each}
 							{/each}
@@ -243,6 +245,7 @@
 													category,
 													isVariantSelected(category, variant.id) ? null : variant.id
 												)}
+											showPrice={true}
 										/>
 									{/each}
 								{/each}

@@ -1,40 +1,74 @@
 import type { PageServerLoad } from './$types';
-import { productRepo } from '$lib/server/db/repositories';
+import { productRepo } from '$lib/server/db/repositories/productRepo';
 import { error } from '@sveltejs/kit';
-import type { Product, ProductVariant, ProductImage } from '$lib/server/db';
+import { toProductViewModel } from '$lib/types/product';
 
-interface CompatibilityResult {
-    readonly product: Product;
-    readonly variants: readonly ProductVariant[];
-    readonly images: readonly ProductImage[];
-}
+export const load: PageServerLoad = async ({ params }) => {
+    const productData = await productRepo.getCompleteProductDetails(params.slug);
 
-interface ProductPageData {
-    readonly product: Product;
-    readonly variants: readonly ProductVariant[];
-    readonly images: readonly ProductImage[];
-    readonly requiredAccessories: Readonly<Record<string, readonly CompatibilityResult[]>>;
-    readonly optionalAccessories: Readonly<Record<string, readonly CompatibilityResult[]>>;
-    readonly requiredAccessoryCategories: readonly string[];
-    readonly optionalAccessoryCategories: readonly string[];
-}
-
-export const load: PageServerLoad = async ({ params }): Promise<ProductPageData> => {
-    // Use the single repository method that handles all filtering and compatibility logic
-    const productDetails = await productRepo.getCompleteProductDetails(params.slug);
-
-    if (!productDetails) {
+    if (!productData) {
         error(404, 'Product not found');
     }
 
-    // Return the pre-filtered data with proper immutability
-    return Object.freeze({
-        product: productDetails.product,
-        variants: Object.freeze(productDetails.variants),
-        images: Object.freeze(productDetails.images),
-        requiredAccessories: Object.freeze(productDetails.requiredAccessories),
-        optionalAccessories: Object.freeze(productDetails.optionalAccessories),
-        requiredAccessoryCategories: Object.freeze(productDetails.requiredAccessoryCategories),
-        optionalAccessoryCategories: Object.freeze(productDetails.optionalAccessoryCategories)
-    }) as ProductPageData;
+    console.log('Raw product data:', {
+        product: productData.product,
+        variants: productData.variants,
+        images: productData.images
+    });
+
+    // Transform the data using our ViewModel
+    const productViewModel = toProductViewModel(
+        productData.product,
+        productData.variants,
+        productData.images
+    );
+
+    console.log('Transformed product view model:', productViewModel);
+
+    // Transform accessories
+    const transformedRequiredAccessories = Object.entries(productData.requiredAccessories || {}).reduce(
+        (acc, [category, accessories]) => ({
+            ...acc,
+            [category]: accessories.map(accessory => ({
+                ...accessory,
+                product: toProductViewModel(
+                    accessory.product,
+                    accessory.variants,
+                    accessory.images
+                )
+            }))
+        }),
+        {}
+    );
+
+    console.log('Transformed required accessories:', transformedRequiredAccessories);
+
+    const transformedOptionalAccessories = Object.entries(productData.optionalAccessories || {}).reduce(
+        (acc, [category, accessories]) => ({
+            ...acc,
+            [category]: accessories.map(accessory => ({
+                ...accessory,
+                product: toProductViewModel(
+                    accessory.product,
+                    accessory.variants,
+                    accessory.images
+                )
+            }))
+        }),
+        {}
+    );
+
+    const result = {
+        product: productViewModel,
+        variants: productData.variants,
+        images: productData.images,
+        requiredAccessories: transformedRequiredAccessories,
+        optionalAccessories: transformedOptionalAccessories,
+        requiredAccessoryCategories: productData.requiredAccessoryCategories,
+        optionalAccessoryCategories: productData.optionalAccessoryCategories
+    };
+
+    console.log('Final result:', result);
+
+    return result;
 }; 

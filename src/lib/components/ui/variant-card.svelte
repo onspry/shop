@@ -1,9 +1,10 @@
 <script lang="ts">
-	import type { ProductVariant } from '$lib/server/db';
+	import type { ProductVariantViewModel } from '$lib/types/product';
 	import { Card } from '$lib/components/ui/card';
+	import * as m from '$lib/paraglide/messages/en.js';
 
 	let { variant, isSelected, onClick, showPrice } = $props<{
-		variant: ProductVariant;
+		variant: ProductVariantViewModel;
 		isSelected: boolean;
 		onClick: () => void;
 		showPrice?: boolean;
@@ -12,8 +13,7 @@
 	// Helper function to get variant attribute value
 	const getVariantAttribute = (key: string): string => {
 		try {
-			const attributes = variant.attributes as Record<string, unknown>;
-			const value = attributes[key];
+			const value = variant.attributes[key];
 			return typeof value === 'string' ? value : '';
 		} catch (e) {
 			return '';
@@ -35,7 +35,7 @@
 	);
 
 	// Check if variant is out of stock
-	const isOutOfStock = $derived(variant.stock_quantity === 0);
+	const isOutOfStock = $derived(variant.stockStatus === 'out_of_stock');
 
 	// Helper function to get color class based on switch type
 	const getSwitchColorClass = (): string => {
@@ -84,12 +84,18 @@
 	onclick={handleClick}
 >
 	<div class="flex flex-col h-full">
-		<!-- Out of Stock Badge -->
-		{#if isOutOfStock}
+		<!-- Stock Status Badge -->
+		{#if variant.stockStatus === 'out_of_stock'}
 			<div
 				class="absolute top-2 left-2 bg-destructive text-destructive-foreground text-xs px-2 py-1 rounded"
 			>
-				Out of Stock
+				{m.product_out_of_stock()}
+			</div>
+		{:else if variant.stockStatus === 'low_stock'}
+			<div
+				class="absolute top-2 left-2 bg-warning text-warning-foreground text-xs px-2 py-1 rounded"
+			>
+				{m.product_low_stock()}
 			</div>
 		{/if}
 
@@ -147,14 +153,13 @@
 		{#if showPrice !== false}
 			<div class="flex justify-between items-center text-sm mb-2">
 				<span class="font-bold">${formattedPrice}</span>
-				<span class="text-muted-foreground">Stock: {variant.stock_quantity}</span>
 			</div>
 		{/if}
 
 		<!-- Selected Attributes -->
 		{#if variant.attributes}
 			<div class="mt-4 text-sm">
-				{#each Object.entries(variant.attributes as Record<string, unknown>) as [key, value]}
+				{#each Object.entries(variant.attributes) as [key, value]}
 					{#if !['compatibleWith', 'compatibility'].includes(key) && typeof value === 'string'}
 						<div class="grid grid-cols-2 gap-1">
 							<span class="text-muted-foreground capitalize">{key.replace(/_/g, ' ')}:</span>

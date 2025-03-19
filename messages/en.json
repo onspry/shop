@@ -54,6 +54,7 @@
     "product_accessory": "Accessory",
     "product_add_to_cart": "Add to Cart",
     "product_out_of_stock": "Out of Stock",
+	"product_low_stock": "Low Stock",
     "product_in_stock": "In Stock",
     "product_quantity": "Quantity",
     "product_total": "Total",
