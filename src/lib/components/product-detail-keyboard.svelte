@@ -262,6 +262,23 @@
 		return getVariantAttribute(variant, 'compatibleWith', {});
 	}
 
+	// Helper function to get button text based on selection state
+	function getButtonText(): string {
+		if (!selectedVariant) {
+			return m.product_select_keyboard();
+		}
+		if (selectedVariant.stockStatus === 'out_of_stock') {
+			return m.product_out_of_stock();
+		}
+		if (!selectedSwitch) {
+			return m.product_select_switch();
+		}
+		if (!selectedKeycap) {
+			return m.product_select_keycap();
+		}
+		return m.product_add_to_cart();
+	}
+
 	// Derived state for cart button
 	let canAddToCart = $derived(
 		!!selectedVariant &&
@@ -492,9 +509,9 @@
 						onclick={addToCart}
 						class="w-full"
 						disabled={!canAddToCart}
-						aria-label={canAddToCart ? m.product_add_to_cart() : m.product_out_of_stock()}
+						aria-label={getButtonText()}
 					>
-						{canAddToCart ? m.product_add_to_cart() : m.product_out_of_stock()}
+						{getButtonText()}
 					</Button>
 				</div>
 
