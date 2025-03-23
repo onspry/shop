@@ -1,23 +1,29 @@
-import type { Product, ProductVariant, ProductImage } from '$lib/server/db';
+import type { ProductViewModel, ProductVariantViewModel } from '$lib/types/product';
+import type { ProductImage } from '$lib/server/db/schema/product_image';
 import { writable, derived } from 'svelte/store';
 
 // Create writable store with persistent tracking
 const store = writable({
-    products: [] as Product[],
-    variants: [] as ProductVariant[],
+    products: [] as ProductViewModel[],
+    variants: [] as ProductVariantViewModel[],
     images: [] as ProductImage[],
     loadedKeyboards: new Set<string>(), // Track which keyboards we've loaded accessories for
-    selectedProduct: null as Product | null,
+    selectedProduct: null as ProductViewModel | null,
     loading: false,
     error: null as string | null
 });
 
 // Derived stores for access to individual parts of the store
 export const products = derived(store, $store => $store.products);
+
 export const variants = derived(store, $store => $store.variants);
+
 export const images = derived(store, $store => $store.images);
+
 export const selectedProduct = derived(store, $store => $store.selectedProduct);
+
 export const loading = derived(store, $store => $store.loading);
+
 export const error = derived(store, $store => $store.error);
 
 // Derived stores for product categories
@@ -25,12 +31,8 @@ export const keyboardProduct = derived(products, $products =>
     $products.find(p => !p.isAccessory && p.category?.toUpperCase() === 'KEYBOARD')
 );
 
-export const switchesProduct = derived(products, $products =>
-    $products.find(p => p.category?.toUpperCase() === 'SWITCHES')
-);
-
 export const keycapsProduct = derived(products, $products =>
-    $products.find(p => p.category?.toUpperCase() === 'KEYCAPS')
+    $products.find(p => p.category?.toUpperCase() === 'KEYCAP')
 );
 
 export const accessories = derived(products, $products =>
@@ -38,7 +40,7 @@ export const accessories = derived(products, $products =>
 );
 
 export const accessoryCategories = derived(accessories, $accessories => {
-    const groups = new Map<string, Product[]>();
+    const groups = new Map<string, ProductViewModel[]>();
     $accessories.forEach((product) => {
         const category = product.category;
         if (!groups.has(category)) {
@@ -46,39 +48,15 @@ export const accessoryCategories = derived(accessories, $accessories => {
         }
         groups.get(category)?.push(product);
     });
-    return [...groups.entries()] as [string, Product[]][];
+    return [...groups.entries()] as [string, ProductViewModel[]][];
 });
-
-// Setter functions
-export function setProducts(newProducts: Product[]) {
-    store.update(state => ({
-        ...state,
-        products: newProducts
-    }));
-}
-
-export function setVariants(newVariants: ProductVariant[]) {
-    store.update(state => ({
-        ...state,
-        variants: newVariants
-    }));
-}
-
-export function setImages(newImages: ProductImage[]) {
-    store.update(state => ({
-        ...state,
-        images: newImages
-    }));
-}
 
 // Repository-aware actions with persistence
 export function loadKeyboardWithAccessories(
-    keyboard: Product,
-    keyboardVariants: ProductVariant[],
-    keyboardImages: ProductImage[],
-    accessories: Product[],
-    accessoryVariants: ProductVariant[],
-    accessoryImages: ProductImage[]
+    keyboard: ProductViewModel,
+    keyboardVariants: ProductVariantViewModel[],
+    accessories: ProductViewModel[],
+    accessoryVariants: ProductVariantViewModel[]
 ) {
     store.update(state => {
         // If we've already loaded this keyboard and its accessories, don't reload
@@ -96,11 +74,6 @@ export function loadKeyboardWithAccessories(
         const existingVariantIds = new Set(state.variants.map(v => v.id));
         const newVariants = allVariants.filter(v => !existingVariantIds.has(v.id));
 
-        // Add images without duplicates
-        const allImages = [...keyboardImages, ...accessoryImages];
-        const existingImageIds = new Set(state.images.map(i => i.id));
-        const newImages = allImages.filter(i => !existingImageIds.has(i.id));
-
         // Mark this keyboard as loaded
         const updatedLoadedKeyboards = new Set(state.loadedKeyboards);
         updatedLoadedKeyboards.add(keyboard.id);
@@ -109,13 +82,27 @@ export function loadKeyboardWithAccessories(
             ...state,
             products: [...state.products, ...newProducts],
             variants: [...state.variants, ...newVariants],
-            images: [...state.images, ...newImages],
             loadedKeyboards: updatedLoadedKeyboards
         };
     });
 }
 
-export function addProduct(product: Product) {
+// Setter functions
+export function setProducts(newProducts: ProductViewModel[]) {
+    store.update(state => ({
+        ...state,
+        products: newProducts
+    }));
+}
+
+export function setVariants(newVariants: ProductVariantViewModel[]) {
+    store.update(state => ({
+        ...state,
+        variants: newVariants
+    }));
+}
+
+export function addProduct(product: ProductViewModel) {
     store.update(state => {
         // Don't add duplicates
         if (state.products.some(p => p.id === product.id)) {
@@ -128,7 +115,7 @@ export function addProduct(product: Product) {
     });
 }
 
-export function addVariants(productVariants: ProductVariant[]) {
+export function addVariants(productVariants: ProductVariantViewModel[]) {
     store.update(state => {
         // Filter out duplicates
         const newVariants = productVariants.filter(v =>
@@ -141,22 +128,9 @@ export function addVariants(productVariants: ProductVariant[]) {
     });
 }
 
-export function addImages(productImages: ProductImage[]) {
-    store.update(state => {
-        // Filter out duplicates
-        const newImages = productImages.filter(i =>
-            !state.images.some(existing => existing.id === i.id)
-        );
-        return {
-            ...state,
-            images: [...state.images, ...newImages]
-        };
-    });
-}
-
 // Category-based selectors
 export function getProductsByCategory(category: string) {
-    let result: Product[] = [];
+    let result: ProductViewModel[] = [];
     products.subscribe($products => {
         result = $products.filter(p => p.category?.toUpperCase() === category.toUpperCase());
     })();
@@ -164,8 +138,8 @@ export function getProductsByCategory(category: string) {
 }
 
 export function getVariantsByCategory(category: string) {
-    let categoryProducts: Product[] = [];
-    let result: ProductVariant[] = [];
+    let categoryProducts: ProductViewModel[] = [];
+    let result: ProductVariantViewModel[] = [];
 
     products.subscribe($products => {
         categoryProducts = $products.filter(p =>
@@ -176,26 +150,7 @@ export function getVariantsByCategory(category: string) {
     const productIds = categoryProducts.map(p => p.id);
 
     variants.subscribe($variants => {
-        result = $variants.filter(v => productIds.includes(v.productId));
-    })();
-
-    return result;
-}
-
-export function getImagesByCategory(category: string) {
-    let categoryProducts: Product[] = [];
-    let result: ProductImage[] = [];
-
-    products.subscribe($products => {
-        categoryProducts = $products.filter(p =>
-            p.category?.toUpperCase() === category.toUpperCase()
-        );
-    })();
-
-    const productIds = categoryProducts.map(p => p.id);
-
-    images.subscribe($images => {
-        result = $images.filter(i => productIds.includes(i.productId));
+        result = $variants.filter(v => productIds.includes(v.id));
     })();
 
     return result;
@@ -235,7 +190,7 @@ export function selectProduct(productId: string) {
 }
 
 export function getCompatibleAccessories(productId: string) {
-    let result: Product[] = [];
+    let result: ProductViewModel[] = [];
 
     store.subscribe(state => {
         const product = state.products.find(p => p.id === productId);
@@ -248,20 +203,10 @@ export function getCompatibleAccessories(productId: string) {
 }
 
 export function getProductVariants(productId: string) {
-    let result: ProductVariant[] = [];
+    let result: ProductVariantViewModel[] = [];
 
     variants.subscribe($variants => {
-        result = $variants.filter(v => v.productId === productId);
-    })();
-
-    return result;
-}
-
-export function getProductImages(productId: string) {
-    let result: ProductImage[] = [];
-
-    images.subscribe($images => {
-        result = $images.filter(i => i.productId === productId);
+        result = $variants.filter(v => v.id === productId);
     })();
 
     return result;
@@ -274,4 +219,20 @@ export function isKeyboardLoaded(keyboardId: string) {
         loaded = state.loadedKeyboards.has(keyboardId);
     })();
     return loaded;
+}
+
+// Image-related functions
+export function setImages(newImages: ProductImage[]) {
+    store.update(state => ({
+        ...state,
+        images: newImages
+    }));
+}
+
+export function getProductImages(productId: string) {
+    let result: ProductImage[] = [];
+    store.subscribe(state => {
+        result = state.images.filter(img => img.productId === productId);
+    })();
+    return result;
 } 

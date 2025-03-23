@@ -1,74 +1,22 @@
-import type { PageServerLoad } from './$types';
 import { productRepo } from '$lib/server/db/repositories/productRepo';
-import { error } from '@sveltejs/kit';
-import { toProductViewModel } from '$lib/types/product';
+import type { ProductViewModel } from '$lib/types/product';
+import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params }) => {
-    const productData = await productRepo.getCompleteProductDetails(params.slug);
+    const result = await productRepo.getProduct(params.slug);
 
-    if (!productData) {
-        error(404, 'Product not found');
+    // If this is a keyboard, fetch compatible switches and keycaps
+    let switches: ProductViewModel[] = [];
+    let keycaps: ProductViewModel[] = [];
+    if (result.product.category === 'KEYBOARD') {
+        switches = await productRepo.getProductsByCategory('SWITCH');
+        keycaps = await productRepo.getProductsByCategory('KEYCAP');
     }
 
-    console.log('Raw product data:', {
-        product: productData.product,
-        variants: productData.variants,
-        images: productData.images
-    });
-
-    // Transform the data using our ViewModel
-    const productViewModel = toProductViewModel(
-        productData.product,
-        productData.variants,
-        productData.images
-    );
-
-    console.log('Transformed product view model:', productViewModel);
-
-    // Transform accessories
-    const transformedRequiredAccessories = Object.entries(productData.requiredAccessories || {}).reduce(
-        (acc, [category, accessories]) => ({
-            ...acc,
-            [category]: accessories.map(accessory => ({
-                ...accessory,
-                product: toProductViewModel(
-                    accessory.product,
-                    accessory.variants,
-                    accessory.images
-                )
-            }))
-        }),
-        {}
-    );
-
-    console.log('Transformed required accessories:', transformedRequiredAccessories);
-
-    const transformedOptionalAccessories = Object.entries(productData.optionalAccessories || {}).reduce(
-        (acc, [category, accessories]) => ({
-            ...acc,
-            [category]: accessories.map(accessory => ({
-                ...accessory,
-                product: toProductViewModel(
-                    accessory.product,
-                    accessory.variants,
-                    accessory.images
-                )
-            }))
-        }),
-        {}
-    );
-
-    const result = {
-        product: productViewModel,
-        variants: productData.variants,
-        images: productData.images,
-        requiredAccessories: transformedRequiredAccessories,
-        optionalAccessories: transformedOptionalAccessories,
-        requiredAccessoryCategories: productData.requiredAccessoryCategories,
-        optionalAccessoryCategories: productData.optionalAccessoryCategories
+    return {
+        product: result.product,
+        defaultVariantId: result.defaultVariantId,
+        switches,
+        keycaps
     };
-
-    console.log('Final result:', result);
-
-    return result;
 }; 

@@ -6,9 +6,9 @@
 	import Navbar from '$lib/components/navbar.svelte';
 	import { ParaglideJS } from '@inlang/paraglide-sveltekit';
 	import { i18n } from '$lib/i18n';
-	import { ModeWatcher } from 'mode-watcher';
 	import { onMount } from 'svelte';
 	import { setUser } from '$lib/stores/auth';
+	import { theme } from '$lib/stores/theme';
 
 	let { children, data } = $props();
 
@@ -18,14 +18,11 @@
 		setUser(data.user);
 	});
 
+	// Initialize theme on mount
 	onMount(() => {
-		// Check system preference or stored preference
-		const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-		const storedTheme = localStorage.getItem('theme');
-
-		if (storedTheme === 'dark' || (!storedTheme && isDark)) {
-			document.documentElement.classList.add('dark');
-		}
+		// The theme store will handle initialization from localStorage or system preference
+		const isDark = $theme === 'dark';
+		document.documentElement.classList.toggle('dark', isDark);
 	});
 </script>
 
@@ -35,7 +32,6 @@
 			class="sticky top-0 z-50 w-full h-[var(--header-height)] border-b bg-background/80 backdrop-blur-sm"
 		>
 			<div class="layout-container h-full">
-				<ModeWatcher />
 				<Navbar />
 			</div>
 		</header>

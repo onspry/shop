@@ -1,24 +1,30 @@
 <script lang="ts">
 	import * as m from '$lib/paraglide/messages/en.js';
-	import type { Product, ProductImage, ProductVariant } from '$lib/server/db';
+	import type {
+		ProductViewModel,
+		ProductVariantViewModel,
+		ProductImageViewModel
+	} from '$lib/types/product';
 	import { Button } from '$lib/components/ui/button';
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';
 	import VariantCard from '$lib/components/ui/variant-card.svelte';
+	import { formatPrice } from '$lib/utils/price';
 
-	let {
-		product = {} as Product,
-		variants = [],
-		images = []
-	} = $props<{
-		product?: Product;
-		variants?: ProductVariant[];
-		images?: ProductImage[];
+	let { product, variants, images } = $props<{
+		product: ProductViewModel;
+		variants: ProductVariantViewModel[];
+		images: ProductImageViewModel[];
 	}>();
+
+	// Image loading state
+	let loadedImages = $state(new Set<string>());
 
 	// Derived data
 	const basePrice = $derived(
-		variants?.length > 0 ? Math.min(...variants.map((v: ProductVariant) => Number(v.price))) : 0
+		variants?.length > 0
+			? Math.min(...variants.map((v: ProductVariantViewModel) => Number(v.price)))
+			: 0
 	);
 
 	// State management for selected options
@@ -33,13 +39,8 @@
 
 	// Get the selected variant based on current selection
 	const selectedVariant = $derived(
-		variants?.find((v: ProductVariant) => v.id === selectedVariantId) || variants?.[0]
+		variants?.find((v: ProductVariantViewModel) => v.id === selectedVariantId) || variants?.[0]
 	);
-
-	// Format price for display
-	function formatPrice(price: number): string {
-		return (price / 100).toFixed(2);
-	}
 
 	// Handle variant selection
 	function selectVariant(variantId: string) {
@@ -53,14 +54,23 @@
 		alert(`Added ${selectedVariant.name} to cart`);
 	}
 
-	// Add this function to handle image loading errors
+	// Image handling functions
+	function handleImageLoad(event: Event) {
+		const img = event.target as HTMLImageElement;
+		loadedImages.add(img.src);
+	}
+
 	function handleImageError(event: Event) {
 		const imgElement = event.target as HTMLImageElement;
 		imgElement.src = `/placeholder-${product?.category?.toLowerCase() || 'default'}.jpg`;
 	}
 
+	function getOptimizedImageUrl(url: string, width: number, height: number): string {
+		return `${url}?w=${width}&h=${height}&q=80&format=webp`;
+	}
+
 	// Helper function to get variant attribute
-	function getVariantAttribute(variant: ProductVariant, key: string): string {
+	function getVariantAttribute(variant: ProductVariantViewModel, key: string): string {
 		try {
 			const attributes = variant.attributes as Record<string, string>;
 			return attributes[key] || '';
@@ -68,6 +78,11 @@
 			return '';
 		}
 	}
+
+	// Check if configuration is complete
+	const canAddToCart = $derived(
+		!!selectedVariant && selectedVariant.stockStatus !== 'out_of_stock'
+	);
 </script>
 
 <div class="container mx-auto px-4 py-8">
@@ -80,23 +95,45 @@
 			<!-- Product Images -->
 			<div class="space-y-4">
 				{#if images?.length > 0}
-					<div class="aspect-square overflow-hidden rounded-lg bg-muted">
+					<div class="aspect-square overflow-hidden rounded-lg bg-muted relative">
+						{#if !loadedImages.has(images[0].url)}
+							<div class="absolute inset-0 flex items-center justify-center">
+								<div class="animate-pulse bg-muted-foreground/20 w-full h-full"></div>
+							</div>
+						{/if}
 						<img
-							src={images[0].url}
+							data-src={getOptimizedImageUrl(images[0].url, 800, 800)}
 							alt={images[0].alt}
-							class="h-full w-full object-cover object-center"
+							width={800}
+							height={800}
+							loading="lazy"
+							class="h-full w-full object-cover object-center transition-opacity duration-300"
+							class:opacity-0={!loadedImages.has(images[0].url)}
+							class:opacity-100={loadedImages.has(images[0].url)}
+							onload={handleImageLoad}
 							onerror={handleImageError}
 						/>
 					</div>
 
 					{#if images.length > 1}
 						<div class="grid grid-cols-4 gap-2">
-							{#each images as image, i}
-								<div class="aspect-square overflow-hidden rounded-md bg-muted">
+							{#each images.slice(1) as image}
+								<div class="aspect-square overflow-hidden rounded-md bg-muted relative">
+									{#if !loadedImages.has(image.url)}
+										<div class="absolute inset-0 flex items-center justify-center">
+											<div class="animate-pulse bg-muted-foreground/20 w-full h-full"></div>
+										</div>
+									{/if}
 									<img
-										src={image.url}
+										data-src={getOptimizedImageUrl(image.url, 200, 200)}
 										alt={image.alt}
+										width={200}
+										height={200}
+										loading="lazy"
 										class="h-full w-full object-cover object-center cursor-pointer hover:opacity-80 transition-opacity"
+										class:opacity-0={!loadedImages.has(image.url)}
+										class:opacity-100={loadedImages.has(image.url)}
+										onload={handleImageLoad}
 										onerror={handleImageError}
 									/>
 								</div>
@@ -111,11 +148,11 @@
 			</div>
 
 			<!-- Product Details -->
-			<div class="space-y-6">
+			<div class="space-y-8">
 				<div>
 					<h1 class="text-3xl font-bold">{product.name}</h1>
 					<p class="text-lg font-medium text-muted-foreground">
-						${formatPrice(selectedVariant?.price || basePrice)}
+						{formatPrice(selectedVariant?.price || basePrice)}
 					</p>
 				</div>
 
@@ -126,16 +163,17 @@
 				</div>
 
 				<!-- Accessory Configuration Options -->
-				<div class="space-y-6">
+				<div class="space-y-8">
 					<div class="space-y-4">
 						<div>
 							<Label for="variant-selection">{product.category} Options</Label>
-							<div class="grid grid-cols-3 gap-3 mt-2" id="variant-selection">
+							<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2" id="variant-selection">
 								{#each variants || [] as variant}
 									<VariantCard
 										{variant}
 										isSelected={selectedVariantId === variant.id}
 										onClick={() => selectVariant(variant.id)}
+										showPrice={true}
 									/>
 								{/each}
 							</div>
@@ -146,7 +184,7 @@
 						<div class="bg-muted p-4 rounded-md">
 							<h3 class="font-medium mb-2">Selected Option</h3>
 							<div class="grid grid-cols-2 gap-2 text-sm">
-								{#if product.category === 'SWITCHES'}
+								{#if product.category === 'SWITCH'}
 									<div>Type:</div>
 									<div>{getVariantAttribute(selectedVariant, 'type') || 'N/A'}</div>
 
@@ -155,7 +193,7 @@
 
 									<div>Feel:</div>
 									<div>{getVariantAttribute(selectedVariant, 'feel') || 'N/A'}</div>
-								{:else if product.category === 'KEYCAPS'}
+								{:else if product.category === 'KEYCAP'}
 									<div>Legend Type:</div>
 									<div>{getVariantAttribute(selectedVariant, 'legend_type') || 'N/A'}</div>
 
@@ -171,8 +209,13 @@
 				</div>
 
 				<div class="pt-4">
-					<Button onclick={addToCart} class="w-full">
-						{m.product_add_to_cart()}
+					<Button
+						onclick={addToCart}
+						class="w-full"
+						disabled={!canAddToCart}
+						aria-label={canAddToCart ? m.product_add_to_cart() : m.product_out_of_stock()}
+					>
+						{canAddToCart ? m.product_add_to_cart() : m.product_out_of_stock()}
 					</Button>
 				</div>
 

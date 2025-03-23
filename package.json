@@ -16,7 +16,8 @@
 		"test": "npm run test:unit -- --run",
 		"db:push": "drizzle-kit push",
 		"db:migrate": "drizzle-kit migrate",
-		"db:studio": "drizzle-kit studio"
+		"db:studio": "drizzle-kit studio",
+		"db:seed": "tsx scripts/seed.ts"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",

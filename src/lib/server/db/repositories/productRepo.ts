@@ -1,343 +1,286 @@
-import { db } from '..';
-import { product, productVariant, productImage } from '..';
-import type { Product, ProductVariant, ProductImage } from '..';
-import { eq, asc, inArray, or } from 'drizzle-orm';
-
-// Types and Interfaces
-interface CompatibilityResult {
-    product: Product;
-    variants: ProductVariant[];
-    images: ProductImage[];
-}
+import { db } from '$lib/server/db';
+import { product, productVariant, productImage } from '$lib/server/db';
+import { eq, asc, inArray } from 'drizzle-orm';
+import type { Product, ProductVariant, ProductImage } from '$lib/server/db';
+import type { ProductViewModel } from '$lib/types/product';
+import { toProductViewModel } from '$lib/types/product';
+import { toCatalogueViewModel } from '$lib/types/catalogue';
 
 interface ProductWithRelations extends Product {
     variants: ProductVariant[];
     images: ProductImage[];
 }
 
-interface AccessoryData {
-    product: Product;
-    variants: ProductVariant[];
-    images: ProductImage[];
-}
-
-interface ProductDetails {
-    product: Product;
-    variants: ProductVariant[];
-    images: ProductImage[];
-    requiredAccessories: Record<string, CompatibilityResult[]>;
-    optionalAccessories: Record<string, CompatibilityResult[]>;
-    requiredAccessoryCategories: string[];
-    optionalAccessoryCategories: string[];
-}
-
-interface AttributesWithCompatibility {
-    compatibleWith?: {
-        keyboards?: string[] | string;
-        switches?: string[];
-        stemType?: string[];
-    };
-    compatibility?: {
-        switches?: string[];
-        requiredAccessories?: string[];
-    };
-    featureTags?: string[];
-}
-
 interface QueryResult {
     product: Product;
-    product_variant: ProductVariant | null;
-    product_image: ProductImage | null;
+    product_variant: ProductVariant[] | null;
+    product_image: ProductImage[] | null;
 }
 
-// Constants
-const REQUIRED_CATEGORIES = ['SWITCHES', 'KEYCAPS'] as const;
-const KEYBOARD_CATEGORY = 'KEYBOARD' as const;
+// Internal helper methods
+function groupResults(results: QueryResult[]): ProductWithRelations[] {
+    const productsMap = new Map<string, ProductWithRelations>();
 
-/**
- * Repository for handling product operations
- */
-export const productRepo = {
-    /**
-     * Get a product by its slug with variants and images
-     */
-    async getBySlug(slug: string): Promise<ProductWithRelations | null> {
-        const results = await db.select()
-            .from(product)
-            .where(eq(product.slug, slug))
-            .leftJoin(productVariant, eq(product.id, productVariant.productId))
-            .leftJoin(productImage, eq(product.id, productImage.productId))
-            .orderBy(asc(productImage.position));
-
-        if (results.length === 0) return null;
-
-        return this.transformQueryResults(results as QueryResult[]);
-    },
-
-    /**
-     * Transform flat query results into a nested structure
-     */
-    transformQueryResults(results: QueryResult[]): ProductWithRelations {
-        const productData: ProductWithRelations = {
-            ...results[0].product,
-            variants: [],
-            images: []
-        };
-
-        for (const row of results) {
-            const variant = row.product_variant;
-            if (variant && !productData.variants.some(v => v.id === variant.id)) {
-                productData.variants.push(variant);
-            }
-
-            const image = row.product_image;
-            if (image && !productData.images.some(i => i.id === image.id)) {
-                productData.images.push(image);
-            }
+    for (const row of results) {
+        if (!productsMap.has(row.product.id)) {
+            productsMap.set(row.product.id, {
+                ...row.product,
+                variants: [],
+                images: []
+            });
         }
 
-        return productData;
-    },
+        const productData = productsMap.get(row.product.id)!;
 
-    /**
-     * Get all products with optional category filter
-     */
-    async getProducts(category?: string): Promise<Product[]> {
-        const query = db.select().from(product);
-
-        if (category) {
-            return await query
-                .where(
-                    or(
-                        eq(product.category, category.toUpperCase()),
-                        eq(product.category, category.toLowerCase()),
-                        eq(product.category, category)
-                    )
-                )
-                .orderBy(asc(product.name));
+        // Add all variants
+        if (Array.isArray(row.product_variant)) {
+            row.product_variant.forEach(variant => {
+                if (!productData.variants.some(v => v.id === variant.id)) {
+                    productData.variants.push(variant);
+                }
+            });
         }
 
-        return await query.orderBy(asc(product.name));
-    },
+        // Add all images
+        if (Array.isArray(row.product_image)) {
+            row.product_image.forEach(image => {
+                if (!productData.images.some(i => i.id === image.id)) {
+                    productData.images.push(image);
+                }
+            });
+        }
+    }
 
-    /**
-     * Get variants for products
-     */
-    async getVariantsForProducts(productIds: string[]): Promise<ProductVariant[]> {
-        if (productIds.length === 0) return [];
+    // Ensure all products have variants and images arrays
+    return Array.from(productsMap.values()).map(product => ({
+        ...product,
+        variants: product.variants || [],
+        images: product.images || []
+    }));
+}
 
-        return await db.select()
+async function queryProducts(options: {
+    where?: ReturnType<typeof eq>;
+    orderBy?: ReturnType<typeof asc>;
+    limit?: number;
+    offset?: number;
+} = {}): Promise<QueryResult[]> {
+    // First, get the products
+    const query = db.select({
+        product: {
+            id: product.id,
+            name: product.name,
+            category: product.category,
+            slug: product.slug,
+            isAccessory: product.isAccessory,
+            description: product.description,
+            features: product.features,
+            specifications: product.specifications,
+            createdAt: product.createdAt,
+            updatedAt: product.updatedAt
+        }
+    })
+        .from(product)
+        .limit(options.limit ?? 50)
+        .offset(options.offset ?? 0);
+
+    if (options.where) {
+        query.where(options.where);
+    }
+
+    if (options.orderBy) {
+        query.orderBy(options.orderBy);
+    }
+
+    const results = await query;
+
+    // Then, get variants and images separately
+    const productIds = results.map(r => r.product.id);
+
+    const [variants, images] = await Promise.all([
+        db.select({
+            id: productVariant.id,
+            productId: productVariant.productId,
+            name: productVariant.name,
+            sku: productVariant.sku,
+            price: productVariant.price,
+            stockQuantity: productVariant.stockQuantity,
+            attributes: productVariant.attributes
+        })
             .from(productVariant)
-            .where(inArray(productVariant.productId, productIds));
-    },
+            .where(inArray(productVariant.productId, productIds)),
 
-    /**
-     * Get images for products
-     */
-    async getImagesForProducts(productIds: string[]): Promise<ProductImage[]> {
-        if (productIds.length === 0) return [];
-
-        return await db.select()
+        db.select({
+            id: productImage.id,
+            productId: productImage.productId,
+            url: productImage.url,
+            alt: productImage.alt,
+            position: productImage.position
+        })
             .from(productImage)
             .where(inArray(productImage.productId, productIds))
-            .orderBy(asc(productImage.position));
-    },
+            .orderBy(asc(productImage.position))
+    ]);
 
+    // Combine the results
+    return results.map(result => ({
+        product: result.product,
+        product_variant: variants.filter(v => v.productId === result.product.id),
+        product_image: images.filter(i => i.productId === result.product.id)
+    }));
+}
+
+async function getBySlug(slug: string): Promise<ProductWithRelations | null> {
+    const results = await queryProducts({
+        where: eq(product.slug, slug)
+    });
+
+    if (results.length === 0) return null;
+    return groupResults(results)[0];
+}
+
+const CATEGORY_PRIORITIES = {
+    KEYBOARD: 0,
+    SWITCH: 1,
+    KEYCAP: 2,
+    CASE: 3,
+    // Add other categories with their priorities
+} as const;
+
+// Public API
+export const productRepo = {
     /**
-     * Get complete product details with pre-filtered compatible accessories
+     * Get all products, optionally filtered by category with pagination
+     * @param category - Optional category to filter products by
+     * @param page - Page number (1-based)
+     * @param pageSize - Number of items per page
+     * @returns Object containing products and total count
      */
-    async getCompleteProductDetails(slug: string): Promise<ProductDetails | null> {
-        // 1. Get the main product with its variants and images
-        const mainProduct = await this.getBySlug(slug);
-        if (!mainProduct) return null;
+    async getProducts(category?: string, page: number = 1, pageSize: number = 50): Promise<{
+        products: ProductViewModel[];
+        total: number;
+    }> {
+        const startTime = performance.now();
+        const offset = (page - 1) * pageSize;
 
-        // Return early if not a keyboard
-        if (mainProduct.category !== KEYBOARD_CATEGORY) {
-            return this.createBaseProductDetails(mainProduct);
-        }
+        console.log(`[ProductRepo] Starting getProducts query for category: ${category || 'all'}, page: ${page}`);
 
-        // 2. Get all accessories with their variants and images in one query
-        const accessories = await this.getAccessoriesWithRelations();
-
-        // Process and organize accessories
-        const { required, optional } = this.organizeAccessories(accessories, mainProduct);
-
-        return {
-            ...this.createBaseProductDetails(mainProduct),
-            ...required,
-            ...optional
-        };
-    },
-
-    /**
-     * Create base product details without accessories
-     */
-    createBaseProductDetails(product: ProductWithRelations): ProductDetails {
-        return {
-            product,
-            variants: product.variants,
-            images: product.images,
-            requiredAccessories: {},
-            optionalAccessories: {},
-            requiredAccessoryCategories: [],
-            optionalAccessoryCategories: []
-        };
-    },
-
-    /**
-     * Get all accessories with their relations in a single query
-     */
-    async getAccessoriesWithRelations(): Promise<AccessoryData[]> {
-        const query = db.select({
-            product: product,
-            product_variant: productVariant,
-            product_image: productImage
-        })
-            .from(product)
-            .where(eq(product.isAccessory, true))
-            .leftJoin(productVariant, eq(product.id, productVariant.productId))
-            .leftJoin(productImage, eq(product.id, productImage.productId))
-            .orderBy(asc(productImage.position));
-
-        const results = await query;
-        return this.processAccessoryResults(results as QueryResult[]);
-    },
-
-    /**
-     * Process flat accessory results into structured data
-     */
-    processAccessoryResults(results: QueryResult[]): AccessoryData[] {
-        const accessoryMap = new Map<string, AccessoryData>();
-
-        for (const row of results) {
-            if (!row.product) continue;
-
-            if (!accessoryMap.has(row.product.id)) {
-                accessoryMap.set(row.product.id, {
-                    product: row.product,
-                    variants: [],
-                    images: []
-                });
-            }
-
-            const accessoryData = accessoryMap.get(row.product.id)!;
-            const variant = row.product_variant;
-            const image = row.product_image;
-
-            if (variant && !accessoryData.variants.some(v => v.id === variant.id)) {
-                accessoryData.variants.push(variant);
-            }
-
-            if (image && !accessoryData.images.some(i => i.id === image.id)) {
-                accessoryData.images.push(image);
-            }
-        }
-
-        return Array.from(accessoryMap.values());
-    },
-
-    /**
-     * Organize accessories into required and optional categories
-     */
-    organizeAccessories(accessories: AccessoryData[], mainProduct: ProductWithRelations): {
-        required: Pick<ProductDetails, 'requiredAccessories' | 'requiredAccessoryCategories'>,
-        optional: Pick<ProductDetails, 'optionalAccessories' | 'optionalAccessoryCategories'>
-    } {
-        const requiredAccessories: Record<string, CompatibilityResult[]> = {};
-        const optionalAccessories: Record<string, CompatibilityResult[]> = {};
-        const optionalCategories = new Set<string>();
-
-        for (const accessory of accessories) {
-            if (!accessory.product.category) continue;
-
-            const category = accessory.product.category.toUpperCase();
-
-            if (!this.checkCompatibility(accessory.variants, category, mainProduct.name.toLowerCase())) {
-                continue;
-            }
-
-            const result: CompatibilityResult = {
-                product: accessory.product,
-                variants: accessory.variants,
-                images: accessory.images
-            };
-
-            if (REQUIRED_CATEGORIES.includes(category as typeof REQUIRED_CATEGORIES[number])) {
-                requiredAccessories[category] = requiredAccessories[category] || [];
-                requiredAccessories[category].push(result);
-            } else {
-                optionalAccessories[category] = optionalAccessories[category] || [];
-                optionalAccessories[category].push(result);
-                optionalCategories.add(category);
-            }
-        }
-
-        return {
-            required: {
-                requiredAccessories,
-                requiredAccessoryCategories: [...REQUIRED_CATEGORIES]
-            },
-            optional: {
-                optionalAccessories,
-                optionalAccessoryCategories: Array.from(optionalCategories)
-            }
-        };
-    },
-
-    /**
-     * Check compatibility between an accessory and a keyboard
-     */
-    checkCompatibility(
-        variants: ProductVariant[],
-        category: string,
-        keyboardName: string
-    ): boolean {
-        if (variants.length === 0) return false;
-
-        return variants.some(variant => {
-            if (!variant.attributes) return false;
-
-            try {
-                const attributes = variant.attributes as AttributesWithCompatibility;
-                const { compatibleWith } = attributes;
-                if (!compatibleWith) return false;
-
-                switch (category) {
-                    case 'SWITCHES':
-                    case 'KEYCAPS':
-                        return this.checkSwitchKeycapCompatibility(compatibleWith);
-                    case 'CASE':
-                        return this.checkCaseCompatibility(compatibleWith, keyboardName);
-                    default:
-                        return true;
-                }
-            } catch (error) {
-                console.error(`Error checking compatibility for variant ${variant.id}:`, error);
-                return false;
-            }
+        const results = await queryProducts({
+            where: category ? eq(product.category, category.toUpperCase()) : undefined,
+            orderBy: asc(product.name),
+            limit: pageSize,
+            offset
         });
+
+        const queryTime = performance.now();
+        console.log(`[ProductRepo] Database query completed in ${(queryTime - startTime).toFixed(2)}ms`);
+
+        const total = results.length;
+        const products = groupResults(results);
+        const viewModels = products.map(product => toProductViewModel(product, product.variants, product.images));
+
+        const endTime = performance.now();
+        console.log(`[ProductRepo] getProducts completed in ${(endTime - startTime).toFixed(2)}ms`);
+        console.log(`[ProductRepo] Processed ${total} products`);
+
+        return {
+            products: viewModels,
+            total
+        };
     },
 
     /**
-     * Check compatibility for switches and keycaps
+     * Get all products grouped by category with pagination
+     * @param page - Page number (1-based)
+     * @param pageSize - Number of items per page
+     * @returns Catalogue view model with products grouped by category
      */
-    checkSwitchKeycapCompatibility(compatibleWith: AttributesWithCompatibility['compatibleWith']): boolean {
-        return Boolean(compatibleWith?.stemType?.length);
+    async getCatalogue(page: number = 1, pageSize: number = 50): Promise<ReturnType<typeof toCatalogueViewModel>> {
+        const startTime = performance.now();
+        console.log(`[ProductRepo] Starting getCatalogue for page: ${page}`);
+
+        const { products, total } = await this.getProducts(undefined, page, pageSize);
+
+        const productGroups = products.reduce((acc, product) => {
+            const category = product.category || 'Uncategorized';
+            if (!acc[category]) {
+                acc[category] = [];
+            }
+            acc[category].push(product);
+            return acc;
+        }, {} as Record<string, ProductViewModel[]>);
+
+        const sortedGroups = Object.entries(productGroups)
+            .sort(([a], [b]) => {
+                const priorityA = CATEGORY_PRIORITIES[a.toUpperCase() as keyof typeof CATEGORY_PRIORITIES] ?? Number.MAX_SAFE_INTEGER;
+                const priorityB = CATEGORY_PRIORITIES[b.toUpperCase() as keyof typeof CATEGORY_PRIORITIES] ?? Number.MAX_SAFE_INTEGER;
+                if (priorityA !== priorityB) return priorityA - priorityB;
+                return a.localeCompare(b);
+            })
+            .map(([category, products]) => ({ category, products }));
+
+        const endTime = performance.now();
+        console.log(`[ProductRepo] getCatalogue completed in ${(endTime - startTime).toFixed(2)}ms`);
+        console.log(`[ProductRepo] Grouped into ${sortedGroups.length} categories`);
+
+        return toCatalogueViewModel(sortedGroups, total);
     },
 
     /**
-     * Check compatibility for cases
+     * Get product details with variants
+     * @param slug - The product's URL slug
+     * @returns Object containing the product view model and default variant ID
+     * @throws Error if product not found
      */
-    checkCaseCompatibility(
-        compatibleWith: AttributesWithCompatibility['compatibleWith'],
-        keyboardName: string
-    ): boolean {
-        const keyboards = Array.isArray(compatibleWith?.keyboards)
-            ? compatibleWith.keyboards.map(k => k.toLowerCase())
-            : typeof compatibleWith?.keyboards === 'string'
-                ? [compatibleWith.keyboards.toLowerCase()]
-                : [];
+    async getProduct(slug: string): Promise<{
+        product: ProductViewModel;
+        defaultVariantId: string | null;
+    }> {
+        const productWithRelations = await getBySlug(slug);
+        if (!productWithRelations) {
+            throw new Error('Product not found');
+        }
 
-        return keyboards.length === 0 || keyboards.includes(keyboardName);
+        const productViewModel = toProductViewModel(
+            productWithRelations,
+            productWithRelations.variants,
+            productWithRelations.images
+        );
+
+        const defaultVariantId = productWithRelations.variants.length > 0
+            ? productWithRelations.variants[0].id
+            : null;
+
+        return {
+            product: productViewModel,
+            defaultVariantId
+        };
+    },
+
+    /**
+     * Get products by category
+     * @param category - The product category to filter by
+     * @returns Array of products in the specified category
+     */
+    async getProductsByCategory(category: string): Promise<ProductViewModel[]> {
+        const results = await queryProducts({
+            where: eq(product.category, category)
+        });
+
+        // Group results by product to get variants and images
+        const groupedResults = groupResults(results);
+
+        // Ensure each product has variants and images arrays
+        const productsWithRelations = groupedResults.map(result => ({
+            ...result,
+            variants: result.variants || [],
+            images: result.images || []
+        }));
+
+        return productsWithRelations.map(result => toProductViewModel(
+            result,
+            result.variants,
+            result.images
+        ));
     }
 }; 

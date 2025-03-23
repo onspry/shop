@@ -69,5 +69,8 @@
     "included": "Included",
     "notIncluded": "Not Included",
     "total": "Total",
-    "addToCart": "Add to Cart"
+    "addToCart": "Add to Cart",
+	"nav_back": "Back",
+	"nav_next": "Next",
+	"nav_complete": "Complete"
 }

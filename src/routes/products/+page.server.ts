@@ -1,45 +1,19 @@
+import { productRepo } from '$lib/server/db/repositories/productRepo';
 import type { PageServerLoad } from './$types';
-import { db } from '$lib/server/db';
-import { product, productVariant, productImage } from '$lib/server/db';
-import type { Product, ProductVariant, ProductImage } from '$lib/server/db';
-import { eq, asc } from 'drizzle-orm';
 
-type ProductWithRelations = Product & {
-    variants: ProductVariant[];
-    images: ProductImage[];
-};
+export const load: PageServerLoad = async ({ url }) => {
+    const startTime = performance.now();
 
-export const load: PageServerLoad = async () => {
-    const allProducts = await db.select()
-        .from(product)
-        .leftJoin(productVariant, eq(product.id, productVariant.productId))
-        .leftJoin(productImage, eq(product.id, productImage.productId))
-        .orderBy(asc(productImage.position));
+    const page = Number(url.searchParams.get('page')) || 1;
+    const pageSize = Number(url.searchParams.get('pageSize')) || 50;
 
-    // Transform the flat results into a nested structure
-    const productsMap = new Map<string, ProductWithRelations>();
+    console.log(`[Products Page] Starting load for page ${page}, size ${pageSize}`);
 
-    for (const row of allProducts) {
-        if (!productsMap.has(row.product.id)) {
-            productsMap.set(row.product.id, {
-                ...row.product,
-                variants: [],
-                images: []
-            });
-        }
+    const catalogue = await productRepo.getCatalogue(page, pageSize);
 
-        const productData = productsMap.get(row.product.id)!;
+    const endTime = performance.now();
+    console.log(`[Products Page] Load completed in ${(endTime - startTime).toFixed(2)}ms`);
+    console.log(`[Products Page] Loaded ${catalogue.totalProducts} products in ${catalogue.productGroups.length} categories`);
 
-        if (row.product_variant && !productData.variants.some(v => v.id === row.product_variant?.id)) {
-            productData.variants.push(row.product_variant);
-        }
-
-        if (row.product_image && !productData.images.some(i => i.id === row.product_image?.id)) {
-            productData.images.push(row.product_image);
-        }
-    }
-
-    return {
-        products: Array.from(productsMap.values())
-    };
+    return { catalogue };
 }; 

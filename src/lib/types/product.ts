@@ -10,6 +10,10 @@ export interface ProductViewModel {
     specifications: Record<string, string>;
     images: ProductImageViewModel[];
     variants: ProductVariantViewModel[];
+    isAccessory: boolean;
+    slug: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 // ViewModel for product images
@@ -23,11 +27,25 @@ export interface ProductImageViewModel {
 // ViewModel for product variants with stock status
 export interface ProductVariantViewModel {
     id: string;
-    name: string;
     sku: string;
+    name: string;
     price: number;
-    attributes: Record<string, string>;
+    stock_quantity: number;
+    attributes: Record<string, unknown>;
     stockStatus: 'in_stock' | 'low_stock' | 'out_of_stock';
+}
+
+// Helper function to transform variant to ViewModel
+export function toProductVariantViewModel(variant: ProductVariant): ProductVariantViewModel {
+    return {
+        id: variant.id,
+        name: variant.name,
+        sku: variant.sku,
+        price: variant.price,
+        stock_quantity: variant.stockQuantity,
+        attributes: variant.attributes || {},
+        stockStatus: getStockStatus(variant.stockQuantity)
+    };
 }
 
 // Helper function to transform internal product to ViewModel
@@ -45,14 +63,11 @@ export function toProductViewModel(product: Product, variants: ProductVariant[],
             alt: img.alt,
             position: img.position
         })),
-        variants: variants.map(variant => ({
-            id: variant.id,
-            name: variant.name,
-            sku: variant.sku,
-            price: variant.price,
-            attributes: variant.attributes || {},
-            stockStatus: getStockStatus(variant.stockQuantity)
-        }))
+        variants: variants.map(toProductVariantViewModel),
+        isAccessory: product.isAccessory,
+        slug: product.slug,
+        createdAt: product.createdAt,
+        updatedAt: product.updatedAt
     };
 }
 

@@ -15,6 +15,13 @@
 		});
 	</script>
 	%sveltekit.head%
+	<script>
+		// Set initial theme before page renders to prevent flickering
+		const storedTheme = localStorage.getItem('theme');
+		const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+		const initialTheme = storedTheme || (systemPrefersDark ? 'dark' : 'light');
+		document.documentElement.classList.toggle('dark', initialTheme === 'dark');
+	</script>
 </head>
 
 <body data-sveltekit-preload-data="hover" class="app-body">

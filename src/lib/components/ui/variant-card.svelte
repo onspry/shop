@@ -2,12 +2,14 @@
 	import type { ProductVariantViewModel } from '$lib/types/product';
 	import { Card } from '$lib/components/ui/card';
 	import * as m from '$lib/paraglide/messages/en.js';
+	import { formatPrice } from '$lib/utils/price';
 
-	let { variant, isSelected, onClick, showPrice } = $props<{
+	let { variant, isSelected, onClick, showPrice, disabled } = $props<{
 		variant: ProductVariantViewModel;
 		isSelected: boolean;
 		onClick: () => void;
 		showPrice?: boolean;
+		disabled?: boolean;
 	}>();
 
 	// Helper function to get variant attribute value
@@ -19,9 +21,6 @@
 			return '';
 		}
 	};
-
-	// Format price for display
-	const formattedPrice = $derived((Number(variant.price) / 100).toFixed(2));
 
 	// Get variant type and color for switches
 	const switchType = $derived(
@@ -80,7 +79,7 @@
 <Card
 	class={`relative rounded-lg border p-4 transition-all ${
 		isSelected ? 'border-primary bg-primary/5 shadow-md' : 'border-muted hover:border-primary/50'
-	} ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+	} ${isOutOfStock || disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
 	onclick={handleClick}
 >
 	<div class="flex flex-col h-full">
@@ -152,7 +151,7 @@
 		<!-- Variant Price -->
 		{#if showPrice !== false}
 			<div class="flex justify-between items-center text-sm mb-2">
-				<span class="font-bold">${formattedPrice}</span>
+				<span class="font-bold">{formatPrice(Number(variant.price))}</span>
 			</div>
 		{/if}
 

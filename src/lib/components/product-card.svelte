@@ -1,39 +1,50 @@
 <!-- ProductCard.svelte -->
 <script lang="ts">
-	import type { Product, ProductImage, ProductVariant } from '$lib/server/db/schema';
+	import type { ProductViewModel, ProductVariantViewModel } from '$lib/types/product';
 	import {
 		product_starting_at,
 		product_view_details,
 		product_accessory
 	} from '$lib/paraglide/messages';
+	import { formatPrice } from '$lib/utils/price';
 
-	let { product, variants, images } = $props<{
-		product: Product;
-		variants: ProductVariant[];
-		images: ProductImage[];
+	let { product } = $props<{
+		product: ProductViewModel;
 	}>();
 
 	const basePrice = $derived(
-		variants.length > 0 ? Math.min(...variants.map((v: ProductVariant) => Number(v.price))) : 0
+		product.variants.length > 0
+			? Math.min(...product.variants.map((v: ProductVariantViewModel) => Number(v.price)))
+			: 0
 	);
 
-	const hasMultipleVariants = $derived(variants.length > 1);
+	const hasMultipleVariants = $derived(product.variants.length > 1);
+
+	// Handle image error by replacing with fallback
+	function handleImageError(event: Event) {
+		const img = event.target as HTMLImageElement;
+		img.src = '/placeholder.png';
+		img.alt = 'Product placeholder';
+	}
 </script>
 
 <div
 	class="group relative bg-background rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
 >
 	<div class="relative h-48 overflow-hidden">
-		{#if images.length > 0}
+		{#if product.images.length > 0}
 			<img
-				src={images[0].url}
-				alt={images[0].alt}
+				src={product.images[0].url}
+				alt={product.images[0].alt}
 				class="w-full h-full object-contain object-center group-hover:scale-105 transition-transform duration-300"
+				onerror={handleImageError}
 			/>
 		{:else}
-			<div class="w-full h-full flex items-center justify-center bg-muted">
-				<span class="text-muted-foreground text-sm">No image available</span>
-			</div>
+			<img
+				src="/placeholder.png"
+				alt="Product placeholder"
+				class="w-full h-full object-contain object-center"
+			/>
 		{/if}
 	</div>
 
@@ -50,7 +61,7 @@
 
 		<div class="flex items-baseline mb-2">
 			<span class="text-xl font-bold text-foreground">
-				${basePrice.toFixed(2)}
+				{formatPrice(basePrice)}
 			</span>
 			{#if hasMultipleVariants}
 				<span class="ml-2 text-sm text-muted-foreground">
