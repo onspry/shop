@@ -13,6 +13,7 @@
 	import { ProductCompatibilityService } from '$lib/utils/product-compatibility';
 	import { browser } from '$app/environment';
 	import { goto, pushState } from '$app/navigation';
+	import { page } from '$app/stores';
 
 	// Props
 	let {
@@ -54,6 +55,16 @@
 	let compatibleKeycaps = $state<ProductVariantViewModel[]>([]);
 	let selectedKeycap = $state<ProductVariantViewModel | null>(null);
 	let selectionState = $state<SelectionStateType>({ state: 'initial' });
+
+	// Get initial selections from URL parameters
+	const urlVariantId = $page.url.searchParams.get('variant');
+	const urlSwitchId = $page.url.searchParams.get('switch');
+	const urlKeycapId = $page.url.searchParams.get('keycap');
+
+	// Initialize state with URL values if they exist
+	currentVariantId = urlVariantId || null;
+	currentSwitchId = urlSwitchId || null;
+	currentKeycapId = urlKeycapId || null;
 
 	// Update derived values
 	$effect(() => {
@@ -194,13 +205,6 @@
 			isLoading = false;
 		}
 	}
-
-	// Initialize default variant
-	$effect(() => {
-		if (!currentVariantId && variants?.length > 0) {
-			selectVariant(variants[0].id);
-		}
-	});
 
 	// Handle browser back/forward
 	if (browser) {

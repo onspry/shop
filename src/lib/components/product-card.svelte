@@ -29,7 +29,7 @@
 </script>
 
 <div
-	class="group relative bg-background rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
+	class="group relative bg-background border border-border rounded-lg overflow-hidden transition-all duration-300 hover:border-primary hover:shadow-lg"
 >
 	<div class="relative h-48 overflow-hidden">
 		{#if product.images.length > 0}
