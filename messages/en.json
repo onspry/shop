@@ -75,5 +75,17 @@
     "addToCart": "Add to Cart",
 	"nav_back": "Back",
 	"nav_next": "Next",
-	"nav_complete": "Complete"
+	"nav_complete": "Complete",
+	
+	"cart_empty": "Your cart is empty",
+	"cart_continue_shopping": "Continue Shopping",
+	"cart_subtotal": "Subtotal",
+	"cart_discount": "Discount",
+	"cart_total": "Total",
+	"cart_checkout": "Checkout",
+	"cart_update": "Update",
+	"cart_remove": "Remove",
+	"cart_apply_discount": "Apply Discount",
+	"cart_discount_placeholder": "Discount code",
+	"cart_item_count": "{count, plural, one {# item} other {# items}}"
 }

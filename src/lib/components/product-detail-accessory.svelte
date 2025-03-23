@@ -10,6 +10,8 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import VariantCard from '$lib/components/ui/variant-card.svelte';
 	import { formatPrice } from '$lib/utils/price';
+	import { cartActions } from '$lib/stores/cart';
+	import { ShoppingCart, Check } from 'lucide-svelte';
 
 	let { product, variants, images } = $props<{
 		product: ProductViewModel;
@@ -47,11 +49,31 @@
 		selectedVariantId = variantId;
 	}
 
-	// Add to cart function
-	function addToCart() {
-		if (!selectedVariant) return;
-		// Implementation would depend on your cart store/system
-		alert(`Added ${selectedVariant.name} to cart`);
+	// Add new state for cart operations
+	let quantity = $state(1);
+	let isAddingToCart = $state(false);
+	let addedToCart = $state(false);
+
+	// Add a new function to handle adding to cart
+	async function addToCart() {
+		if (!selectedVariant || isAddingToCart) return;
+
+		isAddingToCart = true;
+
+		const success = await cartActions.addToCart({
+			productVariantId: selectedVariant.id,
+			quantity
+		});
+
+		if (success) {
+			addedToCart = true;
+			// Reset the success message after 3 seconds
+			setTimeout(() => {
+				addedToCart = false;
+			}, 3000);
+		}
+
+		isAddingToCart = false;
 	}
 
 	// Image handling functions
@@ -208,16 +230,71 @@
 					{/if}
 				</div>
 
-				<div class="pt-4">
-					<Button
-						onclick={addToCart}
-						class="w-full"
-						disabled={!canAddToCart}
-						aria-label={canAddToCart ? m.product_add_to_cart() : m.product_out_of_stock()}
-					>
-						{canAddToCart ? m.product_add_to_cart() : m.product_out_of_stock()}
-					</Button>
-				</div>
+				<!-- Add to cart form -->
+				<form method="POST" action="?/addItem">
+					<input type="hidden" name="productVariantId" value={selectedVariant?.id} />
+					<div class="space-y-4 mt-6">
+						<!-- Quantity selector -->
+						<div class="flex items-center gap-3">
+							<span class="text-sm font-medium">{m.product_quantity()}</span>
+							<div class="flex items-center">
+								<button
+									type="button"
+									onclick={() => quantity > 1 && (quantity -= 1)}
+									class="px-2 py-1 border border-border rounded-l-md bg-card hover:bg-muted transition-colors"
+									disabled={quantity <= 1}
+									aria-label="Decrease quantity"
+								>
+									-
+								</button>
+								<span class="px-4 py-1 border-y border-border bg-background text-center w-12">
+									{quantity}
+								</span>
+								<input type="hidden" name="quantity" value={quantity} />
+								<button
+									type="button"
+									onclick={() => (quantity += 1)}
+									class="px-2 py-1 border border-border rounded-r-md bg-card hover:bg-muted transition-colors"
+									aria-label="Increase quantity"
+								>
+									+
+								</button>
+							</div>
+						</div>
+
+						<!-- Total price -->
+						<div class="flex justify-between items-center">
+							<span class="text-sm font-medium">{m.product_total()}</span>
+							<span class="text-xl font-bold">
+								{selectedVariant ? formatPrice(selectedVariant.price * quantity) : '--'}
+							</span>
+						</div>
+
+						<!-- Add to cart button -->
+						<button
+							type="submit"
+							disabled={!selectedVariant ||
+								isAddingToCart ||
+								selectedVariant.stockStatus === 'out_of_stock'}
+							class="w-full mt-6 py-3 px-6 flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+						>
+							{#if isAddingToCart}
+								<span
+									class="h-5 w-5 block animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"
+								></span>
+								<span>Adding...</span>
+							{:else if addedToCart}
+								<Check class="h-5 w-5" />
+								<span>Added to Cart</span>
+							{:else if selectedVariant?.stockStatus === 'out_of_stock'}
+								<span>{m.product_out_of_stock()}</span>
+							{:else}
+								<ShoppingCart class="h-5 w-5" />
+								<span>{m.addToCart()}</span>
+							{/if}
+						</button>
+					</div>
+				</form>
 
 				{#if product.features?.length > 0}
 					<div class="space-y-2">

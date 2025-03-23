@@ -1,4 +1,4 @@
-import { productRepo } from '$lib/server/db/repositories/productRepo';
+import { productRepo } from '$lib/server/db/repositories/product';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ url }) => {

@@ -8,6 +8,9 @@ import * as userSchema from './schema/user';
 import * as productSchema from './schema/product';
 import * as productVariantSchema from './schema/product_variant';
 import * as productImageSchema from './schema/product_image';
+import * as cartSchema from './schema/cart';
+import * as cartItemSchema from './schema/cart_item';
+import * as discountSchema from './schema/discount';
 
 if (!env.DATABASE_URL) throw new Error('DATABASE_URL is not set');
 if (!dev && !env.DATABASE_AUTH_TOKEN) throw new Error('DATABASE_AUTH_TOKEN is not set');
@@ -19,13 +22,19 @@ const schema = {
 	...userSchema,
 	...productSchema,
 	...productVariantSchema,
-	...productImageSchema
+	...productImageSchema,
+	...cartSchema,
+	...cartItemSchema,
+	...discountSchema
 };
 
 export const db = drizzle(client, { schema });
 
-// Re-export all schemas
+// Re-export schema tables to ensure proper access and relation resolution
 export * from './schema/user';
 export * from './schema/product';
 export * from './schema/product_variant';
 export * from './schema/product_image';
+export * from './schema/cart';
+export * from './schema/cart_item';
+export * from './schema/discount';

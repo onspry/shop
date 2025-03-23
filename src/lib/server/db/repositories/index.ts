@@ -1,1 +1,1 @@
-export { productRepo } from './productRepo'; 
+export { productRepo } from './product'; 
