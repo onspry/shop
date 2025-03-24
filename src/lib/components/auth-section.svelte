@@ -2,7 +2,6 @@
 	import * as m from '$lib/paraglide/messages.js';
 	import { userStore, authStore } from '$lib/stores/auth';
 	import { Button } from '$lib/components/ui/button';
-	import type { User } from '$lib/server/db/schema';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { User as UserIcon, Settings, Package, LogOut } from 'lucide-svelte';
@@ -17,7 +16,7 @@
 		</div>
 	{:else if $authStore.user}
 		<DropdownMenu.Root>
-			<DropdownMenu.Trigger>
+			<DropdownMenu.Trigger class="focus:outline-none focus-visible:ring-0">
 				<Avatar.Root>
 					<Avatar.Image src={$authStore.user.image ?? ''} alt={$authStore.user.firstname ?? ''} />
 					<Avatar.Fallback>{$authStore.user.firstname?.[0]?.toUpperCase() ?? 'U'}</Avatar.Fallback>
@@ -51,3 +50,16 @@
 		</Button>
 	{/if}
 </div>
+
+<style>
+	/* Override any focus styles from the dropdown menu trigger */
+	:global(.dropdown-menu-trigger) {
+		outline: none !important;
+		box-shadow: none !important;
+	}
+
+	:global(.dropdown-menu-trigger:focus-visible) {
+		outline: none !important;
+		box-shadow: none !important;
+	}
+</style>
