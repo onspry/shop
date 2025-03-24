@@ -78,7 +78,10 @@
 	"nav_complete": "Complete",
 	
 	"cart_empty": "Your cart is empty",
+	"cart_empty_title": "Your cart is empty",
+	"cart_empty_message": "Add items to your cart to continue shopping",
 	"cart_continue_shopping": "Continue Shopping",
+	"cart_browse_products": "Browse Products",
 	"cart_subtotal": "Subtotal",
 	"cart_discount": "Discount",
 	"cart_total": "Total",
@@ -86,6 +89,21 @@
 	"cart_update": "Update",
 	"cart_remove": "Remove",
 	"cart_apply_discount": "Apply Discount",
+	"cart_discount_apply": "Apply",
+	"cart_discount_remove": "Remove",
 	"cart_discount_placeholder": "Discount code",
-	"cart_item_count": "{count, plural, one {# item} other {# items}}"
+	"cart_discount_code_required": "Please enter a discount code",
+	"cart_discount_invalid": "Invalid discount code",
+	"cart_discount_applied": "Discount applied: {code}",
+	"cart_item_count": "{count, plural, one {# item} other {# items}}",
+	"cart_your_cart": "Your Cart",
+	"cart_title": "Shopping Cart",
+	"cart_summary": "Order Summary",
+	"cart_checkout_terms": "By checking out, you agree to our terms and conditions",
+	"cart_sync_now": "Sync Now",
+	"cart_mismatch_message": "We detected a mismatch between your cart data. The cart has been reset.",
+	"cart_refresh_now": "Refresh now",
+	"cart_increase_quantity": "Increase quantity",
+	"cart_decrease_quantity": "Decrease quantity",
+	"loading": "Loading..."
 }

@@ -5,6 +5,7 @@ import { cartItem, type NewCartItem, type CartItem } from '$lib/server/db/schema
 import { productVariant, type ProductVariant } from '$lib/server/db/schema/product_variant';
 import { discount } from '$lib/server/db/schema/discount';
 import { nanoid } from 'nanoid';
+import type { CartViewModel, CartItemViewModel, CartSummaryViewModel } from '$lib/types/cart';
 
 // Define type for cart with items to avoid 'any'
 export type CartWithItems = Cart & {
@@ -12,6 +13,12 @@ export type CartWithItems = Cart & {
         productVariant: ProductVariant;
     })[];
 };
+
+// Define type for generic cart items for calculation purposes
+interface CartItemBase {
+    price: number;
+    quantity: number;
+}
 
 /**
  * Get a cart by session ID or create a new one
@@ -375,7 +382,11 @@ export async function removeDiscountFromCart(cartId: string): Promise<void> {
 /**
  * Calculate cart summary
  */
-export function calculateCartSummary(cartWithItems: CartWithItems | null) {
+export function calculateCartSummary(cartWithItems: {
+    items: CartItemBase[];
+    discountAmount?: number | null;
+    discountCode?: string | null;
+} | null) {
     // Type guards to ensure cart and items exist
     if (!cartWithItems || !cartWithItems.items) {
         return {
@@ -386,7 +397,7 @@ export function calculateCartSummary(cartWithItems: CartWithItems | null) {
         };
     }
 
-    const items = cartWithItems.items as unknown as CartItem[];
+    const items = cartWithItems.items;
     if (items.length === 0) {
         return {
             subtotal: 0,
@@ -397,14 +408,14 @@ export function calculateCartSummary(cartWithItems: CartWithItems | null) {
     }
 
     const subtotal = items.reduce(
-        (sum: number, item: CartItem) => sum + (item.price * item.quantity),
+        (sum: number, item: CartItemBase) => sum + (item.price * item.quantity),
         0
     );
 
     const discount = cartWithItems.discountAmount || 0;
     const total = Math.max(0, subtotal - discount);
     const itemCount = items.reduce(
-        (count: number, item: CartItem) => count + item.quantity,
+        (count: number, item: CartItemBase) => count + item.quantity,
         0
     );
 
@@ -483,5 +494,128 @@ export async function assignCartToUser(
                 updatedAt: sql`(unixepoch())`
             })
             .where(eq(cart.id, sessionCart.id));
+    }
+}
+
+/**
+ * Helper function to determine stock status
+ */
+function getStockStatus(quantity: number): 'in_stock' | 'low_stock' | 'out_of_stock' {
+    if (quantity <= 0) return 'out_of_stock';
+    if (quantity < 5) return 'low_stock';
+    return 'in_stock';
+}
+
+/**
+ * Get cart data as view model for the client
+ */
+export async function getCartViewModel(sessionId: string, userId?: string): Promise<CartViewModel> {
+    try {
+        // Get or create cart
+        const userCart = await getOrCreateCart(sessionId, userId);
+
+        // Get cart with items
+        const cartWithItems = await getCartWithItems(userCart.id);
+
+        if (!cartWithItems || !cartWithItems.items || !Array.isArray(cartWithItems.items)) {
+            // Return empty cart if no items found
+            return {
+                id: userCart.id,
+                items: [],
+                discountCode: userCart.discountCode,
+                discountAmount: 0,
+                subtotal: 0,
+                total: 0,
+                itemCount: 0
+            };
+        }
+
+        // Transform cart items for the view - filter out items without a valid productVariant
+        const cartItemsWithDetails = cartWithItems.items
+            .filter(item => item.productVariant != null)
+            .map((item): CartItemViewModel => {
+                // Safe to use non-null assertion as we've filtered out null/undefined variants
+                const variant = item.productVariant!;
+
+                return {
+                    id: item.id,
+                    quantity: item.quantity,
+                    price: item.price,
+                    productVariantId: item.productVariantId,
+                    variant: {
+                        id: variant.id,
+                        name: variant.name,
+                        price: variant.price,
+                        stock_quantity: variant.stockQuantity,
+                        attributes: variant.attributes || {},
+                        sku: variant.sku,
+                        stockStatus: getStockStatus(variant.stockQuantity)
+                    },
+                    product: {
+                        id: variant.productId,
+                        name: variant.name.split(' - ')[0], // Simple derivation of product name
+                        slug: '', // Not needed for cart display
+                        description: null
+                    }
+                };
+            });
+
+        // Calculate totals
+        const summary = calculateCartSummary(cartWithItems);
+
+        // Create the cart view model
+        return {
+            id: userCart.id,
+            items: cartItemsWithDetails,
+            discountCode: userCart.discountCode,
+            discountAmount: userCart.discountAmount || 0,
+            subtotal: summary.subtotal,
+            total: summary.total,
+            itemCount: summary.itemCount
+        };
+    } catch (error) {
+        console.error('Error getting cart view model:', error);
+        // Return empty cart in case of error
+        return {
+            id: '',
+            items: [],
+            discountCode: null,
+            discountAmount: 0,
+            subtotal: 0,
+            total: 0,
+            itemCount: 0
+        };
+    }
+}
+
+/**
+ * Get cart summary data as view model for the client
+ */
+export async function getCartSummaryViewModel(sessionId: string, userId?: string): Promise<CartSummaryViewModel> {
+    try {
+        // Get or create cart
+        const userCart = await getOrCreateCart(sessionId, userId);
+
+        // Get cart with items
+        const cartWithItems = await getCartWithItems(userCart.id);
+
+        // Calculate summary
+        const summary = calculateCartSummary(cartWithItems);
+
+        return {
+            subtotal: summary.subtotal,
+            discountAmount: userCart.discountAmount || 0,
+            total: summary.total,
+            itemCount: summary.itemCount
+        };
+    } catch (error) {
+        console.error('Error getting cart summary view model:', error);
+        // Return empty summary in case of error
+        return {
+            subtotal: 0,
+            discountAmount: 0,
+            total: 0,
+            itemCount: 0
+        };
     }
 } 

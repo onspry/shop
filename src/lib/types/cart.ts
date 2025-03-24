@@ -6,6 +6,12 @@ export interface CartItemViewModel {
     quantity: number;
     price: number;
     variant: ProductVariantViewModel;
+    product?: {
+        id: string;
+        name: string;
+        slug?: string;
+        description?: string | null;
+    };
 }
 
 export interface CartViewModel {
@@ -34,4 +40,11 @@ export interface RemoveCartItemPayload {
 
 export interface ApplyDiscountPayload {
     code: string;
+}
+
+export interface CartSummaryViewModel {
+    subtotal: number;
+    discountAmount: number;
+    total: number;
+    itemCount: number;
 } 

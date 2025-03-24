@@ -8,6 +8,9 @@
 @import '@fontsource/onest/700.css';
 @import '@fontsource/onest/300.css';
 
+/* Import custom toast styles */
+@import '$lib/styles/toast.css';
+
 /* Font loading strategy */
 html {
   visibility: hidden;

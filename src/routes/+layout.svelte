@@ -9,6 +9,7 @@
 	import { onMount } from 'svelte';
 	import { setUser } from '$lib/stores/auth';
 	import { theme } from '$lib/stores/theme';
+	import { Toaster } from '$lib/components/ui/sonner';
 
 	let { children, data } = $props();
 
@@ -48,4 +49,17 @@
 			</div>
 		</footer>
 	</div>
+
+	<Toaster
+		richColors
+		closeButton
+		toastOptions={{
+			classes: {
+				success: 'toast-success',
+				error: 'toast-error',
+				actionButton: 'toast-action'
+			},
+			duration: 4000
+		}}
+	/>
 </ParaglideJS>

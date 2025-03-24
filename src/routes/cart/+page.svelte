@@ -1,248 +1,219 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
-	import { cart, isLoading, updateCartFromPageData } from '$lib/stores/cart';
+	import {
+		cart,
+		isLoading,
+		updateCartFromPageData,
+		resetCartStore,
+		updateCartItem,
+		removeCartItem,
+		applyDiscount,
+		removeDiscount
+	} from '$lib/stores/cart';
 	import type { CartViewModel } from '$lib/types/cart';
-	import { cartActions } from '$lib/stores/cart';
 	import CartItem from '$lib/components/cart/cart-item.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { ShoppingCart, ArrowRight, Loader2 } from 'lucide-svelte';
 	import { formatPrice } from '$lib/utils/price';
-	import { invalidateAll } from '$app/navigation';
-	import {
-		cart_empty,
-		cart_continue_shopping,
-		cart_subtotal,
-		cart_discount,
-		cart_total,
-		cart_checkout,
-		cart_apply_discount,
-		cart_discount_placeholder
-	} from '$lib/paraglide/messages';
-
-	// Define the type directly since it's not exported
-	interface CartPageData {
-		cart: {
-			id: string;
-			discountCode: string | null;
-		} | null;
-		items: Array<{
-			id: string;
-			productVariantId: string;
-			quantity: number;
-			price: number;
-			variant: {
-				id: string;
-				name: string;
-				price: number;
-				stock_quantity: number;
-				attributes: Record<string, unknown>;
-				productId: string;
-				sku: string;
-				stockStatus: 'in_stock' | 'low_stock' | 'out_of_stock';
-			};
-			product: {
-				id: string;
-				name: string;
-				slug: string;
-				description: string | null;
-			} | null;
-		}>;
-		subtotal: number;
-		discountAmount: number;
-		total: number;
-		error?: string;
-	}
+	import { invalidateAll, goto } from '$app/navigation';
+	import { onMount } from 'svelte';
+	import * as m from '$lib/paraglide/messages';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 
 	// Use data from the server
 	let { data } = $props();
 
-	// State for loading states
-	let loadingDiscount = $state(false);
-	let pageLoading = $state(false);
-
-	// Combined loading state to disable all controls
-	const isAnyLoading = $derived($isLoading || loadingDiscount || pageLoading);
-
-	// Update cart store with page data and debugging info
-	$effect(() => {
-		try {
-			// Only update if we have valid data
-			if (data) {
-				updateCartFromPageData(data as CartPageData);
-			}
-		} catch (err) {
-			console.error('Error updating cart data:', err);
-		}
-	});
-
-	// State for discount code input
+	// Track loading state separate from global state
+	let isSubmitting = $state(false);
 	let discountCode = $state('');
 	let discountError = $state('');
 
+	// Local cart data from the server
+	let cartData = $state<CartViewModel | null>(null);
+
+	// Update cart data when server data changes
+	$effect(() => {
+		if (data?.cart) {
+			cartData = data.cart;
+			// Update the global cart store
+			updateCartFromPageData({ cart: data.cart });
+		} else {
+			cartData = null;
+			resetCartStore();
+		}
+
+		if (data?.error) {
+			console.error('Cart error:', data.error);
+		}
+	});
+
+	// Handle updating cart item quantity
+	async function handleQuantityChange(itemId: string, newQuantity: number) {
+		isSubmitting = true;
+		const result = await updateCartItem(itemId, newQuantity);
+		isSubmitting = false;
+
+		if (!result.success) {
+			console.error('Failed to update quantity:', result.error);
+		}
+	}
+
+	// Handle removing item from cart
+	async function handleRemoveItem(itemId: string) {
+		isSubmitting = true;
+		const result = await removeCartItem(itemId);
+		isSubmitting = false;
+
+		if (!result.success) {
+			console.error('Failed to remove item:', result.error);
+		}
+	}
+
+	// Handle applying discount code
 	async function handleApplyDiscount() {
-		if (!discountCode.trim()) {
-			discountError = 'Please enter a discount code';
+		if (!discountCode) {
+			discountError = m.cart_discount_code_required();
 			return;
 		}
 
-		loadingDiscount = true;
-		try {
-			const success = await cartActions.applyDiscount({ code: discountCode });
-			if (!success) {
-				discountError = 'Invalid discount code';
-			} else {
-				discountError = '';
-				discountCode = '';
-			}
-		} finally {
-			loadingDiscount = false;
+		discountError = '';
+		isSubmitting = true;
+		const result = await applyDiscount(discountCode);
+		isSubmitting = false;
+
+		if (!result.success) {
+			discountError = result.error || m.cart_discount_invalid();
 		}
 	}
 
+	// Handle removing discount code
 	async function handleRemoveDiscount() {
-		if (isAnyLoading) return;
+		isSubmitting = true;
+		const result = await removeDiscount();
+		isSubmitting = false;
 
-		loadingDiscount = true;
-		try {
-			await cartActions.removeDiscount();
-		} finally {
-			loadingDiscount = false;
+		if (!result.success) {
+			console.error('Failed to remove discount:', result.error);
+		} else {
+			discountCode = '';
 		}
 	}
 
-	// Safe access helper function
-	function getCartItems() {
-		return $cart.items || [];
-	}
-
-	// Function to get cart item count text
-	function getCartItemCountText(count: number): string {
-		return count === 1 ? `${count} item` : `${count} items`;
-	}
-
-	// Handle checkout button click with loading state
-	async function handleCheckout() {
-		pageLoading = true;
-		try {
-			// Redirect to checkout
-			window.location.href = '/checkout';
-		} finally {
-			// This will only run if the redirect fails
-			pageLoading = false;
-		}
+	// Handle checkout button click
+	function handleCheckout() {
+		goto('/checkout');
 	}
 </script>
 
-<div class="container py-10">
-	<h1 class="text-3xl font-bold mb-8">
-		<ShoppingCart class="inline-block mr-2 h-8 w-8" />
-		{getCartItemCountText($cart.itemCount || 0)}
-		{#if $isLoading}
-			<span class="ml-2 inline-block">
-				<Loader2 class="h-5 w-5 inline-block animate-spin text-muted-foreground" />
-			</span>
-		{/if}
-	</h1>
+<div class="min-h-[80vh]">
+	<h1 class="text-3xl font-bold mb-8">{m.cart_title()}</h1>
 
-	{#if !getCartItems().length}
-		<div class="text-center py-16 border rounded-lg bg-card">
-			<h2 class="text-xl font-medium mb-4">{cart_empty()}</h2>
-			<Button href="/products" variant="default" class="mt-4" disabled={isAnyLoading}>
-				{cart_continue_shopping()}
+	{#if $isLoading || isSubmitting}
+		<div class="w-full flex justify-center my-4">
+			<Loader2 size={24} class="animate-spin text-primary" aria-label={m.loading()} />
+		</div>
+	{/if}
+
+	{#if !cartData || !cartData.items || cartData.items.length === 0}
+		<div class="flex flex-col items-center justify-center py-12 px-4 border rounded-lg">
+			<ShoppingCart size={64} class="text-muted-foreground mb-4" />
+			<h2 class="text-xl font-medium mb-2">{m.cart_empty_title()}</h2>
+			<p class="text-muted-foreground mb-6 text-center">
+				{m.cart_empty_message()}
+			</p>
+			<Button href="/products">
+				{m.cart_browse_products()}
 			</Button>
 		</div>
 	{:else}
 		<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-			<!-- Cart items -->
+			<!-- Cart items list -->
 			<div class="md:col-span-2 space-y-4">
-				{#each getCartItems() as item (item.id)}
-					<CartItem {item} onUpdate={() => {}} />
+				{#each cartData.items as item (item.id)}
+					<CartItem
+						{item}
+						onQuantityChange={(quantity) => handleQuantityChange(item.id, quantity)}
+						onRemove={() => handleRemoveItem(item.id)}
+						disabled={$isLoading || isSubmitting}
+					/>
 				{/each}
 			</div>
 
-			<!-- Order summary -->
-			<div class="bg-card border rounded-lg p-6 h-fit">
-				<h2 class="font-medium text-lg mb-4">Order Summary</h2>
+			<!-- Cart summary -->
+			<div class="md:col-span-1">
+				<div class="bg-muted/40 rounded-lg p-6 sticky top-24">
+					<h2 class="text-xl font-semibold mb-4">{m.cart_summary()}</h2>
 
-				<div class="space-y-3 mb-6">
-					<div class="flex justify-between">
-						<span class="text-muted-foreground">{cart_subtotal()}</span>
-						<span>{formatPrice($cart.subtotal || 0)}</span>
-					</div>
-
-					{#if $cart.discountAmount > 0}
-						<div class="flex justify-between text-success">
-							<span>{cart_discount()}</span>
-							<span>-{formatPrice($cart.discountAmount)}</span>
+					<div class="space-y-3 mb-6">
+						<div class="flex justify-between">
+							<span class="text-muted-foreground">{m.cart_subtotal()}</span>
+							<span>{formatPrice(cartData.subtotal)}</span>
 						</div>
 
-						<Button
-							type="button"
-							variant="link"
-							class="px-0 h-auto text-sm text-destructive"
-							onclick={handleRemoveDiscount}
-							disabled={isAnyLoading}
-						>
-							{#if loadingDiscount}
-								<span class="animate-pulse flex items-center">
-									<Loader2 class="h-3 w-3 mr-1 animate-spin" />
-									Removing...
-								</span>
-							{:else}
-								Remove discount
-							{/if}
-						</Button>
-					{:else}
-						<div class="pt-2">
-							<div class="flex gap-2">
-								<Input
-									type="text"
-									bind:value={discountCode}
-									placeholder={cart_discount_placeholder()}
-									class="h-9"
-									disabled={isAnyLoading}
-								/>
+						{#if cartData.discountAmount > 0}
+							<div class="flex justify-between text-green-600 dark:text-green-400">
+								<span>{m.cart_discount()}</span>
+								<span>-{formatPrice(cartData.discountAmount)}</span>
+							</div>
+						{/if}
+
+						<div class="flex justify-between font-bold text-lg pt-2 border-t">
+							<span>{m.cart_total()}</span>
+							<span>{formatPrice(cartData.total)}</span>
+						</div>
+					</div>
+
+					<!-- Discount code form -->
+					<div class="mb-6">
+						<div class="flex gap-2 mb-2">
+							<Input
+								placeholder={m.cart_discount_placeholder()}
+								bind:value={discountCode}
+								disabled={cartData.discountCode !== null || $isLoading || isSubmitting}
+							/>
+							{#if cartData.discountCode}
 								<Button
-									type="button"
 									variant="outline"
-									class="h-9"
-									disabled={isAnyLoading}
+									disabled={$isLoading || isSubmitting}
+									onclick={handleRemoveDiscount}
+								>
+									{m.cart_discount_remove()}
+								</Button>
+							{:else}
+								<Button
+									variant="outline"
+									disabled={$isLoading || isSubmitting || !discountCode}
 									onclick={handleApplyDiscount}
 								>
-									{#if loadingDiscount}
-										<span class="animate-pulse flex items-center">
-											<Loader2 class="h-3 w-3 mr-1 animate-spin" />
-											Applying...
-										</span>
-									{:else}
-										{cart_apply_discount()}
-									{/if}
+									{m.cart_discount_apply()}
 								</Button>
-							</div>
-							{#if discountError}
-								<p class="text-destructive text-xs mt-1">{discountError}</p>
 							{/if}
 						</div>
-					{/if}
 
-					<div class="border-t pt-3 flex justify-between font-medium">
-						<span>{cart_total()}</span>
-						<span>{formatPrice($cart.total || 0)}</span>
+						{#if discountError}
+							<p class="text-sm text-destructive">{discountError}</p>
+						{:else if cartData.discountCode}
+							<p class="text-sm text-green-600 dark:text-green-400">
+								{m.cart_discount_applied({ code: cartData.discountCode })}
+							</p>
+						{/if}
 					</div>
-				</div>
 
-				<Button type="button" class="w-full" onclick={handleCheckout} disabled={isAnyLoading}>
-					{#if pageLoading}
-						<span class="flex items-center">
-							<Loader2 class="h-4 w-4 mr-2 animate-spin" />
-							Processing...
-						</span>
-					{:else}
-						{cart_checkout()}
-						<ArrowRight class="ml-2 h-4 w-4" />
-					{/if}
-				</Button>
+					<!-- Checkout button -->
+					<Button
+						class="w-full"
+						size="lg"
+						disabled={$isLoading || isSubmitting || cartData.items.length === 0}
+						onclick={handleCheckout}
+					>
+						{m.cart_checkout()}
+						<ArrowRight class="ml-2" size={16} />
+					</Button>
+
+					<p class="text-xs text-center text-muted-foreground mt-4">
+						{m.cart_checkout_terms()}
+					</p>
+				</div>
 			</div>
 		</div>
 	{/if}

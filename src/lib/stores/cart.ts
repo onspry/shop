@@ -1,46 +1,6 @@
-import { invalidateAll } from '$app/navigation';
 import { writable } from 'svelte/store';
-import type {
-    CartViewModel,
-    AddToCartPayload,
-    UpdateCartItemPayload,
-    RemoveCartItemPayload,
-    ApplyDiscountPayload
-} from '$lib/types/cart';
-
-// Define page data interface that maps to our cart data
-interface CartPageData {
-    cart: {
-        id: string;
-        discountCode: string | null;
-    } | null;
-    items: Array<{
-        id: string;
-        productVariantId: string;
-        quantity: number;
-        price: number;
-        variant: {
-            id: string;
-            name: string;
-            price: number;
-            stock_quantity: number;
-            attributes: Record<string, unknown>;
-            productId: string;
-            sku: string;
-            stockStatus: 'in_stock' | 'low_stock' | 'out_of_stock';
-        };
-        product: {
-            id: string;
-            name: string;
-            slug: string;
-            description: string | null;
-        } | null;
-    }>;
-    subtotal: number;
-    discountAmount: number;
-    total: number;
-    error?: string;
-}
+import { invalidateAll } from '$app/navigation';
+import type { CartViewModel } from '$lib/types/cart';
 
 // Initial empty cart state
 const initialCart: CartViewModel = {
@@ -53,130 +13,130 @@ const initialCart: CartViewModel = {
     itemCount: 0
 };
 
-// Create cart store with Svelte writable store
-const cartStore = writable<CartViewModel>(initialCart);
-const loadingStore = writable<boolean>(false);
+// Writable store for local cart changes
+export const cart = writable<CartViewModel>(initialCart);
 
-// Export stores
-export const cart = cartStore;
-export const isLoading = loadingStore;
+// Loading state for cart operations
+export const isLoading = writable(false);
 
-// Helper function to create and submit form data
-async function submitFormAction<T>(
+// Response type for cart operations
+type CartOperationResult = {
+    success: boolean;
+    error?: string;
+};
+
+/**
+ * Generic function to handle cart form actions with consistent error handling
+ */
+async function executeCartAction(
     action: string,
-    data: T
-): Promise<boolean> {
-    loadingStore.set(true);
-
+    formData: FormData
+): Promise<CartOperationResult> {
     try {
-        // Create form data from object
-        const formData = new FormData();
-        Object.entries(data as Record<string, unknown>).forEach(([key, value]) => {
-            formData.append(key, String(value));
-        });
+        isLoading.set(true);
 
-        // Submit the form using fetch API with the proper cart URL
-        // This ensures actions go to the /cart route which has the handlers
         const response = await fetch(`/cart?/${action}`, {
             method: 'POST',
             body: formData
         });
 
         if (!response.ok) {
-            const result = await response.json();
-            console.error(`Error in ${action}:`, result);
-            return false;
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `Failed to execute ${action}`);
         }
 
-        // Use invalidateAll to refresh all route data
+        // Refresh data by invalidating all endpoints
         await invalidateAll();
 
-        return true;
+        return { success: true };
     } catch (error) {
-        console.error(`Error in ${action}:`, error);
-        return false;
+        console.error(`Failed to execute ${action}:`, error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error occurred'
+        };
     } finally {
-        loadingStore.set(false);
+        isLoading.set(false);
     }
 }
 
-// Cart operations
-async function addToCart(payload: AddToCartPayload): Promise<boolean> {
-    return submitFormAction('addItem', payload);
+// Function to reset cart store when there might be stale data
+export function resetCartStore() {
+    cart.set(initialCart);
+    invalidateAll();
 }
 
-async function updateCartItem(payload: UpdateCartItemPayload): Promise<boolean> {
-    return submitFormAction('updateItem', payload);
-}
-
-async function removeCartItem(payload: RemoveCartItemPayload): Promise<boolean> {
-    return submitFormAction('removeItem', payload);
-}
-
-async function applyDiscount(payload: ApplyDiscountPayload): Promise<boolean> {
-    // Fix the payload key to match what the server expects
-    const correctedPayload = { discountCode: payload.code };
-    return submitFormAction('applyDiscount', correctedPayload);
-}
-
-async function removeDiscount(): Promise<boolean> {
-    return submitFormAction('removeDiscount', {});
-}
-
-// Update cart from page data
-function updateCartFromPageData(pageData: CartPageData): void {
-    if (!pageData) {
-        console.warn('No page data provided to updateCartFromPageData');
-        return;
-    }
+// Function to update cart store from page data
+export function updateCartFromPageData(pageData: Record<string, unknown>) {
+    if (!pageData) return;
 
     try {
-        // Safely get the items array
-        const items = Array.isArray(pageData.items) ? pageData.items : [];
-
-        // Map the page data to our CartViewModel structure with safety checks
-        const updatedCart: CartViewModel = {
-            id: pageData.cart?.id || '',
-            items: items.filter(item => item && item.variant).map(item => ({
-                id: item.id,
-                productVariantId: item.productVariantId,
-                quantity: item.quantity,
-                price: item.price,
-                variant: {
-                    id: item.variant.id,
-                    sku: item.variant.sku,
-                    name: item.variant.name,
-                    price: item.variant.price,
-                    stock_quantity: item.variant.stock_quantity,
-                    attributes: item.variant.attributes || {},
-                    productId: item.variant.productId,
-                    stockStatus: item.variant.stockStatus
-                }
-            })),
-            discountCode: pageData.cart?.discountCode || null,
-            discountAmount: pageData.discountAmount || 0,
-            subtotal: pageData.subtotal || 0,
-            total: pageData.total || 0,
-            itemCount: items.reduce(
-                (count: number, item) => count + (item?.quantity || 0),
-                0
-            )
-        };
-
-        console.log('Updating cart store with:', updatedCart);
-        cartStore.set(updatedCart);
+        const cartData = pageData.cart as CartViewModel;
+        if (!cartData) {
+            resetCartStore();
+            return;
+        }
+        cart.set(cartData);
     } catch (error) {
         console.error('Error updating cart from page data:', error);
-        // Don't set the store to an invalid state, keep the previous state
+        resetCartStore();
     }
 }
 
-// Export actions and update function
-export { updateCartFromPageData };
+// Add item to cart using form action
+export async function addToCart(
+    productVariantId: string,
+    quantity: number = 1
+): Promise<CartOperationResult> {
+    const formData = new FormData();
+    formData.append('productVariantId', productVariantId);
+    formData.append('quantity', quantity.toString());
+    return executeCartAction('addItem', formData);
+}
+
+// Update cart item quantity using form action
+export async function updateCartItem(
+    cartItemId: string,
+    quantity: number
+): Promise<CartOperationResult> {
+    const formData = new FormData();
+    formData.append('cartItemId', cartItemId);
+    formData.append('quantity', quantity.toString());
+    return executeCartAction('updateItem', formData);
+}
+
+// Remove cart item using form action
+export async function removeCartItem(cartItemId: string): Promise<CartOperationResult> {
+    const formData = new FormData();
+    formData.append('cartItemId', cartItemId);
+    return executeCartAction('removeItem', formData);
+}
+
+// Apply discount code using form action
+export async function applyDiscount(code: string): Promise<CartOperationResult> {
+    const formData = new FormData();
+    formData.append('discountCode', code);
+    return executeCartAction('applyDiscount', formData);
+}
+
+// Remove discount code using form action
+export async function removeDiscount(): Promise<CartOperationResult> {
+    return executeCartAction('removeDiscount', new FormData());
+}
+
+// Clear cart using form action
+export async function clearCart(): Promise<CartOperationResult> {
+    return executeCartAction('clearCart', new FormData());
+}
+
+// Cart actions object for component usage
 export const cartActions = {
-    addToCart,
-    updateCartItem,
-    removeCartItem,
+    addToCart: async ({ productVariantId, quantity = 1 }: { productVariantId: string; quantity: number }) => {
+        return addToCart(productVariantId, quantity);
+    },
+    updateItem: updateCartItem,
+    removeItem: removeCartItem,
     applyDiscount,
-    removeDiscount
+    removeDiscount,
+    clearCart
 }; 

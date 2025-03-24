@@ -3,37 +3,45 @@
 	import { cart } from '$lib/stores/cart';
 	import * as m from '$lib/paraglide/messages';
 
-	// Add derived state to detect count changes
-	let previousCount = $state(0);
-	let animateCount = $state(false);
+	// Simple state, with no derived reactivity
+	let currentCount = $state(0);
+	let shouldAnimate = $state(false);
+	let initialized = $state(false);
 
-	// Effect to detect count changes and trigger animation
+	// Update the count when the cart store changes
 	$effect(() => {
-		if (previousCount !== 0 && previousCount !== $cart.itemCount) {
-			animateCount = true;
+		const newCount = $cart.itemCount || 0;
+		const oldCount = currentCount;
+
+		// Update the count
+		currentCount = newCount;
+
+		// Don't animate on first load
+		if (!initialized) {
+			initialized = true;
+			return;
+		}
+
+		// Animate only when count increases
+		if (newCount > oldCount) {
+			shouldAnimate = true;
+			// Reset animation after 1 second
 			setTimeout(() => {
-				animateCount = false;
+				shouldAnimate = false;
 			}, 1000);
 		}
-		previousCount = $cart.itemCount;
 	});
 </script>
 
-<a
-	href="/cart"
-	class="flex items-center relative text-foreground hover:text-primary transition-colors"
-	aria-label={m.nav_cart()}
->
-	<ShoppingCart class="h-5 w-5 {$cart.itemCount > 0 ? 'text-primary' : ''}" aria-hidden="true" />
-	{#if $cart.itemCount > 0}
+<a href="/cart" class="relative" aria-label={m.nav_cart()}>
+	<ShoppingCart strokeWidth={1.5} size={24} />
+
+	{#if currentCount > 0}
 		<span
-			class="absolute -top-2 -right-2 flex items-center justify-center
-			bg-primary text-primary-foreground font-medium
-			text-xs rounded-full min-w-5 h-5 px-1.5
-			{animateCount ? 'animate-bounce' : ''}"
-			aria-label="{$cart.itemCount} {$cart.itemCount === 1 ? 'item' : 'items'} in cart"
+			class="absolute -top-2 -right-2 flex items-center justify-center bg-orange-500 text-white text-xs font-bold rounded-full h-5 w-5"
+			class:animate-bounce={shouldAnimate}
 		>
-			{$cart.itemCount < 100 ? $cart.itemCount : '99+'}
+			{currentCount}
 		</span>
 	{/if}
 </a>
