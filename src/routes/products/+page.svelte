@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { CatalogueViewModel } from '$lib/types/catalogue';
+	import type { CatalogueViewModel } from '$lib/models/catalogue';
 	import ProductCard from '$lib/components/product-card.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { goto } from '$app/navigation';

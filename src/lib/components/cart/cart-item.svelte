@@ -1,20 +1,23 @@
 <script lang="ts">
-	import type { CartItemViewModel } from '$lib/types/cart';
-	import { X, Minus, Plus, Loader2 } from 'lucide-svelte';
+	import type { CartItemViewModel } from '$lib/models/cart';
+	import { X, Minus, Plus, ImageOff, Loader2 } from 'lucide-svelte';
 	import { formatPrice } from '$lib/utils/price';
 	import * as m from '$lib/paraglide/messages';
-	import ImageWithSkeleton from '$lib/components/ui/image-with-skeleton.svelte';
 
 	let {
 		item,
 		onQuantityChange,
 		onRemove,
-		disabled = false
+		disabled = false,
+		isLoading = false,
+		loadingAction = ''
 	} = $props<{
 		item: CartItemViewModel;
 		onQuantityChange: (quantity: number) => void;
 		onRemove: () => void;
 		disabled?: boolean;
+		isLoading?: boolean;
+		loadingAction?: 'increment' | 'decrement' | 'remove' | '';
 	}>();
 
 	// Quantity can't go below 1 or above available stock
@@ -25,44 +28,52 @@
 	const variantName = $derived(item?.variant?.name || 'Product');
 	const variantImage = $derived(item?.variant?.attributes?.image);
 
-	// For loading states
-	let incrementing = $state(false);
-	let decrementing = $state(false);
+	let imageError = $state(false);
+	let imageLoaded = $state(false);
 
-	// Operation in progress indicator to disable all controls
-	const isDisabled = $derived(disabled || incrementing || decrementing);
-
-	async function incrementQuantity() {
-		if (isDisabled || quantity >= maxQuantity) return;
-
-		incrementing = true;
-		try {
-			onQuantityChange(quantity + 1);
-		} finally {
-			incrementing = false;
-		}
+	function handleImageError() {
+		imageError = true;
 	}
 
-	async function decrementQuantity() {
-		if (isDisabled || quantity <= minQuantity) return;
+	function handleImageLoad() {
+		imageLoaded = true;
+	}
 
-		decrementing = true;
-		try {
-			onQuantityChange(quantity - 1);
-		} finally {
-			decrementing = false;
-		}
+	function incrementQuantity() {
+		if (disabled || quantity >= maxQuantity) return;
+		onQuantityChange(quantity + 1);
+	}
+
+	function decrementQuantity() {
+		if (disabled || quantity <= minQuantity) return;
+		onQuantityChange(quantity - 1);
 	}
 </script>
 
 <div class="flex border rounded-lg overflow-hidden bg-background">
-	<div class="w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0">
-		<ImageWithSkeleton
-			src={variantImage || '/placeholder.jpg'}
-			alt={variantName}
-			className="w-full h-full object-cover"
-			aspectRatio="1:1"
-		/>
+	<div class="w-32 h-32 flex-shrink-0">
+		<div class="relative aspect-square h-full overflow-hidden">
+			{#if imageError}
+				<div class="absolute inset-0 flex items-center justify-center bg-muted">
+					<ImageOff class="h-8 w-8 text-muted-foreground" />
+				</div>
+			{:else}
+				{#if !imageLoaded}
+					<div class="absolute inset-0">
+						<div class="h-full w-full animate-pulse bg-muted-foreground/20"></div>
+					</div>
+				{/if}
+				<img
+					src={variantImage}
+					alt={variantName}
+					class="h-full w-full object-cover transition-opacity duration-300"
+					class:opacity-0={!imageLoaded}
+					class:opacity-100={imageLoaded}
+					onerror={handleImageError}
+					onload={handleImageLoad}
+				/>
+			{/if}
+		</div>
 	</div>
 
 	<div class="flex-1 p-4 flex flex-col justify-between">
@@ -75,10 +86,10 @@
 				<button
 					class="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
 					onclick={onRemove}
-					disabled={isDisabled}
+					disabled={disabled || isLoading}
 					aria-label={m.cart_remove()}
 				>
-					{#if disabled}
+					{#if isLoading && loadingAction === 'remove'}
 						<Loader2 class="h-5 w-5 animate-spin" />
 					{:else}
 						<X class="h-5 w-5" />
@@ -92,10 +103,10 @@
 				<button
 					class="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
 					onclick={decrementQuantity}
-					disabled={isDisabled || quantity <= minQuantity}
+					disabled={disabled || isLoading || quantity <= minQuantity}
 					aria-label={m.cart_decrease_quantity()}
 				>
-					{#if decrementing}
+					{#if isLoading && loadingAction === 'decrement'}
 						<Loader2 class="h-4 w-4 animate-spin" />
 					{:else}
 						<Minus class="h-4 w-4" />
@@ -107,10 +118,10 @@
 				<button
 					class="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
 					onclick={incrementQuantity}
-					disabled={isDisabled || quantity >= maxQuantity}
+					disabled={disabled || isLoading || quantity >= maxQuantity}
 					aria-label={m.cart_increase_quantity()}
 				>
-					{#if incrementing}
+					{#if isLoading && loadingAction === 'increment'}
 						<Loader2 class="h-4 w-4 animate-spin" />
 					{:else}
 						<Plus class="h-4 w-4" />

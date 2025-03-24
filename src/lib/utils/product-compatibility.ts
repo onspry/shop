@@ -1,4 +1,4 @@
-import type { ProductViewModel, ProductVariantViewModel } from '$lib/types/product';
+import type { ProductViewModel, ProductVariantViewModel } from '$lib/models/product';
 
 interface CompatibilityRules {
     stemType: string | string[];

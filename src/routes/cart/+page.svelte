@@ -1,6 +1,5 @@
 <script lang="ts">
 	import {
-		cart,
 		isLoading,
 		updateCartFromPageData,
 		resetCartStore,
@@ -9,22 +8,23 @@
 		applyDiscount,
 		removeDiscount
 	} from '$lib/stores/cart';
-	import type { CartViewModel } from '$lib/types/cart';
+	import type { CartViewModel } from '$lib/models/cart.js';
 	import CartItem from '$lib/components/cart/cart-item.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { ShoppingCart, ArrowRight, Loader2 } from 'lucide-svelte';
 	import { formatPrice } from '$lib/utils/price';
-	import { invalidateAll, goto } from '$app/navigation';
-	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import * as m from '$lib/paraglide/messages';
-	import { Skeleton } from '$lib/components/ui/skeleton';
 
 	// Use data from the server
 	let { data } = $props();
 
-	// Track loading state separate from global state
-	let isSubmitting = $state(false);
+	// Track loading states for specific actions
+	let loadingItemId = $state<string | null>(null);
+	let loadingAction = $state<'increment' | 'decrement' | 'remove' | ''>('');
+	let isApplyingDiscount = $state(false);
+	let isRemovingDiscount = $state(false);
 	let discountCode = $state('');
 	let discountError = $state('');
 
@@ -49,9 +49,14 @@
 
 	// Handle updating cart item quantity
 	async function handleQuantityChange(itemId: string, newQuantity: number) {
-		isSubmitting = true;
+		loadingItemId = itemId;
+		loadingAction =
+			newQuantity > (cartData?.items.find((i) => i.id === itemId)?.quantity || 0)
+				? 'increment'
+				: 'decrement';
 		const result = await updateCartItem(itemId, newQuantity);
-		isSubmitting = false;
+		loadingItemId = null;
+		loadingAction = '';
 
 		if (!result.success) {
 			console.error('Failed to update quantity:', result.error);
@@ -60,9 +65,11 @@
 
 	// Handle removing item from cart
 	async function handleRemoveItem(itemId: string) {
-		isSubmitting = true;
+		loadingItemId = itemId;
+		loadingAction = 'remove';
 		const result = await removeCartItem(itemId);
-		isSubmitting = false;
+		loadingItemId = null;
+		loadingAction = '';
 
 		if (!result.success) {
 			console.error('Failed to remove item:', result.error);
@@ -77,9 +84,9 @@
 		}
 
 		discountError = '';
-		isSubmitting = true;
+		isApplyingDiscount = true;
 		const result = await applyDiscount(discountCode);
-		isSubmitting = false;
+		isApplyingDiscount = false;
 
 		if (!result.success) {
 			discountError = result.error || m.cart_discount_invalid();
@@ -88,9 +95,9 @@
 
 	// Handle removing discount code
 	async function handleRemoveDiscount() {
-		isSubmitting = true;
+		isRemovingDiscount = true;
 		const result = await removeDiscount();
-		isSubmitting = false;
+		isRemovingDiscount = false;
 
 		if (!result.success) {
 			console.error('Failed to remove discount:', result.error);
@@ -107,12 +114,6 @@
 
 <div class="min-h-[80vh]">
 	<h1 class="text-3xl font-bold mb-8">{m.cart_title()}</h1>
-
-	{#if $isLoading || isSubmitting}
-		<div class="w-full flex justify-center my-4">
-			<Loader2 size={24} class="animate-spin text-primary" aria-label={m.loading()} />
-		</div>
-	{/if}
 
 	{#if !cartData || !cartData.items || cartData.items.length === 0}
 		<div class="flex flex-col items-center justify-center py-12 px-4 border rounded-lg">
@@ -134,7 +135,9 @@
 						{item}
 						onQuantityChange={(quantity) => handleQuantityChange(item.id, quantity)}
 						onRemove={() => handleRemoveItem(item.id)}
-						disabled={$isLoading || isSubmitting}
+						isLoading={loadingItemId !== null}
+						disabled={loadingItemId !== null}
+						loadingAction={loadingItemId === item.id ? loadingAction : ''}
 					/>
 				{/each}
 			</div>
@@ -169,23 +172,33 @@
 							<Input
 								placeholder={m.cart_discount_placeholder()}
 								bind:value={discountCode}
-								disabled={cartData.discountCode !== null || $isLoading || isSubmitting}
+								disabled={cartData.discountCode !== null ||
+									isApplyingDiscount ||
+									isRemovingDiscount}
 							/>
 							{#if cartData.discountCode}
 								<Button
 									variant="outline"
-									disabled={$isLoading || isSubmitting}
+									disabled={isRemovingDiscount}
 									onclick={handleRemoveDiscount}
 								>
-									{m.cart_discount_remove()}
+									{#if isRemovingDiscount}
+										<Loader2 class="h-4 w-4 animate-spin" />
+									{:else}
+										{m.cart_discount_remove()}
+									{/if}
 								</Button>
 							{:else}
 								<Button
 									variant="outline"
-									disabled={$isLoading || isSubmitting || !discountCode}
+									disabled={isApplyingDiscount || !discountCode}
 									onclick={handleApplyDiscount}
 								>
-									{m.cart_discount_apply()}
+									{#if isApplyingDiscount}
+										<Loader2 class="h-4 w-4 animate-spin" />
+									{:else}
+										{m.cart_discount_apply()}
+									{/if}
 								</Button>
 							{/if}
 						</div>
@@ -203,7 +216,7 @@
 					<Button
 						class="w-full"
 						size="lg"
-						disabled={$isLoading || isSubmitting || cartData.items.length === 0}
+						disabled={cartData.items.length === 0}
 						onclick={handleCheckout}
 					>
 						{m.cart_checkout()}

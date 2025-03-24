@@ -24,17 +24,18 @@
 		{:else if productCategory === 'KEYBOARD'}
 			<ProductDetailKeyboard
 				product={data.product}
-				variants={data.product.variants}
-				images={data.product.images}
+				variants={data.variants}
+				images={data.images}
 				switches={data.switches}
 				keycaps={data.keycaps}
+				searchParams={data.searchParams}
 				onvariantselect={handleVariantSelect}
 			/>
 		{:else}
 			<ProductDetailAccessory
 				product={data.product}
-				variants={data.product.variants}
-				images={data.product.images}
+				variants={data.variants}
+				images={data.images}
 			/>
 		{/if}
 	</div>

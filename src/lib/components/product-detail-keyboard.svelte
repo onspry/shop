@@ -4,7 +4,7 @@
 		ProductViewModel,
 		ProductVariantViewModel,
 		ProductImageViewModel
-	} from '$lib/types/product';
+	} from '$lib/models/product';
 	import { Button } from '$lib/components/ui/button';
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';
@@ -13,9 +13,8 @@
 	import { ProductCompatibilityService } from '$lib/utils/product-compatibility';
 	import { browser } from '$app/environment';
 	import { goto, pushState } from '$app/navigation';
-	import { page } from '$app/stores';
 	import { cartActions } from '$lib/stores/cart';
-	import { ShoppingCart, Check } from 'lucide-svelte';
+	import { ShoppingCart, Check, ImageOff } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 
 	// Props
@@ -27,7 +26,8 @@
 		keycaps = [],
 		onvariantselect = () => {},
 		onSwitchSelect = () => {},
-		onKeycapSelect = () => {}
+		onKeycapSelect = () => {},
+		searchParams
 	} = $props<{
 		product: ProductViewModel;
 		variants: ProductVariantViewModel[];
@@ -37,6 +37,7 @@
 		onvariantselect?: (e: CustomEvent<{ variantId: string }>) => void;
 		onSwitchSelect?: (switchId: string | null) => void;
 		onKeycapSelect?: (keycapId: string | null) => void;
+		searchParams: { variant: string | null; switch: string | null; keycap: string | null };
 	}>();
 
 	// Core state variables
@@ -60,9 +61,9 @@
 	let selectionState = $state<SelectionStateType>({ state: 'initial' });
 
 	// Get initial selections from URL parameters
-	const urlVariantId = $page.url.searchParams.get('variant');
-	const urlSwitchId = $page.url.searchParams.get('switch');
-	const urlKeycapId = $page.url.searchParams.get('keycap');
+	const urlVariantId = searchParams.variant;
+	const urlSwitchId = searchParams.switch;
+	const urlKeycapId = searchParams.keycap;
 
 	// Initialize state with URL values if they exist
 	currentVariantId = urlVariantId || null;
@@ -270,9 +271,11 @@
 		loadedImages.add(img.src);
 	}
 
+	let imageErrors = $state(new Set<string>());
+
 	function handleImageError(event: Event) {
-		const imgElement = event.target as HTMLImageElement;
-		imgElement.src = `/placeholder-${product?.category?.toLowerCase() || 'default'}.jpg`;
+		const img = event.target as HTMLImageElement;
+		imageErrors.add(img.src);
 	}
 
 	function getOptimizedImageUrl(url: string, width: number, height: number): string {
@@ -382,18 +385,24 @@
 								<div class="animate-pulse bg-muted-foreground/20 w-full h-full"></div>
 							</div>
 						{/if}
-						<img
-							data-src={getOptimizedImageUrl(images[0].url, 800, 800)}
-							alt={images[0].alt}
-							width={800}
-							height={800}
-							loading="lazy"
-							class="h-full w-full object-cover object-center transition-opacity duration-300"
-							class:opacity-0={!loadedImages.has(images[0].url)}
-							class:opacity-100={loadedImages.has(images[0].url)}
-							onload={handleImageLoad}
-							onerror={handleImageError}
-						/>
+						{#if imageErrors.has(images[0].url)}
+							<div class="absolute inset-0 flex items-center justify-center bg-muted">
+								<ImageOff class="h-12 w-12 text-muted-foreground" />
+							</div>
+						{:else}
+							<img
+								data-src={getOptimizedImageUrl(images[0].url, 800, 800)}
+								alt={images[0].alt}
+								width={800}
+								height={800}
+								loading="lazy"
+								class="h-full w-full object-cover object-center transition-opacity duration-300"
+								class:opacity-0={!loadedImages.has(images[0].url)}
+								class:opacity-100={loadedImages.has(images[0].url)}
+								onload={handleImageLoad}
+								onerror={handleImageError}
+							/>
+						{/if}
 					</div>
 
 					{#if images.length > 1}
@@ -405,18 +414,24 @@
 											<div class="animate-pulse bg-muted-foreground/20 w-full h-full"></div>
 										</div>
 									{/if}
-									<img
-										data-src={getOptimizedImageUrl(image.url, 200, 200)}
-										alt={image.alt}
-										width={200}
-										height={200}
-										loading="lazy"
-										class="h-full w-full object-cover object-center cursor-pointer hover:opacity-80 transition-opacity"
-										class:opacity-0={!loadedImages.has(image.url)}
-										class:opacity-100={loadedImages.has(image.url)}
-										onload={handleImageLoad}
-										onerror={handleImageError}
-									/>
+									{#if imageErrors.has(image.url)}
+										<div class="absolute inset-0 flex items-center justify-center bg-muted">
+											<ImageOff class="h-6 w-6 text-muted-foreground" />
+										</div>
+									{:else}
+										<img
+											data-src={getOptimizedImageUrl(image.url, 200, 200)}
+											alt={image.alt}
+											width={200}
+											height={200}
+											loading="lazy"
+											class="h-full w-full object-cover object-center cursor-pointer hover:opacity-80 transition-opacity"
+											class:opacity-0={!loadedImages.has(image.url)}
+											class:opacity-100={loadedImages.has(image.url)}
+											onload={handleImageLoad}
+											onerror={handleImageError}
+										/>
+									{/if}
 								</div>
 							{/each}
 						</div>
@@ -482,8 +497,11 @@
 							</div>
 						</div>
 					{:else if selectedVariant}
-						<div class="text-muted-foreground">
-							No compatible switches found for this keyboard variant.
+						<div class="flex flex-col items-center justify-center p-8 bg-muted rounded-lg">
+							<ImageOff class="h-12 w-12 text-muted-foreground mb-4" />
+							<div class="text-muted-foreground text-center">
+								No compatible switches found for this keyboard variant.
+							</div>
 						</div>
 					{/if}
 
@@ -506,8 +524,11 @@
 							</div>
 						</div>
 					{:else if selectedSwitch}
-						<div class="text-muted-foreground">
-							No compatible keycaps found for this switch type.
+						<div class="flex flex-col items-center justify-center p-8 bg-muted rounded-lg">
+							<ImageOff class="h-12 w-12 text-muted-foreground mb-4" />
+							<div class="text-muted-foreground text-center">
+								No compatible keycaps found for this switch type.
+							</div>
 						</div>
 					{/if}
 

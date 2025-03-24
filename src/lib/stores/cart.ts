@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store';
 import { invalidateAll } from '$app/navigation';
-import type { CartViewModel } from '$lib/types/cart';
+import type { CartViewModel } from '$lib/models/cart';
 
 // Initial empty cart state
 const initialCart: CartViewModel = {

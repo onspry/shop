@@ -5,7 +5,7 @@ import { cartItem, type NewCartItem, type CartItem } from '$lib/server/db/schema
 import { productVariant, type ProductVariant } from '$lib/server/db/schema/product_variant';
 import { discount } from '$lib/server/db/schema/discount';
 import { nanoid } from 'nanoid';
-import type { CartViewModel, CartItemViewModel, CartSummaryViewModel } from '$lib/types/cart';
+import type { CartViewModel, CartItemViewModel, CartSummaryViewModel } from '$lib/models/cart';
 
 // Define type for cart with items to avoid 'any'
 export type CartWithItems = Cart & {

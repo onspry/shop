@@ -6,6 +6,27 @@
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { User as UserIcon, Settings, Package, LogOut } from 'lucide-svelte';
 	import LoadingSpinner from '$lib/components/loading-spinner.svelte';
+	import { Skeleton } from '$lib/components/ui/skeleton';
+
+	let imageLoaded = $state(false);
+	let imageError = $state(false);
+
+	// Reset loading state when image source changes
+	$effect(() => {
+		if ($authStore.user?.image) {
+			imageLoaded = false;
+			imageError = false;
+		}
+	});
+
+	function handleImageLoad() {
+		imageLoaded = true;
+	}
+
+	function handleImageError() {
+		imageError = true;
+		imageLoaded = true; // Consider it "loaded" even if it failed
+	}
 </script>
 
 <div class="relative inline-block">
@@ -18,8 +39,21 @@
 		<DropdownMenu.Root>
 			<DropdownMenu.Trigger class="focus:outline-none focus-visible:ring-0">
 				<Avatar.Root>
-					<Avatar.Image src={$authStore.user.image ?? ''} alt={$authStore.user.firstname ?? ''} />
-					<Avatar.Fallback>{$authStore.user.firstname?.[0]?.toUpperCase() ?? 'U'}</Avatar.Fallback>
+					{#if !imageLoaded}
+						<Skeleton class="absolute inset-0 w-full h-full rounded-full z-10" />
+					{/if}
+					<Avatar.Image
+						src={$authStore.user.image ?? ''}
+						alt={$authStore.user.firstname ?? ''}
+						onload={handleImageLoad}
+						onerror={handleImageError}
+						class={!imageLoaded ? 'opacity-0' : 'opacity-100'}
+					/>
+					{#if imageError || !$authStore.user.image}
+						<Avatar.Fallback>
+							{$authStore.user.firstname?.[0]?.toUpperCase() ?? 'U'}
+						</Avatar.Fallback>
+					{/if}
 				</Avatar.Root>
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content class="w-48">

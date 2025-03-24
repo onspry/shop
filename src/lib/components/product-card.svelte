@@ -1,16 +1,23 @@
 <!-- ProductCard.svelte -->
 <script lang="ts">
-	import type { ProductViewModel, ProductVariantViewModel } from '$lib/types/product';
+	import type { ProductViewModel, ProductVariantViewModel } from '$lib/models/product';
 	import {
 		product_starting_at,
 		product_view_details,
 		product_accessory
 	} from '$lib/paraglide/messages';
 	import { formatPrice } from '$lib/utils/price';
+	import { ImageOff } from 'lucide-svelte';
 
 	let { product } = $props<{
 		product: ProductViewModel;
 	}>();
+
+	// Helper function to get optimized image URL
+	function getOptimizedImageUrl(url: string): string {
+		// Optimize for card view - 400px width, 80% quality, WebP format
+		return `${url}?w=300&h=300&q=80&format=webp`;
+	}
 
 	const basePrice = $derived(
 		product.variants.length > 0
@@ -20,32 +27,45 @@
 
 	const hasMultipleVariants = $derived(product.variants.length > 1);
 
-	// Handle image error by replacing with fallback
-	function handleImageError(event: Event) {
-		const img = event.target as HTMLImageElement;
-		img.src = '/placeholder.png';
-		img.alt = 'Product placeholder';
+	let imageError = $state(false);
+	let imageLoaded = $state(false);
+
+	function handleImageError() {
+		imageError = true;
+	}
+
+	function handleImageLoad() {
+		imageLoaded = true;
 	}
 </script>
 
 <div
 	class="group relative bg-background border border-border rounded-lg overflow-hidden transition-all duration-300 hover:border-primary hover:shadow-lg"
 >
-	<div class="relative h-48 overflow-hidden">
-		{#if product.images.length > 0}
-			<img
-				src={product.images[0].url}
-				alt={product.images[0].alt}
-				class="w-full h-full object-contain object-center group-hover:scale-105 transition-transform duration-300"
-				onerror={handleImageError}
-			/>
-		{:else}
-			<img
-				src="/placeholder.png"
-				alt="Product placeholder"
-				class="w-full h-full object-contain object-center"
-			/>
-		{/if}
+	<div class="relative h-48">
+		<div class="absolute inset-0 flex items-center justify-center bg-muted">
+			{#if imageError || !product.images.length}
+				<ImageOff class="h-10 w-10 text-muted-foreground" />
+			{:else}
+				{#if !imageLoaded}
+					<div class="absolute inset-0">
+						<div class="h-full w-full animate-pulse bg-muted-foreground/20"></div>
+					</div>
+				{/if}
+				<img
+					src={getOptimizedImageUrl(product.images[0].url)}
+					alt={product.images[0].alt}
+					width={300}
+					height={300}
+					loading="lazy"
+					class="max-h-48 w-auto object-contain group-hover:scale-105 transition-transform duration-300"
+					class:opacity-0={!imageLoaded}
+					class:opacity-100={imageLoaded}
+					onerror={handleImageError}
+					onload={handleImageLoad}
+				/>
+			{/if}
+		</div>
 	</div>
 
 	<div class="p-4">

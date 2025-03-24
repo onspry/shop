@@ -1,4 +1,4 @@
-import type { ProductViewModel, ProductVariantViewModel } from '$lib/types/product';
+import type { ProductViewModel, ProductVariantViewModel } from '$lib/models/product';
 import type { ProductImage } from '$lib/server/db/schema/product_image';
 import { writable, derived } from 'svelte/store';
 

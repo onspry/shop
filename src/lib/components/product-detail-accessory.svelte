@@ -4,7 +4,7 @@
 		ProductViewModel,
 		ProductVariantViewModel,
 		ProductImageViewModel
-	} from '$lib/types/product';
+	} from '$lib/models/product';
 	import { Button } from '$lib/components/ui/button';
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';

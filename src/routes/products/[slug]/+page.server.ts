@@ -1,12 +1,12 @@
 import { productRepo } from '$lib/server/db/repositories/product';
-import type { ProductViewModel } from '$lib/types/product';
+import type { ProductViewModel } from '$lib/models/product';
 import type { PageServerLoad } from './$types';
 import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types';
 import * as cartRepository from '$lib/server/db/repositories/cart';
 import { randomUUID } from 'crypto';
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, url }) => {
     const result = await productRepo.getProduct(params.slug);
 
     // If this is a keyboard, fetch compatible switches and keycaps
@@ -19,9 +19,16 @@ export const load: PageServerLoad = async ({ params }) => {
 
     return {
         product: result.product,
+        variants: result.product.variants || [],
+        images: result.product.images || [],
         defaultVariantId: result.defaultVariantId,
         switches,
-        keycaps
+        keycaps,
+        searchParams: {
+            variant: url.searchParams.get('variant'),
+            switch: url.searchParams.get('switch'),
+            keycap: url.searchParams.get('keycap')
+        }
     };
 };
 

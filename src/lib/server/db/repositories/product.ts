@@ -2,9 +2,9 @@ import { db } from '$lib/server/db';
 import { product, productVariant, productImage } from '$lib/server/db';
 import { eq, asc, inArray } from 'drizzle-orm';
 import type { Product, ProductVariant, ProductImage } from '$lib/server/db';
-import type { ProductViewModel } from '$lib/types/product';
-import { toProductViewModel } from '$lib/types/product';
-import { toCatalogueViewModel } from '$lib/types/catalogue';
+import type { ProductViewModel } from '$lib/models/product';
+import { toProductViewModel } from '$lib/models/product';
+import { toCatalogueViewModel } from '$lib/models/catalogue';
 
 interface ProductWithRelations extends Product {
     variants: ProductVariant[];

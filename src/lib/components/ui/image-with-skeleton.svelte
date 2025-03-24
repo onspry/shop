@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+	import { ImageOff } from 'lucide-svelte';
 
 	let {
 		src = '',
@@ -22,8 +23,17 @@
 	let imageLoaded = $state(false);
 	let imageError = $state(false);
 
+	// Reset loading state when src changes
+	$effect(() => {
+		if (src) {
+			imageLoaded = false;
+			imageError = false;
+		}
+	});
+
 	function handleLoad() {
 		imageLoaded = true;
+		imageError = false;
 	}
 
 	function handleError() {
@@ -33,26 +43,38 @@
 </script>
 
 <div
-	class={`relative ${className}`}
+	class={`relative overflow-hidden ${className}`}
 	style:width={typeof width === 'number' ? `${width}px` : width}
 	style:height={typeof height === 'number' ? `${height}px` : height}
 	style:aspect-ratio={aspectRatio}
 >
-	{#if !imageLoaded}
-		<Skeleton class="absolute inset-0 w-full h-full rounded-md" />
+	{#if !imageLoaded || !src}
+		<Skeleton class="absolute inset-0 w-full h-full rounded-md z-10" />
 	{/if}
 
-	<img
-		{src}
-		{alt}
-		onload={handleLoad}
-		onerror={handleError}
-		class={`w-full h-full object-${objectFit} rounded-md transition-opacity duration-300 ${!imageLoaded ? 'opacity-0' : 'opacity-100'}`}
-	/>
+	{#if src}
+		<img
+			{src}
+			{alt}
+			onload={handleLoad}
+			onerror={handleError}
+			class={`w-full h-full object-${objectFit} rounded-md transition-opacity duration-300 ${!imageLoaded || imageError ? 'opacity-0' : 'opacity-100'}`}
+			aria-hidden={imageError}
+		/>
+	{/if}
 
-	{#if imageError}
-		<div class="absolute inset-0 flex items-center justify-center bg-muted/50 rounded-md">
-			<span class="text-muted-foreground text-sm">Failed to load image</span>
+	{#if imageError && src}
+		<div class="absolute inset-0 flex items-center justify-center bg-muted rounded-md">
+			<ImageOff class="h-6 w-6 text-muted-foreground" />
 		</div>
 	{/if}
 </div>
+
+<style>
+	img {
+		/* Hide the default browser broken image icon */
+		&:-moz-broken {
+			-moz-force-broken-image-icon: 0;
+		}
+	}
+</style>
