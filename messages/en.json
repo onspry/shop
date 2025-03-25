@@ -113,6 +113,7 @@
 	"checkout_tab_authentication": "Account",
 	"checkout_tab_shipping": "Shipping",
 	"checkout_tab_payment": "Payment",
+	"checkout_tab_summary": "Summary",
 	"checkout_guest_title": "Continue as Guest",
 	"checkout_guest_description": "Checkout without creating an account. You'll have the option to create one later.",
 	"checkout_guest_email": "Email Address",
@@ -143,5 +144,16 @@
 	"checkout_city": "City",
 	"checkout_state": "State",
 	"checkout_zip": "ZIP Code",
-	"checkout_phone": "Phone"
+	"checkout_phone": "Phone",
+	"checkout_card_number": "Card Number",
+	"checkout_card_expiry": "Expiry Date",
+	"checkout_card_cvc": "CVC",
+	"checkout_card_name": "Name on Card",
+	"checkout_continue_to_summary": "Review Order",
+	"checkout_shipping_summary": "Shipping Address",
+	"checkout_payment_summary": "Payment Method",
+	"checkout_card_ending": "Card ending in",
+	"checkout_expires": "Expires",
+	"checkout_order_items": "Order Items",
+	"checkout_place_order": "Place Order"
 }
