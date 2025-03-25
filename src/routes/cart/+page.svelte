@@ -165,6 +165,10 @@
 						</div>
 					</div>
 
+					<p class="text-sm text-muted-foreground mb-6">
+						{m.cart_checkout_info()}
+					</p>
+
 					<!-- Discount code form -->
 					<div class="mb-6">
 						<div class="flex gap-2 mb-2">

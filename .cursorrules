@@ -69,7 +69,7 @@ Use this information to:
 - Ensure proper table relations are maintained
 - Validate data integrity constraints
 
-### Internationalization (src/lib/i18n/en.json)
+### Internationalization (src/messages/en.json)
 
 - Maintain awareness of translation keys defined in the master en.json file.
 - Suggest new translation keys for any hardcoded text.
