@@ -8,7 +8,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';
-	import VariantCard from '$lib/components/ui/variant-card.svelte';
+	import VariantCard from '$lib/components/variant-card.svelte';
 	import { formatPrice } from '$lib/utils/price';
 	import { cartActions } from '$lib/stores/cart';
 	import { ShoppingCart, Check } from 'lucide-svelte';

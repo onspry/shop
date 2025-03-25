@@ -2,7 +2,7 @@
 	import * as m from '$lib/paraglide/messages.js';
 	import AuthSection from './auth-section.svelte';
 	import DarkmodeToggle from './darkmode-toggle.svelte';
-	import CartIcon from './cart/cart-icon.svelte';
+	import CartIcon from './cart-icon.svelte';
 	// No reactive state is required for this simple nav component.
 	// Text content uses localization keys (e.g., $t('nav_home')) for multilingual support.
 </script>

@@ -3,8 +3,8 @@
 	import { X, Minus, Plus, ImageOff, Loader2 } from 'lucide-svelte';
 	import { formatPrice } from '$lib/utils/price';
 	import * as m from '$lib/paraglide/messages';
-	import { Button } from '../ui/button';
 	import { Progress } from '$lib/components/ui/progress';
+	import Button from './ui/button/button.svelte';
 
 	let {
 		item,

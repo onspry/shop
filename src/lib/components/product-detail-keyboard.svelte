@@ -8,7 +8,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';
-	import VariantCard from '$lib/components/ui/variant-card.svelte';
+	import VariantCard from '$lib/components/variant-card.svelte';
 	import ImagePreview from '$lib/components/ui/image-preview.svelte';
 	import { formatPrice } from '$lib/utils/price';
 	import { ProductCompatibilityService } from '$lib/utils/product-compatibility';

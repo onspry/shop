@@ -1,6 +1,5 @@
 <script lang="ts">
 	import {
-		isLoading,
 		updateCartFromPageData,
 		resetCartStore,
 		updateCartItem,
@@ -9,7 +8,7 @@
 		removeDiscount
 	} from '$lib/stores/cart';
 	import type { CartViewModel } from '$lib/models/cart.js';
-	import CartItem from '$lib/components/cart/cart-item.svelte';
+	import CartItem from '$lib/components/cart-item.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { ShoppingCart, ArrowRight, Loader2 } from 'lucide-svelte';
