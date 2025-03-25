@@ -9,6 +9,7 @@ export const cart = t.sqliteTable('cart', {
     sessionId: t.text('session_id').notNull().unique(),
     discountCode: t.text('discount_code'),
     discountAmount: t.integer('discount_amount').default(0), // Store amount in cents
+    guestEmail: t.text('guest_email'), // Add guestEmail field for checkout
     createdAt: t.integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
     updatedAt: t.integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
 }, (table) => [

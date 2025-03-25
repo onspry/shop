@@ -542,6 +542,8 @@ export async function getCartViewModel(sessionId: string, userId?: string): Prom
                     quantity: item.quantity,
                     price: item.price,
                     productVariantId: item.productVariantId,
+                    imageUrl: typeof variant.attributes?.image === 'string' ? variant.attributes.image : '',
+                    name: variant.name,
                     variant: {
                         id: variant.id,
                         name: variant.name,
@@ -617,5 +619,93 @@ export async function getCartSummaryViewModel(sessionId: string, userId?: string
             total: 0,
             itemCount: 0
         };
+    }
+}
+
+/**
+ * Transfer cart from session to user after login
+ */
+export async function transferCartToUser(sessionId: string, userId: string): Promise<void> {
+    try {
+        // Check if session exists and has a cart
+        const sessionCart = await db.query.cart.findFirst({
+            where: eq(cart.sessionId, sessionId)
+        });
+
+        if (!sessionCart) {
+            return; // No session cart, nothing to transfer
+        }
+
+        // Check if user already has a cart
+        const userCart = await db.query.cart.findFirst({
+            where: eq(cart.userId, userId)
+        });
+
+        if (!userCart) {
+            // If user doesn't have a cart, just assign the session cart to the user
+            await db.update(cart)
+                .set({
+                    userId,
+                    updatedAt: sql`(unixepoch())`
+                })
+                .where(eq(cart.id, sessionCart.id));
+            return;
+        }
+
+        // User already has a cart, merge the items
+        const sessionItems = await db.query.cartItem.findMany({
+            where: eq(cartItem.cartId, sessionCart.id)
+        });
+
+        // Transfer each item to the user's cart
+        for (const item of sessionItems) {
+            await addItemToCart(
+                userCart.id,
+                item.productVariantId,
+                item.quantity
+            );
+        }
+
+        // If session cart had a discount, apply it to user's cart
+        if (sessionCart.discountCode) {
+            try {
+                await applyDiscountToCart(userCart.id, sessionCart.discountCode);
+            } catch (error) {
+                console.error('Could not transfer discount code:', error);
+            }
+        }
+
+        // Delete the session cart after transfer
+        await clearCart(sessionCart.id);
+        await db.delete(cart).where(eq(cart.id, sessionCart.id));
+
+    } catch (error) {
+        console.error('Error transferring cart to user:', error);
+        throw error;
+    }
+}
+
+/**
+ * Set guest email for checkout
+ */
+export async function setGuestEmail(sessionId: string, email: string): Promise<void> {
+    try {
+        const userCart = await db.query.cart.findFirst({
+            where: eq(cart.sessionId, sessionId)
+        });
+
+        if (!userCart) {
+            throw new Error('Cart not found');
+        }
+
+        await db.update(cart)
+            .set({
+                guestEmail: email,
+                updatedAt: sql`(unixepoch())`
+            })
+            .where(eq(cart.id, userCart.id));
+    } catch (error) {
+        console.error('Error setting guest email:', error);
+        throw error;
     }
 } 

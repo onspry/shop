@@ -392,41 +392,48 @@
 	{:else}
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
 			<!-- Product Images -->
-			<div class="space-y-4">
+			<div class="relative">
 				{#if images?.length > 0}
-					<div class="rounded-lg">
-						<ImagePreview
-							src={images[currentImageIndex].url}
-							alt={images[currentImageIndex].alt}
-							width={800}
-							height={800}
-							className="rounded-lg"
-						/>
-					</div>
+					<div class="flex gap-4">
+						<!-- Thumbnails on the left -->
+						{#if images.length > 1}
+							<div class="flex flex-col gap-2 w-20">
+								{#each images as image, index}
+									<Button
+										variant="ghost"
+										size="icon"
+										onclick={() => switchMainImage(index)}
+										aria-label="View {image.alt}"
+										class="p-0 h-auto w-auto hover:bg-transparent aspect-square"
+									>
+										<ImagePreview
+											src={image.url}
+											alt={image.alt}
+											width={80}
+											height={80}
+											className="transition-opacity duration-200 aspect-square {currentImageIndex ===
+											index
+												? 'opacity-100 ring-2 ring-primary'
+												: 'opacity-70'}"
+										/>
+									</Button>
+								{/each}
+							</div>
+						{/if}
 
-					{#if images.length > 1}
-						<div class="grid grid-cols-4 gap-2">
-							{#each images as image, index}
-								<Button
-									variant="ghost"
-									size="icon"
-									onclick={() => switchMainImage(index)}
-									aria-label="View {image.alt}"
-									class="p-0 h-auto w-auto hover:bg-transparent aspect-square"
-								>
-									<ImagePreview
-										src={image.url}
-										alt={image.alt}
-										width={400}
-										height={400}
-										className="transition-opacity duration-200 {currentImageIndex === index
-											? 'opacity-100'
-											: 'opacity-50'}"
-									/>
-								</Button>
-							{/each}
+						<!-- Main image on the right -->
+						<div class="flex-1">
+							<div class="aspect-square max-w-lg mx-auto overflow-hidden rounded-lg">
+								<ImagePreview
+									src={images[currentImageIndex].url}
+									alt={images[currentImageIndex].alt}
+									width={550}
+									height={550}
+									className="rounded-lg w-full h-full object-contain"
+								/>
+							</div>
 						</div>
-					{/if}
+					</div>
 				{:else}
 					<div class="aspect-square flex items-center justify-center rounded-lg bg-muted">
 						<span class="text-muted-foreground">No image available</span>

@@ -6,6 +6,8 @@ export interface CartItemViewModel {
     quantity: number;
     price: number;
     variant: ProductVariantViewModel;
+    imageUrl: string;
+    name: string;
     product?: {
         id: string;
         name: string;

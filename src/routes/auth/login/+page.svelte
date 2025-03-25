@@ -21,6 +21,9 @@
 	// Using $props() instead of export let for Svelte 5
 	let { data } = $props();
 
+	// Get the redirect URL from the server data
+	const redirectTo = data.redirectTo || '/';
+
 	// Initialize the form with Superform
 	const { form, errors, enhance, submitting, message } = superForm(data.form, {
 		validators: zod(loginSchema),
@@ -43,7 +46,9 @@
 
 	function handleSocialLogin(provider: string) {
 		loadingProvider = provider;
-		window.location.href = `/auth/login/${provider}`;
+		// Append the redirect parameter to the social login URL
+		const redirectParam = redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : '';
+		window.location.href = `/auth/login/${provider}${redirectParam}`;
 	}
 
 	const socialProviders = [
@@ -124,7 +129,15 @@
 					Email & Password
 				</Button>
 			{:else}
-				<form method="POST" action="?/email" class="space-y-4" use:enhance>
+				<form
+					method="POST"
+					action={`?/email${redirectTo !== '/' ? `&redirect=${encodeURIComponent(redirectTo)}` : ''}`}
+					class="space-y-4"
+					use:enhance
+				>
+					<!-- Hidden input to preserve the redirect parameter -->
+					<input type="hidden" name="redirectTo" value={redirectTo} />
+
 					<div class="grid gap-2">
 						<Label for="email">Email address</Label>
 						<Input
@@ -187,7 +200,12 @@
 		<CardFooter>
 			<p class="text-sm text-muted-foreground">
 				Don't have an account?
-				<a href="/auth/register" class="font-medium hover:text-primary"> Sign up </a>
+				<a
+					href={`/auth/register${redirectTo !== '/' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`}
+					class="font-medium hover:text-primary"
+				>
+					Sign up
+				</a>
 			</p>
 		</CardFooter>
 	</Card>

@@ -2,8 +2,21 @@
 	import type { PageData } from './$types';
 	import ProductDetailKeyboard from '$lib/components/product-detail-keyboard.svelte';
 	import ProductDetailAccessory from '$lib/components/product-detail-accessory.svelte';
+	import { onMount } from 'svelte';
 
 	let { data } = $props<{ data: PageData }>();
+
+	// Content visibility control
+	let contentVisible = $state(false);
+
+	// Set timeout to prevent flash of content
+	onMount(() => {
+		const timer = setTimeout(() => {
+			contentVisible = true;
+		}, 300);
+
+		return () => clearTimeout(timer);
+	});
 
 	// Derive product category safely
 	const productCategory = $derived(data?.product?.category?.toUpperCase() ?? '');
@@ -16,7 +29,11 @@
 </script>
 
 <div class="min-h-screen bg-background">
-	<div class="container mx-auto px-4 py-8">
+	<div
+		class="container mx-auto px-4 py-8 transition-opacity duration-500"
+		class:opacity-0={!contentVisible}
+		class:opacity-100={contentVisible}
+	>
 		{#if !data}
 			<div class="flex justify-center items-center h-64">
 				<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>

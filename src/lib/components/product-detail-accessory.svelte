@@ -67,14 +67,18 @@
 
 	// Image utility functions
 	function getOptimizedImageUrl(url: string, width: number, height: number): string {
-		return url;
+		if (!url) return '';
+		// Ensure URL starts with a forward slash if it's a relative path
+		if (!url.startsWith('/') && !url.startsWith('http')) {
+			url = '/' + url;
+		}
+		return `${url}?w=${width}&h=${height}&q=80&format=webp`;
 	}
 
 	function handleImageLoad(event: Event) {
 		const img = event.target as HTMLImageElement;
-		const url = img.getAttribute('data-src');
-		if (url) {
-			loadedImages.add(url);
+		if (img.src) {
+			loadedImages.add(img.src);
 		}
 	}
 
@@ -129,53 +133,72 @@
 	{:else}
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
 			<!-- Product Images -->
-			<div class="space-y-4">
+			<div class="relative">
 				{#if images?.length > 0}
-					<div class="aspect-square overflow-hidden rounded-lg bg-muted relative">
-						{#if !loadedImages.has(images[0].url)}
-							<div class="absolute inset-0 flex items-center justify-center">
-								<div class="animate-pulse bg-muted-foreground/20 w-full h-full"></div>
+					<div class="flex gap-4">
+						<!-- Thumbnails on the left -->
+						{#if images.length > 1}
+							<div class="flex flex-col gap-2 w-20">
+								{#each images as image, index (image.url)}
+									<Button
+										type="button"
+										class={`aspect-square overflow-hidden rounded-md bg-muted relative cursor-pointer hover:opacity-80 transition-opacity border-0 p-0 w-full ${
+											loadedImages.has(image.url) && index === 0 ? 'ring-2 ring-primary' : ''
+										}`}
+										onclick={() => {
+											// Move this image to first position in display
+											const temp = [...images];
+											const selectedImg = temp.splice(index, 1)[0];
+											temp.unshift(selectedImg);
+											images = temp;
+										}}
+										aria-label={`View ${image.alt || 'product image'}`}
+									>
+										{#if !loadedImages.has(image.url)}
+											<div class="absolute inset-0 flex items-center justify-center">
+												<div class="animate-pulse bg-muted-foreground/20 w-full h-full"></div>
+											</div>
+										{/if}
+										<img
+											src={getOptimizedImageUrl(image.url, 80, 80)}
+											alt={image.alt}
+											width={80}
+											height={80}
+											loading="lazy"
+											class="h-full w-full object-contain object-center transition-opacity duration-300"
+											class:opacity-0={!loadedImages.has(image.url)}
+											class:opacity-100={loadedImages.has(image.url)}
+											onload={handleImageLoad}
+											onerror={handleImageError}
+										/>
+									</Button>
+								{/each}
 							</div>
 						{/if}
-						<img
-							data-src={getOptimizedImageUrl(images[0].url, 800, 800)}
-							alt={images[0].alt}
-							width={800}
-							height={800}
-							loading="lazy"
-							class="h-full w-full object-cover object-center transition-opacity duration-300"
-							class:opacity-0={!loadedImages.has(images[0].url)}
-							class:opacity-100={loadedImages.has(images[0].url)}
-							onload={handleImageLoad}
-							onerror={handleImageError}
-						/>
-					</div>
 
-					{#if images.length > 1}
-						<div class="grid grid-cols-4 gap-2">
-							{#each images.slice(1) as image}
-								<div class="aspect-square overflow-hidden rounded-md bg-muted relative">
-									{#if !loadedImages.has(image.url)}
-										<div class="absolute inset-0 flex items-center justify-center">
-											<div class="animate-pulse bg-muted-foreground/20 w-full h-full"></div>
-										</div>
-									{/if}
-									<img
-										data-src={getOptimizedImageUrl(image.url, 200, 200)}
-										alt={image.alt}
-										width={200}
-										height={200}
-										loading="lazy"
-										class="h-full w-full object-cover object-center cursor-pointer hover:opacity-80 transition-opacity"
-										class:opacity-0={!loadedImages.has(image.url)}
-										class:opacity-100={loadedImages.has(image.url)}
-										onload={handleImageLoad}
-										onerror={handleImageError}
-									/>
-								</div>
-							{/each}
+						<!-- Main image on the right -->
+						<div class="flex-1">
+							<div class="aspect-square max-w-lg mx-auto rounded-lg bg-muted relative">
+								{#if !loadedImages.has(images[0].url)}
+									<div class="absolute inset-0 flex items-center justify-center">
+										<div class="animate-pulse bg-muted-foreground/20 w-full h-full"></div>
+									</div>
+								{/if}
+								<img
+									src={getOptimizedImageUrl(images[0].url, 550, 550)}
+									alt={images[0].alt}
+									width={550}
+									height={550}
+									loading="lazy"
+									class="h-full w-full object-contain object-center transition-opacity duration-300"
+									class:opacity-0={!loadedImages.has(images[0].url)}
+									class:opacity-100={loadedImages.has(images[0].url)}
+									onload={handleImageLoad}
+									onerror={handleImageError}
+								/>
+							</div>
 						</div>
-					{/if}
+					</div>
 				{:else}
 					<div class="aspect-square flex items-center justify-center rounded-lg bg-muted">
 						<span class="text-muted-foreground">No image available</span>

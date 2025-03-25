@@ -4,10 +4,22 @@
 	import { Button } from '$lib/components/ui/button';
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
-	import { fade } from 'svelte/transition';
 	import { ChevronLeft, ChevronRight } from 'lucide-svelte';
+	import { onMount } from 'svelte';
 
 	let { data } = $props<{ data: { catalogue: CatalogueViewModel } }>();
+
+	// Content visibility control
+	let contentVisible = $state(false);
+
+	// Set timeout to prevent flash of content
+	onMount(() => {
+		const timer = setTimeout(() => {
+			contentVisible = true;
+		}, 300);
+
+		return () => clearTimeout(timer);
+	});
 
 	// Calculate pagination - only run in browser
 	const currentPage = $state(
@@ -28,7 +40,11 @@
 </script>
 
 <div class="min-h-screen bg-background">
-	<div class="container py-16 px-4 sm:px-6 lg:px-8">
+	<div
+		class="container py-16 px-4 sm:px-6 lg:px-8 transition-opacity duration-500"
+		class:opacity-0={!contentVisible}
+		class:opacity-100={contentVisible}
+	>
 		{#if !data.catalogue || data.catalogue.productGroups.length === 0}
 			<div class="flex flex-col items-center justify-center py-16 text-muted-foreground">
 				<div class="text-2xl font-medium mb-4">No products available</div>
@@ -36,7 +52,7 @@
 			</div>
 		{:else}
 			{#each data.catalogue.productGroups as group}
-				<section class="mb-24" transition:fade>
+				<section class="mb-24">
 					<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
 						<h2 class="text-4xl font-bold tracking-tight text-foreground mb-4 sm:mb-0">
 							{group.category}
@@ -44,10 +60,7 @@
 						<div class="h-1 w-24 bg-primary rounded-full hidden sm:block"></div>
 					</div>
 
-					<div
-						class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-						in:fade={{ duration: 300, delay: 150 }}
-					>
+					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 						{#each group.products as product (product.id)}
 							<div class="transform transition-all duration-300 hover:scale-[1.02]">
 								<ProductCard {product} />
