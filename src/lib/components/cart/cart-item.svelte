@@ -25,48 +25,56 @@
 	let progress = $state(0);
 	let progressInterval: ReturnType<typeof setInterval> | null = null;
 	let showProgress = $state(false);
+	let isAnimating = $state(false);
 
 	$effect(() => {
 		const isActive = isLoading && loadingAction !== '';
 
-		if (isActive) {
-			// Start new progress animation
+		if (isActive && !isAnimating) {
+			isAnimating = true;
 			showProgress = true;
 			progress = 0;
 			const startTime = Date.now();
 
-			// Clear any existing interval
 			if (progressInterval) {
 				clearInterval(progressInterval);
 			}
 
 			progressInterval = setInterval(() => {
 				const elapsed = Date.now() - startTime;
-				if (elapsed < 2000) {
-					// First 2 seconds: progress slowly to 30%
-					progress = (elapsed / 2000) * 30;
+				if (elapsed < 1000) {
+					// First second: Quick initial progress to 20%
+					progress = (elapsed / 1000) * 20;
+				} else if (elapsed < 3000) {
+					// Next 2 seconds: Slower progress to 60%
+					progress = 20 + ((elapsed - 1000) / 2000) * 40;
 				} else {
-					// After 2 seconds: progress more quickly to 90%
-					progress = Math.min(90, 30 + ((elapsed - 2000) / 3000) * 60);
+					// After 3 seconds: Very slow progress to 85%
+					progress = Math.min(85, 60 + ((elapsed - 3000) / 4000) * 25);
 				}
 			}, 50);
-		} else {
-			// Complete the progress if it was showing
-			if (showProgress) {
-				progress = 100;
-				setTimeout(() => {
-					showProgress = false;
-				}, 500);
-			}
-
-			// Clear interval if it exists
+		} else if (!isActive && isAnimating) {
+			// First, clear the interval
 			if (progressInterval) {
 				clearInterval(progressInterval);
 				progressInterval = null;
 			}
+
+			// Create a smooth transition to 100%
+			const finalInterval = setInterval(() => {
+				if (progress < 100) {
+					progress = Math.min(100, progress + 2);
+				} else {
+					clearInterval(finalInterval);
+					// Only start fade out after reaching 100%
+					setTimeout(() => {
+						showProgress = false;
+						isAnimating = false;
+					}, 300);
+				}
+			}, 16);
 		}
 
-		// Cleanup on component destroy
 		return () => {
 			if (progressInterval) {
 				clearInterval(progressInterval);
@@ -193,10 +201,10 @@
 			</div>
 		</div>
 	</div>
-	{#if showProgress && loadingAction !== ''}
+	{#if showProgress}
 		<Progress
 			value={progress}
-			class="absolute bottom-0 left-0 right-0 h-1 transition-all duration-500"
+			class="absolute bottom-0 left-0 right-0 h-1 transition-opacity duration-500"
 		/>
 	{/if}
 </div>

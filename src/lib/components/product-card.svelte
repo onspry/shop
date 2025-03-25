@@ -41,7 +41,7 @@
 </script>
 
 <div
-	class="group relative bg-background border border-border rounded-lg overflow-hidden transition-all duration-300 hover:border-primary hover:shadow-lg"
+	class="group relative bg-background ring-2 ring-border hover:ring-primary rounded-xl overflow-hidden transition-colors duration-300 hover:shadow-lg"
 >
 	<div class="relative h-48">
 		<div class="absolute inset-0 flex items-center justify-center bg-muted">
@@ -59,7 +59,7 @@
 					width={300}
 					height={300}
 					loading="lazy"
-					class="max-h-48 w-auto object-contain group-hover:scale-105 transition-transform duration-300"
+					class="max-h-48 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
 					class:opacity-0={!imageLoaded}
 					class:opacity-100={imageLoaded}
 					onerror={handleImageError}
