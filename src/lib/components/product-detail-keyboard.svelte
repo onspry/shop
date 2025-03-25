@@ -9,6 +9,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';
 	import VariantCard from '$lib/components/ui/variant-card.svelte';
+	import ImagePreview from '$lib/components/ui/image-preview.svelte';
 	import { formatPrice } from '$lib/utils/price';
 	import { ProductCompatibilityService } from '$lib/utils/product-compatibility';
 	import { browser } from '$app/environment';
@@ -275,10 +276,16 @@
 
 	function handleImageError(event: Event) {
 		const img = event.target as HTMLImageElement;
-		imageErrors.add(img.src);
+		const originalUrl = img.src.split('?')[0]; // Get the base URL without query params
+		imageErrors.add(originalUrl);
 	}
 
 	function getOptimizedImageUrl(url: string, width: number, height: number): string {
+		if (!url) return '';
+		// Ensure URL starts with a forward slash if it's a relative path
+		if (!url.startsWith('/') && !url.startsWith('http')) {
+			url = '/' + url;
+		}
 		return `${url}?w=${width}&h=${height}&q=80&format=webp`;
 	}
 
@@ -352,6 +359,14 @@
 					: 'https://schema.org/OutOfStock'
 		}
 	}));
+
+	// Add state for current main image
+	let currentImageIndex = $state(0);
+
+	// Function to switch main image
+	function switchMainImage(index: number) {
+		currentImageIndex = index;
+	}
 </script>
 
 <!-- Add structured data to head -->
@@ -379,60 +394,36 @@
 			<!-- Product Images -->
 			<div class="space-y-4">
 				{#if images?.length > 0}
-					<div class="aspect-square overflow-hidden rounded-lg bg-muted relative">
-						{#if !loadedImages.has(images[0].url)}
-							<div class="absolute inset-0 flex items-center justify-center">
-								<div class="animate-pulse bg-muted-foreground/20 w-full h-full"></div>
-							</div>
-						{/if}
-						{#if imageErrors.has(images[0].url)}
-							<div class="absolute inset-0 flex items-center justify-center bg-muted">
-								<ImageOff class="h-12 w-12 text-muted-foreground" />
-							</div>
-						{:else}
-							<img
-								data-src={getOptimizedImageUrl(images[0].url, 800, 800)}
-								alt={images[0].alt}
-								width={800}
-								height={800}
-								loading="lazy"
-								class="h-full w-full object-cover object-center transition-opacity duration-300"
-								class:opacity-0={!loadedImages.has(images[0].url)}
-								class:opacity-100={loadedImages.has(images[0].url)}
-								onload={handleImageLoad}
-								onerror={handleImageError}
-							/>
-						{/if}
+					<div class="rounded-lg">
+						<ImagePreview
+							src={images[currentImageIndex].url}
+							alt={images[currentImageIndex].alt}
+							width={800}
+							height={800}
+							className="rounded-lg"
+						/>
 					</div>
 
 					{#if images.length > 1}
 						<div class="grid grid-cols-4 gap-2">
-							{#each images.slice(1) as image}
-								<div class="aspect-square overflow-hidden rounded-md bg-muted relative">
-									{#if !loadedImages.has(image.url)}
-										<div class="absolute inset-0 flex items-center justify-center">
-											<div class="animate-pulse bg-muted-foreground/20 w-full h-full"></div>
-										</div>
-									{/if}
-									{#if imageErrors.has(image.url)}
-										<div class="absolute inset-0 flex items-center justify-center bg-muted">
-											<ImageOff class="h-6 w-6 text-muted-foreground" />
-										</div>
-									{:else}
-										<img
-											data-src={getOptimizedImageUrl(image.url, 200, 200)}
-											alt={image.alt}
-											width={200}
-											height={200}
-											loading="lazy"
-											class="h-full w-full object-cover object-center cursor-pointer hover:opacity-80 transition-opacity"
-											class:opacity-0={!loadedImages.has(image.url)}
-											class:opacity-100={loadedImages.has(image.url)}
-											onload={handleImageLoad}
-											onerror={handleImageError}
-										/>
-									{/if}
-								</div>
+							{#each images as image, index}
+								<Button
+									variant="ghost"
+									size="icon"
+									onclick={() => switchMainImage(index)}
+									aria-label="View {image.alt}"
+									class="p-0 h-auto w-auto hover:bg-transparent aspect-square"
+								>
+									<ImagePreview
+										src={image.url}
+										alt={image.alt}
+										width={400}
+										height={400}
+										className="transition-opacity duration-200 {currentImageIndex === index
+											? 'opacity-100'
+											: 'opacity-50'}"
+									/>
+								</Button>
 							{/each}
 						</div>
 					{/if}
@@ -498,7 +489,6 @@
 						</div>
 					{:else if selectedVariant}
 						<div class="flex flex-col items-center justify-center p-8 bg-muted rounded-lg">
-							<ImageOff class="h-12 w-12 text-muted-foreground mb-4" />
 							<div class="text-muted-foreground text-center">
 								No compatible switches found for this keyboard variant.
 							</div>
@@ -525,7 +515,6 @@
 						</div>
 					{:else if selectedSwitch}
 						<div class="flex flex-col items-center justify-center p-8 bg-muted rounded-lg">
-							<ImageOff class="h-12 w-12 text-muted-foreground mb-4" />
 							<div class="text-muted-foreground text-center">
 								No compatible keycaps found for this switch type.
 							</div>
@@ -577,22 +566,26 @@
 							<span class="text-sm font-medium">{m.product_quantity()}</span>
 							<div class="flex items-center">
 								<Button
-									type="button"
+									variant="outline"
+									size="icon"
 									onclick={() => quantity > 1 && (quantity -= 1)}
-									class="px-2 py-1 border border-border rounded-l-md bg-card hover:bg-muted transition-colors"
 									disabled={quantity <= 1}
 									aria-label="Decrease quantity"
+									class="rounded-r-none"
 								>
 									-
 								</Button>
-								<span class="px-4 py-1 border-y border-border bg-background text-center w-12">
+								<span
+									class="px-4 py-2 border-y border-input bg-background text-center min-w-[3rem]"
+								>
 									{quantity}
 								</span>
 								<Button
-									type="button"
+									variant="outline"
+									size="icon"
 									onclick={() => (quantity += 1)}
-									class="px-2 py-1 border border-border rounded-r-md bg-card hover:bg-muted transition-colors"
 									aria-label="Increase quantity"
+									class="rounded-l-none"
 								>
 									+
 								</Button>
@@ -609,10 +602,11 @@
 
 						<!-- Add to cart button -->
 						<Button
-							type="button"
+							variant="default"
+							size="lg"
 							onclick={addToCart}
 							disabled={!canAddToCart || isAddingToCart}
-							class="w-full mt-6 py-3 px-6 flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+							class="w-full"
 						>
 							{#if isAddingToCart}
 								<span
@@ -630,8 +624,12 @@
 
 						{#if addedToCart}
 							<div class="flex justify-between gap-2 mt-2">
-								<Button variant="outline" class="flex-1" href="/cart">View Cart</Button>
-								<Button variant="outline" class="flex-1" href="/checkout">Checkout</Button>
+								<Button variant="outline" class="flex-1" href="/cart">
+									<span>View Cart</span>
+								</Button>
+								<Button variant="outline" class="flex-1" href="/checkout">
+									<span>Checkout</span>
+								</Button>
 							</div>
 						{/if}
 					</div>

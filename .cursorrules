@@ -188,9 +188,9 @@ Use this information to:
   }
 </script>
 
-<button onclick={incrementCount}>
+<Button onclick={incrementCount}>
   Increment: {count} (doubled: {doubledCount})
-</button>
+</Button>
 
 <ImageWithSkeleton 
   src="/product-image.jpg"
@@ -322,7 +322,7 @@ export async function load({ params }) {
   <h3>{m.product_title()}</h3>
   <p>{m.product_price({ value: product.price })}</p>
   <span>{m.product_quantity()}</span>
-  <button>{m.product_add_to_cart()}</button>
+  <Button>{m.product_add_to_cart()}</Button>
 </div>
 ```
 

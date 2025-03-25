@@ -8,6 +8,7 @@
 	} from '$lib/paraglide/messages';
 	import { formatPrice } from '$lib/utils/price';
 	import { ImageOff } from 'lucide-svelte';
+	import { Button } from './ui/button';
 
 	let { product } = $props<{
 		product: ProductViewModel;
@@ -95,12 +96,12 @@
 		</p>
 
 		<div class="flex justify-between items-center">
-			<button
+			<Button
 				class="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors duration-300"
 				onclick={() => (window.location.href = `/products/${product.slug}`)}
 			>
 				{product_view_details()}
-			</button>
+			</Button>
 
 			{#if product.isAccessory}
 				<span class="text-sm text-muted-foreground">

@@ -3,6 +3,7 @@
 	import { X, Minus, Plus, ImageOff, Loader2 } from 'lucide-svelte';
 	import { formatPrice } from '$lib/utils/price';
 	import * as m from '$lib/paraglide/messages';
+	import { Button } from '../ui/button';
 
 	let {
 		item,
@@ -83,7 +84,7 @@
 				<p class="text-muted-foreground text-xs sm:text-sm">{formatPrice(price)}</p>
 			</div>
 			<div class="flex items-start">
-				<button
+				<Button
 					class="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
 					onclick={onRemove}
 					disabled={disabled || isLoading}
@@ -94,13 +95,13 @@
 					{:else}
 						<X class="h-5 w-5" />
 					{/if}
-				</button>
+				</Button>
 			</div>
 		</div>
 
 		<div class="mt-4 flex justify-between items-center">
 			<div class="flex items-center space-x-1">
-				<button
+				<Button
 					class="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
 					onclick={decrementQuantity}
 					disabled={disabled || isLoading || quantity <= minQuantity}
@@ -111,11 +112,11 @@
 					{:else}
 						<Minus class="h-4 w-4" />
 					{/if}
-				</button>
+				</Button>
 
 				<span class="w-8 text-center text-sm">{quantity}</span>
 
-				<button
+				<Button
 					class="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
 					onclick={incrementQuantity}
 					disabled={disabled || isLoading || quantity >= maxQuantity}
@@ -126,7 +127,7 @@
 					{:else}
 						<Plus class="h-4 w-4" />
 					{/if}
-				</button>
+				</Button>
 			</div>
 
 			<div class="text-right">

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Eye, EyeOff } from 'lucide-svelte';
+	import { Button } from './ui/button';
 
 	// Using $props() for Svelte 5 with oninput callback
 	let { value, id, name, placeholder, autocomplete, ariaInvalid, disabled, oninput } = $props<{
@@ -39,11 +40,11 @@
 		{disabled}
 		class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pr-10"
 	/>
-	<button
+	<Button
 		type="button"
 		class="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground hover:text-foreground"
 		onclick={toggleVisibility}
-		tabindex="-1"
+		tabindex={-1}
 		aria-label={showPassword ? 'Hide password' : 'Show password'}
 	>
 		{#if showPassword}
@@ -51,5 +52,5 @@
 		{:else}
 			<Eye class="h-4 w-4" />
 		{/if}
-	</button>
+	</Button>
 </div>

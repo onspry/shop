@@ -15,6 +15,7 @@
 	} from '$lib/components/ui/card';
 	import { Zap, Wrench, Sparkles, ChevronsDown } from 'lucide-svelte';
 	import Hero from '$lib/components/hero.svelte';
+	import { Button } from '$lib/components/ui/button';
 	// Scroll to features function
 	function scrollToFeatures() {
 		// Delay scrolling by 300ms to allow button animation to play
@@ -47,14 +48,14 @@
 	<Hero />
 
 	<div class="flex justify-center">
-		<button
+		<Button
 			type="button"
 			class="group cursor-pointer p-2 transition-colors hover:text-primary"
 			onclick={scrollToFeatures}
 			aria-label="Scroll to features"
 		>
 			<ChevronsDown class="h-10 w-10 animate-bounce transition-transform group-hover:scale-110" />
-		</button>
+		</Button>
 	</div>
 
 	<div id="features" class="w-full pt-8">
