@@ -4,6 +4,7 @@
 	import { formatPrice } from '$lib/utils/price';
 	import * as m from '$lib/paraglide/messages';
 	import { Button } from '../ui/button';
+	import { Progress } from '$lib/components/ui/progress';
 
 	let {
 		item,
@@ -20,6 +21,58 @@
 		isLoading?: boolean;
 		loadingAction?: 'increment' | 'decrement' | 'remove' | '';
 	}>();
+
+	let progress = $state(0);
+	let progressInterval: ReturnType<typeof setInterval> | null = null;
+	let showProgress = $state(false);
+
+	$effect(() => {
+		const isActive = isLoading && loadingAction !== '';
+
+		if (isActive) {
+			// Start new progress animation
+			showProgress = true;
+			progress = 0;
+			const startTime = Date.now();
+
+			// Clear any existing interval
+			if (progressInterval) {
+				clearInterval(progressInterval);
+			}
+
+			progressInterval = setInterval(() => {
+				const elapsed = Date.now() - startTime;
+				if (elapsed < 2000) {
+					// First 2 seconds: progress slowly to 30%
+					progress = (elapsed / 2000) * 30;
+				} else {
+					// After 2 seconds: progress more quickly to 90%
+					progress = Math.min(90, 30 + ((elapsed - 2000) / 3000) * 60);
+				}
+			}, 50);
+		} else {
+			// Complete the progress if it was showing
+			if (showProgress) {
+				progress = 100;
+				setTimeout(() => {
+					showProgress = false;
+				}, 500);
+			}
+
+			// Clear interval if it exists
+			if (progressInterval) {
+				clearInterval(progressInterval);
+				progressInterval = null;
+			}
+		}
+
+		// Cleanup on component destroy
+		return () => {
+			if (progressInterval) {
+				clearInterval(progressInterval);
+			}
+		};
+	});
 
 	// Quantity can't go below 1 or above available stock
 	const minQuantity = 1;
@@ -51,88 +104,99 @@
 	}
 </script>
 
-<div class="flex border rounded-lg overflow-hidden bg-background">
-	<div class="w-32 h-32 flex-shrink-0">
-		<div class="relative aspect-square h-full overflow-hidden">
-			{#if imageError}
-				<div class="absolute inset-0 flex items-center justify-center bg-muted">
-					<ImageOff class="h-8 w-8 text-muted-foreground" />
-				</div>
-			{:else}
-				{#if !imageLoaded}
-					<div class="absolute inset-0">
-						<div class="h-full w-full animate-pulse bg-muted-foreground/20"></div>
+<div class="relative">
+	<div class="flex border rounded-lg overflow-hidden bg-background">
+		<div class="w-32 h-32 flex-shrink-0">
+			<div class="relative aspect-square h-full overflow-hidden">
+				{#if imageError}
+					<div class="absolute inset-0 flex items-center justify-center bg-muted">
+						<ImageOff class="h-8 w-8 text-muted-foreground" />
 					</div>
+				{:else}
+					{#if !imageLoaded}
+						<div class="absolute inset-0">
+							<div class="h-full w-full animate-pulse bg-muted-foreground/20"></div>
+						</div>
+					{/if}
+					<img
+						src={variantImage}
+						alt={variantName}
+						class="h-full w-full object-cover transition-opacity duration-300"
+						class:opacity-0={!imageLoaded}
+						class:opacity-100={imageLoaded}
+						onerror={handleImageError}
+						onload={handleImageLoad}
+					/>
 				{/if}
-				<img
-					src={variantImage}
-					alt={variantName}
-					class="h-full w-full object-cover transition-opacity duration-300"
-					class:opacity-0={!imageLoaded}
-					class:opacity-100={imageLoaded}
-					onerror={handleImageError}
-					onload={handleImageLoad}
-				/>
-			{/if}
-		</div>
-	</div>
-
-	<div class="flex-1 p-4 flex flex-col justify-between">
-		<div class="flex justify-between">
-			<div>
-				<h3 class="font-medium text-sm sm:text-base">{variantName}</h3>
-				<p class="text-muted-foreground text-xs sm:text-sm">{formatPrice(price)}</p>
-			</div>
-			<div class="flex items-start">
-				<Button
-					class="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-					onclick={onRemove}
-					disabled={disabled || isLoading}
-					aria-label={m.cart_remove()}
-				>
-					{#if isLoading && loadingAction === 'remove'}
-						<Loader2 class="h-5 w-5 animate-spin" />
-					{:else}
-						<X class="h-5 w-5" />
-					{/if}
-				</Button>
 			</div>
 		</div>
 
-		<div class="mt-4 flex justify-between items-center">
-			<div class="flex items-center space-x-1">
-				<Button
-					class="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-					onclick={decrementQuantity}
-					disabled={disabled || isLoading || quantity <= minQuantity}
-					aria-label={m.cart_decrease_quantity()}
-				>
-					{#if isLoading && loadingAction === 'decrement'}
-						<Loader2 class="h-4 w-4 animate-spin" />
-					{:else}
-						<Minus class="h-4 w-4" />
-					{/if}
-				</Button>
-
-				<span class="w-8 text-center text-sm">{quantity}</span>
-
-				<Button
-					class="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-					onclick={incrementQuantity}
-					disabled={disabled || isLoading || quantity >= maxQuantity}
-					aria-label={m.cart_increase_quantity()}
-				>
-					{#if isLoading && loadingAction === 'increment'}
-						<Loader2 class="h-4 w-4 animate-spin" />
-					{:else}
-						<Plus class="h-4 w-4" />
-					{/if}
-				</Button>
+		<div class="flex-1 p-4 flex flex-col justify-between">
+			<div class="flex justify-between">
+				<div>
+					<h3 class="font-medium text-sm sm:text-base">{variantName}</h3>
+					<p class="text-muted-foreground text-xs sm:text-sm">{formatPrice(price)}</p>
+				</div>
+				<div class="flex items-start">
+					<Button
+						class="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+						variant="ghost"
+						onclick={onRemove}
+						disabled={disabled || isLoading}
+						aria-label={m.cart_remove()}
+					>
+						{#if isLoading && loadingAction === 'remove'}
+							<Loader2 class="h-5 w-5 animate-spin" />
+						{:else}
+							<X class="h-5 w-5" />
+						{/if}
+					</Button>
+				</div>
 			</div>
 
-			<div class="text-right">
-				<span class="font-medium">{formatPrice(price * quantity)}</span>
+			<div class="mt-4 flex justify-between items-center">
+				<div class="flex items-center space-x-1">
+					<Button
+						class="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+						variant="ghost"
+						onclick={decrementQuantity}
+						disabled={disabled || isLoading || quantity <= minQuantity}
+						aria-label={m.cart_decrease_quantity()}
+					>
+						{#if isLoading && loadingAction === 'decrement'}
+							<Loader2 class="h-4 w-4 animate-spin" />
+						{:else}
+							<Minus class="h-4 w-4" />
+						{/if}
+					</Button>
+
+					<span class="w-8 text-center text-sm">{quantity}</span>
+
+					<Button
+						class="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+						variant="ghost"
+						onclick={incrementQuantity}
+						disabled={disabled || isLoading || quantity >= maxQuantity}
+						aria-label={m.cart_increase_quantity()}
+					>
+						{#if isLoading && loadingAction === 'increment'}
+							<Loader2 class="h-4 w-4 animate-spin" />
+						{:else}
+							<Plus class="h-4 w-4" />
+						{/if}
+					</Button>
+				</div>
+
+				<div class="text-right">
+					<span class="font-medium">{formatPrice(price * quantity)}</span>
+				</div>
 			</div>
 		</div>
 	</div>
+	{#if showProgress && loadingAction !== ''}
+		<Progress
+			value={progress}
+			class="absolute bottom-0 left-0 right-0 h-1 transition-all duration-500"
+		/>
+	{/if}
 </div>

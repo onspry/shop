@@ -566,8 +566,7 @@
 							<span class="text-sm font-medium">{m.product_quantity()}</span>
 							<div class="flex items-center">
 								<Button
-									variant="outline"
-									size="icon"
+									variant="ghost"
 									onclick={() => quantity > 1 && (quantity -= 1)}
 									disabled={quantity <= 1}
 									aria-label="Decrease quantity"
@@ -575,14 +574,9 @@
 								>
 									-
 								</Button>
-								<span
-									class="px-4 py-2 border-y border-input bg-background text-center min-w-[3rem]"
-								>
-									{quantity}
-								</span>
+								<span class="w-8 text-center text-sm">{quantity}</span>
 								<Button
-									variant="outline"
-									size="icon"
+									variant="ghost"
 									onclick={() => (quantity += 1)}
 									aria-label="Increase quantity"
 									class="rounded-l-none"

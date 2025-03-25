@@ -48,14 +48,16 @@
 	<Hero />
 
 	<div class="flex justify-center">
-		<Button
-			type="button"
-			class="group cursor-pointer p-2 transition-colors hover:text-primary"
+		<div
+			class="cursor-pointer text-muted-foreground hover:text-primary transition-colors"
 			onclick={scrollToFeatures}
+			onkeydown={(e) => e.key === 'Enter' && scrollToFeatures()}
+			role="button"
+			tabindex="0"
 			aria-label="Scroll to features"
 		>
-			<ChevronsDown class="h-10 w-10 animate-bounce transition-transform group-hover:scale-110" />
-		</Button>
+			<ChevronsDown class="h-12 w-12 animate-bounce" />
+		</div>
 	</div>
 
 	<div id="features" class="w-full pt-8">
