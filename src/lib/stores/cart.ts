@@ -32,9 +32,10 @@ async function executeCartAction(
     action: string,
     formData: FormData
 ): Promise<CartOperationResult> {
-    try {
-        isLoading.set(true);
+    // Set loading state before any operations
+    isLoading.set(true);
 
+    try {
         const response = await fetch(`/cart?/${action}`, {
             method: 'POST',
             body: formData
@@ -44,6 +45,9 @@ async function executeCartAction(
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.message || `Failed to execute ${action}`);
         }
+
+        // Wait a bit before invalidating to ensure loading state is visible
+        await new Promise(resolve => setTimeout(resolve, 100));
 
         // Refresh data by invalidating all endpoints
         await invalidateAll();
@@ -56,6 +60,7 @@ async function executeCartAction(
             error: error instanceof Error ? error.message : 'Unknown error occurred'
         };
     } finally {
+        // Clear loading state after operation completes
         isLoading.set(false);
     }
 }

@@ -21,8 +21,6 @@
 	let { data } = $props();
 
 	// Track loading states for specific actions
-	let loadingItemId = $state<string | null>(null);
-	let loadingAction = $state<'increment' | 'decrement' | 'remove' | ''>('');
 	let isApplyingDiscount = $state(false);
 	let isRemovingDiscount = $state(false);
 	let discountCode = $state('');
@@ -61,30 +59,25 @@
 
 	// Handle updating cart item quantity
 	async function handleQuantityChange(itemId: string, newQuantity: number) {
-		loadingItemId = itemId;
-		loadingAction =
-			newQuantity > (cartData?.items.find((i) => i.id === itemId)?.quantity || 0)
-				? 'increment'
-				: 'decrement';
-		const result = await updateCartItem(itemId, newQuantity);
-		loadingItemId = null;
-		loadingAction = '';
-
-		if (!result.success) {
-			console.error('Failed to update quantity:', result.error);
+		try {
+			const result = await updateCartItem(itemId, newQuantity);
+			if (!result.success) {
+				console.error('Failed to update quantity:', result.error);
+			}
+		} catch (error) {
+			console.error('Error updating quantity:', error);
 		}
 	}
 
 	// Handle removing item from cart
 	async function handleRemoveItem(itemId: string) {
-		loadingItemId = itemId;
-		loadingAction = 'remove';
-		const result = await removeCartItem(itemId);
-		loadingItemId = null;
-		loadingAction = '';
-
-		if (!result.success) {
-			console.error('Failed to remove item:', result.error);
+		try {
+			const result = await removeCartItem(itemId);
+			if (!result.success) {
+				console.error('Failed to remove item:', result.error);
+			}
+		} catch (error) {
+			console.error('Error removing item:', error);
 		}
 	}
 
@@ -153,9 +146,7 @@
 							{item}
 							onQuantityChange={(quantity) => handleQuantityChange(item.id, quantity)}
 							onRemove={() => handleRemoveItem(item.id)}
-							isLoading={loadingItemId !== null}
-							disabled={loadingItemId !== null}
-							loadingAction={loadingItemId === item.id ? loadingAction : ''}
+							disabled={false}
 						/>
 					{/each}
 				</div>

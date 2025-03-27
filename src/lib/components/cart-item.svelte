@@ -10,77 +10,68 @@
 		item,
 		onQuantityChange,
 		onRemove,
-		disabled = false,
-		isLoading = false,
-		loadingAction = ''
+		disabled = false
 	} = $props<{
 		item: CartItemViewModel;
 		onQuantityChange: (quantity: number) => void;
 		onRemove: () => void;
 		disabled?: boolean;
-		isLoading?: boolean;
-		loadingAction?: 'increment' | 'decrement' | 'remove' | '';
 	}>();
 
 	let progress = $state(0);
 	let progressInterval: ReturnType<typeof setInterval> | null = null;
 	let showProgress = $state(false);
 	let isAnimating = $state(false);
+	let actionStartTime = $state<number | null>(null);
+	let lastQuantity = $state(item?.quantity || 0);
+	let lastTotalPrice = $state(0);
 
+	// Calculate total price
+	const totalPrice = $derived(item?.price * item?.quantity || 0);
+
+	// Watch for quantity and price changes
 	$effect(() => {
-		const isActive = isLoading && loadingAction !== '';
-
-		if (isActive && !isAnimating) {
-			isAnimating = true;
-			showProgress = true;
-			progress = 0;
-			const startTime = Date.now();
-
-			if (progressInterval) {
-				clearInterval(progressInterval);
-			}
-
-			progressInterval = setInterval(() => {
-				const elapsed = Date.now() - startTime;
-				if (elapsed < 1000) {
-					// First second: Quick initial progress to 20%
-					progress = (elapsed / 1000) * 20;
-				} else if (elapsed < 3000) {
-					// Next 2 seconds: Slower progress to 60%
-					progress = 20 + ((elapsed - 1000) / 2000) * 40;
-				} else {
-					// After 3 seconds: Very slow progress to 85%
-					progress = Math.min(85, 60 + ((elapsed - 3000) / 4000) * 25);
-				}
-			}, 50);
-		} else if (!isActive && isAnimating) {
-			// First, clear the interval
+		if (isAnimating && (item?.quantity !== lastQuantity || totalPrice !== lastTotalPrice)) {
+			// Clear the progress interval
 			if (progressInterval) {
 				clearInterval(progressInterval);
 				progressInterval = null;
 			}
 
-			// Create a smooth transition to 100%
-			const finalInterval = setInterval(() => {
-				if (progress < 100) {
-					progress = Math.min(100, progress + 2);
-				} else {
-					clearInterval(finalInterval);
-					// Only start fade out after reaching 100%
-					setTimeout(() => {
-						showProgress = false;
-						isAnimating = false;
-					}, 300);
-				}
-			}, 16);
+			// Complete the animation
+			progress = 100;
+			setTimeout(() => {
+				showProgress = false;
+				isAnimating = false;
+				actionStartTime = null;
+			}, 300);
+		}
+		lastQuantity = item?.quantity || 0;
+		lastTotalPrice = totalPrice;
+	});
+
+	// Start progress animation when an action is triggered
+	function startProgressAnimation() {
+		if (isAnimating) return;
+
+		isAnimating = true;
+		showProgress = true;
+		progress = 0;
+		actionStartTime = Date.now();
+
+		if (progressInterval) {
+			clearInterval(progressInterval);
 		}
 
-		return () => {
-			if (progressInterval) {
-				clearInterval(progressInterval);
+		progressInterval = setInterval(() => {
+			const elapsed = Date.now() - (actionStartTime || 0);
+			// Smooth continuous progress
+			if (elapsed < 3000) {
+				// First 3 seconds: Smooth progress to 85%
+				progress = Math.min(85, (elapsed / 3000) * 85);
 			}
-		};
-	});
+		}, 16); // Update more frequently for smoother animation
+	}
 
 	// Quantity can't go below 1 or above available stock
 	const minQuantity = 1;
@@ -103,12 +94,20 @@
 
 	function incrementQuantity() {
 		if (disabled || quantity >= maxQuantity) return;
+		startProgressAnimation();
 		onQuantityChange(quantity + 1);
 	}
 
 	function decrementQuantity() {
 		if (disabled || quantity <= minQuantity) return;
+		startProgressAnimation();
 		onQuantityChange(quantity - 1);
+	}
+
+	function handleRemove() {
+		if (disabled) return;
+		startProgressAnimation();
+		onRemove();
 	}
 </script>
 
@@ -149,15 +148,11 @@
 					<Button
 						class="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
 						variant="ghost"
-						onclick={onRemove}
-						disabled={disabled || isLoading}
+						onclick={handleRemove}
+						disabled={disabled || isAnimating}
 						aria-label={m.cart_remove()}
 					>
-						{#if isLoading && loadingAction === 'remove'}
-							<Loader2 class="h-5 w-5 animate-spin" />
-						{:else}
-							<X class="h-5 w-5" />
-						{/if}
+						<X class="h-5 w-5" />
 					</Button>
 				</div>
 			</div>
@@ -168,14 +163,10 @@
 						class="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
 						variant="ghost"
 						onclick={decrementQuantity}
-						disabled={disabled || isLoading || quantity <= minQuantity}
+						disabled={disabled || isAnimating || quantity <= minQuantity}
 						aria-label={m.cart_decrease_quantity()}
 					>
-						{#if isLoading && loadingAction === 'decrement'}
-							<Loader2 class="h-4 w-4 animate-spin" />
-						{:else}
-							<Minus class="h-4 w-4" />
-						{/if}
+						<Minus class="h-4 w-4" />
 					</Button>
 
 					<span class="w-8 text-center text-sm">{quantity}</span>
@@ -184,14 +175,10 @@
 						class="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
 						variant="ghost"
 						onclick={incrementQuantity}
-						disabled={disabled || isLoading || quantity >= maxQuantity}
+						disabled={disabled || isAnimating || quantity >= maxQuantity}
 						aria-label={m.cart_increase_quantity()}
 					>
-						{#if isLoading && loadingAction === 'increment'}
-							<Loader2 class="h-4 w-4 animate-spin" />
-						{:else}
-							<Plus class="h-4 w-4" />
-						{/if}
+						<Plus class="h-4 w-4" />
 					</Button>
 				</div>
 
@@ -202,9 +189,6 @@
 		</div>
 	</div>
 	{#if showProgress}
-		<Progress
-			value={progress}
-			class="absolute bottom-0 left-0 right-0 h-1 transition-opacity duration-500"
-		/>
+		<Progress value={progress} class="absolute bottom-0 left-0 right-0 h-1" />
 	{/if}
 </div>
