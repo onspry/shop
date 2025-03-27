@@ -3,7 +3,7 @@ import * as cartRepository from '$lib/server/db/repositories/cart';
 import { superValidate } from 'sveltekit-superforms/server';
 import { zod } from 'sveltekit-superforms/adapters';
 import { loginSchema } from '$lib/schemas/auth';
-import { shippingSchema } from '$lib/schemas/checkout';
+import { shippingSchema } from '$lib/schemas/shipping';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ cookies, locals }) => {

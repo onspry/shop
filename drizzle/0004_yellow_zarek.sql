@@ -1,0 +1,19 @@
+CREATE INDEX `orders_created_at_idx` ON `orders` (`created_at`);--> statement-breakpoint
+CREATE INDEX `orders_user_id_idx` ON `orders` (`user_id`);--> statement-breakpoint
+CREATE INDEX `orders_status_idx` ON `orders` (`status`);--> statement-breakpoint
+CREATE INDEX `order_items_order_id_idx` ON `order_items` (`order_id`);--> statement-breakpoint
+CREATE INDEX `order_items_product_id_idx` ON `order_items` (`product_id`);--> statement-breakpoint
+CREATE INDEX `order_items_variant_id_idx` ON `order_items` (`variant_id`);--> statement-breakpoint
+CREATE INDEX `order_addresses_order_id_idx` ON `order_addresses` (`order_id`);--> statement-breakpoint
+CREATE INDEX `order_addresses_email_idx` ON `order_addresses` (`email`);--> statement-breakpoint
+CREATE INDEX `order_addresses_type_idx` ON `order_addresses` (`type`);--> statement-breakpoint
+CREATE INDEX `order_status_history_order_id_idx` ON `order_status_history` (`order_id`);--> statement-breakpoint
+CREATE INDEX `order_status_history_status_idx` ON `order_status_history` (`status`);--> statement-breakpoint
+CREATE INDEX `order_status_history_created_at_idx` ON `order_status_history` (`created_at`);--> statement-breakpoint
+CREATE INDEX `payment_transactions_order_id_idx` ON `payment_transactions` (`order_id`);--> statement-breakpoint
+CREATE INDEX `payment_transactions_status_idx` ON `payment_transactions` (`status`);--> statement-breakpoint
+CREATE INDEX `payment_transactions_payment_intent_id_idx` ON `payment_transactions` (`payment_intent_id`);--> statement-breakpoint
+CREATE INDEX `refunds_order_id_idx` ON `refunds` (`order_id`);--> statement-breakpoint
+CREATE INDEX `refunds_transaction_id_idx` ON `refunds` (`transaction_id`);--> statement-breakpoint
+CREATE INDEX `refunds_status_idx` ON `refunds` (`status`);--> statement-breakpoint
+CREATE INDEX `refunds_refund_id_idx` ON `refunds` (`refund_id`);
