@@ -27,14 +27,12 @@ export const load: PageServerLoad = async ({ cookies, locals }) => {
 
         // Create login form for non-authenticated users
         const loginForm = await superValidate(zod(loginSchema));
-
-        const form = await superValidate(zod(shippingSchema));
+        const shippingForm = await superValidate(zod(shippingSchema));
 
         return {
             cart: cartData,
-            isAuthenticated: !!userId,
             form: loginForm,
-            shippingForm: form
+            shippingForm
         };
     } catch (error) {
         console.error('Error loading checkout data:', error);
@@ -126,8 +124,8 @@ export const actions: Actions = {
             return fail(400, { shippingForm: form });
         }
 
-        // Store shipping data in session or database
-        // For now, just return success
-        return { shippingForm: form };
+        return {
+            shippingForm: form
+        };
     }
 }; 

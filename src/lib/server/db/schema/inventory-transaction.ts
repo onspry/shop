@@ -1,26 +1,31 @@
 import { sql } from 'drizzle-orm';
-import { text, integer, sqliteTable } from 'drizzle-orm/sqlite-core';
+import * as t from "drizzle-orm/sqlite-core";
 import { product } from './product';
 import { productVariant } from './product_variant';
 
 export const inventoryTransactionType = ['order', 'restock', 'adjustment'] as const;
 export type InventoryTransactionType = typeof inventoryTransactionType[number];
 
-export const inventoryTransactions = sqliteTable('inventory_transactions', {
-    id: text('id').primaryKey(),
-    productId: text('product_id')
+export const inventoryTransactions = t.sqliteTable('inventory_transactions', {
+    id: t.text('id').primaryKey(),
+    productId: t.text('product_id')
         .notNull()
         .references(() => product.id),
-    variantId: text('variant_id')
+    variantId: t.text('variant_id')
         .references(() => productVariant.id),
-    quantity: integer('quantity').notNull(), // negative for outgoing, positive for incoming
-    type: text('type', { enum: inventoryTransactionType }).notNull(),
-    referenceId: text('reference_id'), // order ID or other reference
-    note: text('note'),
-    createdAt: text('created_at')
+    quantity: t.integer('quantity').notNull(), // negative for outgoing, positive for incoming
+    type: t.text('type', { enum: inventoryTransactionType }).notNull(),
+    referenceId: t.text('reference_id'), // order ID or other reference
+    note: t.text('note'),
+    createdAt: t.integer('created_at', { mode: 'timestamp' })
         .notNull()
-        .default(sql`CURRENT_TIMESTAMP`)
-});
+        .default(sql`(unixepoch())`)
+}, (table) => ({
+    productIdIndex: t.index('inventory_transactions_product_id_idx').on(table.productId),
+    variantIdIndex: t.index('inventory_transactions_variant_id_idx').on(table.variantId),
+    typeIndex: t.index('inventory_transactions_type_idx').on(table.type),
+    createdAtIndex: t.index('inventory_transactions_created_at_idx').on(table.createdAt)
+}));
 
 // Export types
 export type InventoryTransaction = typeof inventoryTransactions.$inferSelect;

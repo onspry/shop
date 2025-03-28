@@ -11,7 +11,7 @@
 	import CartItem from '$lib/components/cart-item.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import { ShoppingCart, ArrowRight, Loader2 } from 'lucide-svelte';
+	import { ShoppingCart, ArrowRight, Loader2, Truck } from 'lucide-svelte';
 	import { formatPrice } from '$lib/utils/price';
 	import { goto } from '$app/navigation';
 	import * as m from '$lib/paraglide/messages';
@@ -153,15 +153,31 @@
 
 				<!-- Cart summary -->
 				<div class="md:col-span-1">
-					<div class="bg-muted/40 rounded-lg p-6 sticky top-24">
-						<h2 class="text-xl font-semibold mb-4">{m.cart_summary()}</h2>
+					<div class="bg-card rounded-lg p-6 border shadow-sm">
+						<div class="flex items-center gap-2 mb-6">
+							<ShoppingCart class="h-6 w-6" />
+							<h2 class="text-2xl font-semibold">Your Cart</h2>
+						</div>
 
+						<!-- Items Summary -->
 						<div class="space-y-3 mb-6">
-							<div class="flex justify-between">
-								<span class="text-muted-foreground">{m.cart_subtotal()}</span>
-								<span>{formatPrice(cartData.subtotal)}</span>
+							<div class="flex justify-between text-sm text-muted-foreground">
+								<span
+									>{cartData.items.length}
+									{cartData.items.length === 1 ? 'item' : 'items'} in cart</span
+								>
+								<span
+									>{cartData.items.reduce((sum, item) => sum + item.quantity, 0)} units total</span
+								>
 							</div>
 
+							{#if cartData.items.some((item) => item.variant.stockStatus === 'low_stock')}
+								<p class="text-sm text-warning">Some items are low in stock</p>
+							{/if}
+						</div>
+
+						<!-- Price Breakdown -->
+						<div class="space-y-4 py-4">
 							{#if cartData.discountAmount > 0}
 								<div class="flex justify-between text-green-600 dark:text-green-400">
 									<span>{m.cart_discount()}</span>
@@ -169,18 +185,37 @@
 								</div>
 							{/if}
 
-							<div class="flex justify-between font-bold text-lg pt-2 border-t">
-								<span>{m.cart_total()}</span>
+							<div class="flex justify-between text-muted-foreground">
+								<span>Shipping</span>
+								<span>Calculated next</span>
+							</div>
+
+							<div class="flex justify-between text-muted-foreground">
+								<span>Estimated Tax</span>
+								<span>Calculated next</span>
+							</div>
+
+							<div class="flex justify-between font-semibold text-lg pt-4 border-t">
+								<span>Total</span>
 								<span>{formatPrice(cartData.total)}</span>
 							</div>
 						</div>
 
-						<p class="text-sm text-muted-foreground mb-6">
-							{m.cart_checkout_info()}
-						</p>
+						<!-- Estimated Delivery -->
+						<div class="mb-6 py-4 border-t">
+							<div class="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+								<Truck class="h-4 w-4" />
+								<span>Estimated delivery:</span>
+							</div>
+							<p class="text-sm font-medium">
+								{new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString()} - {new Date(
+									Date.now() + 10 * 24 * 60 * 60 * 1000
+								).toLocaleDateString()}
+							</p>
+						</div>
 
 						<!-- Discount code form -->
-						<div class="mb-6">
+						<div class="mt-6 mb-6">
 							<div class="flex gap-2 mb-2">
 								<Input
 									placeholder={m.cart_discount_placeholder()}
@@ -227,18 +262,19 @@
 
 						<!-- Checkout button -->
 						<Button
-							class="w-full"
+							class="w-full bg-primary"
 							size="lg"
 							disabled={cartData.items.length === 0}
 							href="/checkout"
 						>
-							{m.cart_checkout()}
+							Proceed to Checkout
 							<ArrowRight class="ml-2" size={16} />
 						</Button>
 
-						<p class="text-xs text-center text-muted-foreground mt-4">
-							{m.cart_checkout_terms()}
-						</p>
+						<div class="mt-4 text-xs text-muted-foreground/60 text-center space-y-1.5">
+							<p>By proceeding to checkout, you agree to our terms of service</p>
+							<p>This is a secure, encrypted transaction</p>
+						</div>
 					</div>
 				</div>
 			</div>

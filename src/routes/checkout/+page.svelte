@@ -16,59 +16,58 @@
 	import { superForm } from 'sveltekit-superforms/client';
 	import { zod } from 'sveltekit-superforms/adapters';
 	import { loginSchema } from '$lib/schemas/auth';
-	import { shippingSchema } from '$lib/schemas/checkout';
+	import { shippingSchema } from '$lib/schemas/shipping';
 	import * as m from '$lib/paraglide/messages';
 	import { formatPrice } from '$lib/utils/price';
 	import LoadingSpinner from '$lib/components/loading-spinner.svelte';
 	import { ArrowRight, ShoppingBag, User, Truck } from 'lucide-svelte';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { z } from 'zod';
+	import ShippingForm from '$lib/components/checkout/shipping-form.svelte';
+	import PaymentForm from '$lib/components/checkout/payment-form.svelte';
+	import type { SuperForm } from 'sveltekit-superforms';
+	import type { PageData } from './$types';
+	import { userStore } from '$lib/stores/auth';
 
 	// Extract the components from TabsPrimitive
 	const { Tabs, TabsContent, TabsList, TabsTrigger } = TabsPrimitive;
 
-	const { data } = $props();
+	const { data } = $props<{ data: PageData }>();
+	const user = $derived($userStore);
+	const isAuthenticated = $derived(!!user);
 
-	// Initialize login form with Superform
-	const { form, errors, enhance, submitting, message } = superForm(data.form, {
+	// Initialize forms with proper types
+	const {
+		form: loginForm,
+		errors: loginErrors,
+		enhance: loginEnhance
+	} = superForm<z.infer<typeof loginSchema>>(data.form, {
 		validators: zod(loginSchema),
-		taintedMessage: null,
 		validationMethod: 'auto'
 	});
-
-	let activeTab = $state('shipping');
-	let guestEmail = $state('');
-
-	type ShippingForm = z.infer<typeof shippingSchema>;
-	const initialData: ShippingForm = {
-		firstName: '',
-		lastName: '',
-		address: '',
-		apartment: '',
-		city: '',
-		state: '',
-		zip: '',
-		phone: ''
-	};
 
 	const {
 		form: shippingForm,
 		errors: shippingErrors,
 		enhance: shippingEnhance
-	} = superForm(data.shippingForm, {
+	} = superForm<z.infer<typeof shippingSchema>>(data.shippingForm, {
 		validators: zod(shippingSchema),
 		validationMethod: 'auto'
 	});
+
+	let activeTab = $state('shipping');
+	let guestEmail = $state('');
+	let shippingValidated = $state(false);
 
 	// Derived state for shipping form validation
 	let isShippingValid = $derived(
 		$shippingForm.firstName?.trim() &&
 			$shippingForm.lastName?.trim() &&
-			$shippingForm.address?.trim() &&
+			$shippingForm.addressLine1?.trim() &&
 			$shippingForm.city?.trim() &&
 			$shippingForm.state?.trim() &&
-			$shippingForm.zip?.trim() &&
-			$shippingForm.phone?.trim() &&
+			$shippingForm.postalCode?.trim() &&
+			$shippingForm.country?.trim() &&
 			Object.keys($shippingErrors).length === 0
 	);
 
@@ -76,37 +75,19 @@
 	let guestSubmitting = $state(false);
 	let guestError = $state('');
 
-	// Add to script section at the top
-	let selectedShippingMethod = $state('standard');
+	// Shipping cost and estimated days from the shipping form component
+	let shippingCost = $state(0);
+	let estimatedDays = $state('');
 
-	const shippingMethods = [
-		{
-			id: 'standard',
-			name: m.shipping_standard(),
-			price: 5.99,
-			description: m.shipping_standard_desc(),
-			estimatedDays: '3-5'
-		},
-		{
-			id: 'express',
-			name: m.shipping_express(),
-			price: 14.99,
-			description: m.shipping_express_desc(),
-			estimatedDays: '1-2'
-		},
-		{
-			id: 'overnight',
-			name: m.shipping_overnight(),
-			price: 29.99,
-			description: m.shipping_overnight_desc(),
-			estimatedDays: '1'
-		}
-	];
+	function handleShippingCostUpdate(cost: number, days: string) {
+		shippingCost = cost;
+		estimatedDays = days;
+	}
 
-	// Add this computed value
-	let shippingCost = $derived(
-		shippingMethods.find((method) => method.id === selectedShippingMethod)?.price || 0
-	);
+	function handleContinueToPayment() {
+		shippingValidated = true;
+		activeTab = 'payment';
+	}
 
 	// Handle guest checkout
 	async function handleGuestCheckout(event: SubmitEvent) {
@@ -136,11 +117,11 @@
 		}
 	}
 
-	function handleContinueToPayment() {
-		if (isShippingValid) {
-			activeTab = 'payment';
-		}
-	}
+	// Derived values for order summary
+	let subtotalWithDiscount = $derived(data.cart.subtotal - (data.cart.discountAmount || 0));
+	let orderTotal = $derived(
+		shippingValidated ? data.cart.total + shippingCost : subtotalWithDiscount
+	);
 </script>
 
 <div class="container mx-auto px-4 py-8">
@@ -149,7 +130,7 @@
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 		<!-- Main checkout flow -->
 		<div class="lg:col-span-2">
-			{#if !data.isAuthenticated}
+			{#if !isAuthenticated}
 				<div class="bg-muted/40 p-4 rounded-lg mb-6 flex justify-between items-center">
 					<div class="flex items-center gap-2">
 						<User size={18} />
@@ -199,188 +180,20 @@
 					<TabsTrigger value="shipping">
 						{m.checkout_tab_shipping()}
 					</TabsTrigger>
-					<TabsTrigger value="payment" disabled={activeTab === 'shipping' && !isShippingValid}>
+					<TabsTrigger value="payment" disabled={!shippingValidated}>
 						{m.checkout_tab_payment()}
 					</TabsTrigger>
 				</TabsList>
-				<TabsContent value="shipping">
-					<Card>
-						<CardHeader>
-							<h2 class="text-2xl font-semibold">{m.checkout_tab_shipping()}</h2>
-						</CardHeader>
-						<CardContent>
-							<div class="space-y-6">
-								<!-- Contact Information -->
-								<div class="space-y-4">
-									<h3 class="font-medium">{m.checkout_contact_info_title()}</h3>
-									<div class="grid gap-4">
-										<div class="grid gap-2">
-											<Label for="email">Email</Label>
-											<Input
-												id="email"
-												type="email"
-												placeholder="name@example.com"
-												value={data.isAuthenticated ? data.user?.email : guestEmail}
-												disabled
-											/>
-										</div>
-									</div>
-								</div>
-
-								<!-- Shipping Address -->
-								<div class="space-y-4">
-									<h3 class="font-medium">{m.checkout_delivery_address()}</h3>
-									<div class="grid gap-4">
-										<div class="grid grid-cols-2 gap-4">
-											<div class="grid gap-2">
-												<Label for="firstName">{m.checkout_first_name()}</Label>
-												<Input
-													id="firstName"
-													bind:value={$shippingForm.firstName}
-													placeholder="John"
-													required
-													aria-invalid={$shippingErrors.firstName ? 'true' : undefined}
-												/>
-												{#if $shippingErrors.firstName}
-													<p class="text-sm text-destructive">{$shippingErrors.firstName}</p>
-												{/if}
-											</div>
-											<div class="grid gap-2">
-												<Label for="lastName">{m.checkout_last_name()}</Label>
-												<Input
-													id="lastName"
-													bind:value={$shippingForm.lastName}
-													placeholder="Doe"
-													required
-													aria-invalid={$shippingErrors.lastName ? 'true' : undefined}
-												/>
-												{#if $shippingErrors.lastName}
-													<p class="text-sm text-destructive">{$shippingErrors.lastName}</p>
-												{/if}
-											</div>
-										</div>
-										<div class="grid gap-2">
-											<Label for="address">{m.checkout_address()}</Label>
-											<Input
-												id="address"
-												bind:value={$shippingForm.address}
-												placeholder="123 Main St"
-												required
-												aria-invalid={$shippingErrors.address ? 'true' : undefined}
-											/>
-											{#if $shippingErrors.address}
-												<p class="text-sm text-destructive">{$shippingErrors.address}</p>
-											{/if}
-										</div>
-										<div class="grid gap-2">
-											<Label for="apartment">{m.checkout_apartment()}</Label>
-											<Input
-												id="apartment"
-												bind:value={$shippingForm.apartment}
-												placeholder="Apt 4B"
-											/>
-										</div>
-										<div class="grid grid-cols-3 gap-4">
-											<div class="grid gap-2">
-												<Label for="city">{m.checkout_city()}</Label>
-												<Input
-													id="city"
-													bind:value={$shippingForm.city}
-													placeholder="New York"
-													required
-													aria-invalid={$shippingErrors.city ? 'true' : undefined}
-												/>
-												{#if $shippingErrors.city}
-													<p class="text-sm text-destructive">{$shippingErrors.city}</p>
-												{/if}
-											</div>
-											<div class="grid gap-2">
-												<Label for="state">{m.checkout_state()}</Label>
-												<Input
-													id="state"
-													bind:value={$shippingForm.state}
-													placeholder="NY"
-													required
-													aria-invalid={$shippingErrors.state ? 'true' : undefined}
-												/>
-												{#if $shippingErrors.state}
-													<p class="text-sm text-destructive">{$shippingErrors.state}</p>
-												{/if}
-											</div>
-											<div class="grid gap-2">
-												<Label for="zip">{m.checkout_zip()}</Label>
-												<Input
-													id="zip"
-													bind:value={$shippingForm.zip}
-													placeholder="10001"
-													required
-													aria-invalid={$shippingErrors.zip ? 'true' : undefined}
-												/>
-												{#if $shippingErrors.zip}
-													<p class="text-sm text-destructive">{$shippingErrors.zip}</p>
-												{/if}
-											</div>
-										</div>
-										<div class="grid gap-2">
-											<Label for="phone">{m.checkout_phone()}</Label>
-											<Input
-												id="phone"
-												type="tel"
-												bind:value={$shippingForm.phone}
-												placeholder="(555) 555-5555"
-												required
-												aria-invalid={$shippingErrors.phone ? 'true' : undefined}
-											/>
-											{#if $shippingErrors.phone}
-												<p class="text-sm text-destructive">{$shippingErrors.phone}</p>
-											{/if}
-										</div>
-									</div>
-								</div>
-
-								<!-- Shipping Method -->
-								<div class="space-y-4 pt-6 border-t">
-									<h3 class="font-medium">{m.checkout_shipping_method()}</h3>
-									<div class="space-y-4">
-										{#each shippingMethods as method}
-											<button
-												type="button"
-												class={`w-full text-left flex items-start gap-4 p-4 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors ${selectedShippingMethod === method.id ? 'bg-muted/50' : ''}`}
-												onclick={() => (selectedShippingMethod = method.id)}
-												onkeydown={(e) => e.key === 'Enter' && (selectedShippingMethod = method.id)}
-											>
-												<div class="flex-1">
-													<div class="flex items-center gap-2">
-														<div
-															class="w-4 h-4 rounded-full border-2 border-primary flex items-center justify-center"
-														>
-															{#if selectedShippingMethod === method.id}
-																<div class="w-2 h-2 rounded-full bg-primary"></div>
-															{/if}
-														</div>
-														<span class="font-medium">{method.name}</span>
-														<span class="text-sm text-muted-foreground">
-															({method.estimatedDays}
-															{m.shipping_business_days()})
-														</span>
-													</div>
-													<p class="text-sm text-muted-foreground ml-6 mt-1">
-														{method.description}
-													</p>
-												</div>
-												<div class="font-medium">{formatPrice(method.price)}</div>
-											</button>
-										{/each}
-									</div>
-								</div>
-
-								<Button type="button" class="w-full" onclick={handleContinueToPayment}>
-									{m.checkout_continue_to_payment()}
-									<ArrowRight class="ml-2" size={16} />
-								</Button>
-							</div>
-						</CardContent>
-					</Card>
+				<TabsContent value="shipping" class="space-y-6">
+					<ShippingForm
+						form={$shippingForm}
+						errors={$shippingErrors}
+						{isAuthenticated}
+						userEmail={user?.email || ''}
+						{guestEmail}
+						onContinue={handleContinueToPayment}
+						onShippingCostUpdate={handleShippingCostUpdate}
+					/>
 				</TabsContent>
 				<TabsContent value="payment">
 					<Card>
@@ -388,10 +201,7 @@
 							<h2 class="text-2xl font-semibold">{m.checkout_tab_payment()}</h2>
 						</CardHeader>
 						<CardContent>
-							<!-- Payment form will go here -->
-							<div class="text-center py-12">
-								<p>{m.checkout_payment_placeholder()}</p>
-							</div>
+							<PaymentForm />
 						</CardContent>
 					</Card>
 				</TabsContent>
@@ -451,43 +261,22 @@
 						<!-- Shipping cost -->
 						<div class="flex justify-between text-sm">
 							<span class="text-muted-foreground">{m.cart_shipping()}</span>
-							{#if !isShippingValid}
+							{#if !shippingValidated}
 								<span class="text-muted-foreground">{m.cart_calculated_at_next_step()}</span>
 							{:else}
 								<span>{formatPrice(shippingCost)}</span>
 							{/if}
 						</div>
 
-						<!-- Tax -->
-						<div class="flex justify-between text-sm">
-							<span class="text-muted-foreground">{m.cart_tax()}</span>
-							{#if !isShippingValid}
-								<span class="text-muted-foreground">{m.cart_calculated_at_next_step()}</span>
-							{:else}
-								<span>{formatPrice((data.cart.subtotal + shippingCost) * 0.08)}</span>
-							{/if}
-						</div>
-
 						<!-- Total -->
 						<div class="flex justify-between font-bold text-base pt-3 mt-3 border-t">
 							<span>{m.cart_total()}</span>
-							<span>
-								{#if !isShippingValid}
-									{formatPrice(data.cart.subtotal - (data.cart.discountAmount || 0))}
-								{:else}
-									{formatPrice(
-										data.cart.subtotal -
-											(data.cart.discountAmount || 0) +
-											shippingCost +
-											(data.cart.subtotal + shippingCost) * 0.08
-									)}
-								{/if}
-							</span>
+							<span>{formatPrice(orderTotal)}</span>
 						</div>
 					</div>
 
 					<!-- Estimated delivery -->
-					{#if isShippingValid}
+					{#if shippingValidated}
 						<div class="flex flex-col pt-4 border-t">
 							<div class="flex items-center gap-2">
 								<div class="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
@@ -496,8 +285,7 @@
 								<span class="font-medium">{m.checkout_estimated_delivery()}</span>
 								<span class="text-muted-foreground">•</span>
 								<span class="text-muted-foreground">
-									{shippingMethods.find((method) => method.id === selectedShippingMethod)
-										?.estimatedDays}
+									{estimatedDays}
 									{m.shipping_business_days()}
 								</span>
 							</div>
@@ -505,10 +293,13 @@
 								<p class="font-medium">{m.checkout_delivery_address()}</p>
 								<p>{$shippingForm.firstName} {$shippingForm.lastName}</p>
 								<p>
-									{$shippingForm.address}{#if $shippingForm.apartment}, {$shippingForm.apartment}{/if}
+									{$shippingForm.addressLine1}{#if $shippingForm.addressLine2}, {$shippingForm.addressLine2}{/if}
 								</p>
-								<p>{$shippingForm.city}, {$shippingForm.state} {$shippingForm.zip}</p>
-								<p class="mt-1">{$shippingForm.phone}</p>
+								<p>{$shippingForm.city}, {$shippingForm.state} {$shippingForm.postalCode}</p>
+								<p>{$shippingForm.country}</p>
+								{#if $shippingForm.phone}
+									<p class="mt-1">{$shippingForm.phone}</p>
+								{/if}
 							</div>
 						</div>
 					{/if}

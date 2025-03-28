@@ -36,7 +36,7 @@
 
 	// Handle click with stock check
 	function handleClick() {
-		if (!isOutOfStock) {
+		if (!isOutOfStock && !disabled) {
 			onClick();
 		}
 	}
@@ -57,7 +57,7 @@
 		isSelected
 			? 'border-primary bg-card shadow-sm'
 			: 'border-muted hover:border-primary/50 bg-background'
-	} ${isOutOfStock || disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+	} ${isOutOfStock || disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`}
 	onclick={handleClick}
 >
 	<div class="flex flex-col h-full">

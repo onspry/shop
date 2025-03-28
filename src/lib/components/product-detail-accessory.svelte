@@ -233,6 +233,7 @@
 										isSelected={selectedVariantId === variant.id}
 										onClick={() => selectVariant(variant.id)}
 										showPrice={true}
+										disabled={isAddingToCart}
 									/>
 								{/each}
 							</div>
@@ -277,7 +278,7 @@
 								type="button"
 								onclick={() => quantity > 1 && (quantity -= 1)}
 								class="px-2 py-1 border border-border rounded-l-md bg-card hover:bg-muted transition-colors"
-								disabled={quantity <= 1}
+								disabled={quantity <= 1 || isAddingToCart}
 								aria-label="Decrease quantity"
 							>
 								-
@@ -289,6 +290,7 @@
 								type="button"
 								onclick={() => (quantity += 1)}
 								class="px-2 py-1 border border-border rounded-r-md bg-card hover:bg-muted transition-colors"
+								disabled={isAddingToCart}
 								aria-label="Increase quantity"
 							>
 								+

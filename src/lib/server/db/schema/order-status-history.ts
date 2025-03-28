@@ -1,24 +1,24 @@
 import { sql } from 'drizzle-orm';
-import { text, sqliteTable, index } from 'drizzle-orm/sqlite-core';
+import * as t from "drizzle-orm/sqlite-core";
 import { orders, orderStatus } from './order';
 
-export const orderStatusHistory = sqliteTable('order_status_history', {
-    id: text('id').primaryKey(),
-    orderId: text('order_id')
+export const orderStatusHistory = t.sqliteTable('order_status_history', {
+    id: t.text('id').primaryKey(),
+    orderId: t.text('order_id')
         .notNull()
         .references(() => orders.id),
-    status: text('status', { enum: orderStatus }).notNull(),
-    note: text('note'),
-    createdAt: text('created_at')
+    status: t.text('status', { enum: orderStatus }).notNull(),
+    note: t.text('note'),
+    createdAt: t.integer('created_at', { mode: 'timestamp' })
         .notNull()
-        .default(sql`CURRENT_TIMESTAMP`)
+        .default(sql`(unixepoch())`)
 }, (table) => ({
     // Index for order lookups
-    orderIdIndex: index('order_status_history_order_id_idx').on(table.orderId),
+    orderIdIndex: t.index('order_status_history_order_id_idx').on(table.orderId),
     // Index for status-based lookups
-    statusIndex: index('order_status_history_status_idx').on(table.status),
+    statusIndex: t.index('order_status_history_status_idx').on(table.status),
     // Index for chronological lookups
-    createdAtIndex: index('order_status_history_created_at_idx').on(table.createdAt)
+    createdAtIndex: t.index('order_status_history_created_at_idx').on(table.createdAt)
 }));
 
 // Export types

@@ -469,7 +469,7 @@
 										isSelected={currentVariantId === variant.id}
 										onClick={() => selectVariant(variant.id)}
 										showPrice={true}
-										disabled={isLoading}
+										disabled={isLoading || isAddingToCart}
 									/>
 								{/each}
 							</div>
@@ -488,7 +488,7 @@
 											isSelected={currentSwitchId === switchVariant.id}
 											onClick={() => selectSwitch(switchVariant.id)}
 											showPrice={true}
-											disabled={isLoading}
+											disabled={isLoading || isAddingToCart}
 										/>
 									{/each}
 								</div>
@@ -514,7 +514,7 @@
 											isSelected={currentKeycapId === keycapVariant.id}
 											onClick={() => selectKeycap(keycapVariant.id)}
 											showPrice={true}
-											disabled={isLoading}
+											disabled={isLoading || isAddingToCart}
 										/>
 									{/each}
 								</div>
@@ -575,7 +575,7 @@
 								<Button
 									variant="ghost"
 									onclick={() => quantity > 1 && (quantity -= 1)}
-									disabled={quantity <= 1}
+									disabled={quantity <= 1 || isAddingToCart}
 									aria-label="Decrease quantity"
 									class="rounded-r-none"
 								>
@@ -585,6 +585,7 @@
 								<Button
 									variant="ghost"
 									onclick={() => (quantity += 1)}
+									disabled={isAddingToCart}
 									aria-label="Increase quantity"
 									class="rounded-l-none"
 								>

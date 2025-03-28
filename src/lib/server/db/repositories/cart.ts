@@ -5,19 +5,48 @@ import { cartItem, type NewCartItem, type CartItem } from '$lib/server/db/schema
 import { productVariant, type ProductVariant } from '$lib/server/db/schema/product_variant';
 import { discount } from '$lib/server/db/schema/discount';
 import { nanoid } from 'nanoid';
-import type { CartViewModel, CartItemViewModel, CartSummaryViewModel } from '$lib/models/cart';
+import type { CartViewModel, CartSummaryViewModel } from '$lib/models/cart';
 
 // Define type for cart with items to avoid 'any'
 export type CartWithItems = Cart & {
-    items: (CartItem & {
-        productVariant: ProductVariant;
-    })[];
+    items: Array<CartItem & {
+        variant: Pick<ProductVariant, 'id' | 'sku' | 'name' | 'price' | 'stockQuantity' | 'attributes' | 'productId'>;
+    }>;
 };
 
 // Define type for generic cart items for calculation purposes
-interface CartItemBase {
+export interface CartItemBase {
     price: number;
     quantity: number;
+}
+
+// Custom error types for better error handling
+export class CartError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'CartError';
+    }
+}
+
+export class CartNotFoundError extends CartError {
+    constructor(cartId: string) {
+        super(`Cart not found: ${cartId}`);
+        this.name = 'CartNotFoundError';
+    }
+}
+
+export class StockError extends CartError {
+    constructor(message: string) {
+        super(message);
+        this.name = 'StockError';
+    }
+}
+
+export class DiscountError extends CartError {
+    constructor(message: string) {
+        super(message);
+        this.name = 'DiscountError';
+    }
 }
 
 /**
@@ -54,40 +83,38 @@ export async function getOrCreateCart(sessionId: string, userId?: string): Promi
 /**
  * Get cart with items and related product data
  */
-export async function getCartWithItems(cartId: string) {
+export async function getCartWithItems(cartId: string): Promise<CartWithItems | null> {
     try {
-        // First get the cart
         const cartData = await db.query.cart.findFirst({
-            where: eq(cart.id, cartId)
+            where: eq(cart.id, cartId),
+            with: {
+                items: {
+                    with: {
+                        variant: {
+                            columns: {
+                                id: true,
+                                sku: true,
+                                name: true,
+                                price: true,
+                                stockQuantity: true,
+                                attributes: true,
+                                productId: true
+                            }
+                        }
+                    }
+                }
+            }
         });
 
         if (!cartData) {
             return null;
         }
 
-        // Then get cart items
-        const items = await db.query.cartItem.findMany({
-            where: eq(cartItem.cartId, cartId)
-        });
-
-        // Get product variants for all items
-        const itemsWithVariants = await Promise.all(
-            items.map(async (item) => {
-                const variant = await db.query.productVariant.findFirst({
-                    where: eq(productVariant.id, item.productVariantId)
-                });
-                return {
-                    ...item,
-                    productVariant: variant
-                };
-            })
-        );
-
-        // Return cart with items
+        // Transform the result to match CartWithItems type
         return {
             ...cartData,
-            items: itemsWithVariants
-        };
+            items: cartData.items.filter(item => item.variant !== null)
+        } as CartWithItems;
     } catch (error) {
         console.error('Error fetching cart with items:', error);
         return null;
@@ -95,70 +122,72 @@ export async function getCartWithItems(cartId: string) {
 }
 
 /**
- * Add item to cart
+ * Add item to cart with proper error handling
  */
 export async function addItemToCart(
     cartId: string,
     productVariantId: string,
     quantity: number = 1
 ): Promise<void> {
-    // Check if product variant exists and get its price
-    const variant = await db.query.productVariant.findFirst({
-        where: eq(productVariant.id, productVariantId),
-        columns: {
-            id: true,
-            price: true,
-            stockQuantity: true
-        }
-    });
+    try {
+        const variant = await db.query.productVariant.findFirst({
+            where: eq(productVariant.id, productVariantId),
+            columns: {
+                id: true,
+                price: true,
+                stockQuantity: true
+            }
+        });
 
-    if (!variant) {
-        throw new Error('Product variant not found');
-    }
-
-    if (variant.stockQuantity < quantity) {
-        throw new Error('Not enough stock available');
-    }
-
-    // Check if item already exists in cart
-    const existingItem = await db.query.cartItem.findFirst({
-        where: and(
-            eq(cartItem.cartId, cartId),
-            eq(cartItem.productVariantId, productVariantId)
-        )
-    });
-
-    if (existingItem) {
-        // Update quantity if item exists
-        const newQuantity = existingItem.quantity + quantity;
-
-        if (newQuantity > variant.stockQuantity) {
-            throw new Error('Not enough stock available');
+        if (!variant) {
+            throw new CartError('Product variant not found');
         }
 
-        await db.update(cartItem)
-            .set({
-                quantity: newQuantity,
-                updatedAt: sql`(unixepoch())`
-            })
-            .where(eq(cartItem.id, existingItem.id));
-    } else {
-        // Add new item to cart
-        const newItem: NewCartItem = {
-            id: nanoid(),
-            cartId,
-            productVariantId,
-            quantity,
-            price: variant.price
-        };
+        if (variant.stockQuantity < quantity) {
+            throw new StockError(`Not enough stock available. Requested: ${quantity}, Available: ${variant.stockQuantity}`);
+        }
 
-        await db.insert(cartItem).values(newItem);
+        const existingItem = await db.query.cartItem.findFirst({
+            where: and(
+                eq(cartItem.cartId, cartId),
+                eq(cartItem.productVariantId, productVariantId)
+            )
+        });
+
+        if (existingItem) {
+            const newQuantity = existingItem.quantity + quantity;
+            if (newQuantity > variant.stockQuantity) {
+                throw new StockError(`Not enough stock available for total quantity. Requested: ${newQuantity}, Available: ${variant.stockQuantity}`);
+            }
+
+            await db.update(cartItem)
+                .set({
+                    quantity: newQuantity,
+                    updatedAt: sql`(unixepoch())`
+                })
+                .where(eq(cartItem.id, existingItem.id));
+        } else {
+            const newItem: NewCartItem = {
+                id: nanoid(),
+                cartId,
+                productVariantId,
+                quantity,
+                price: variant.price
+            };
+
+            await db.insert(cartItem).values(newItem);
+        }
+
+        await db.update(cart)
+            .set({ updatedAt: sql`(unixepoch())` })
+            .where(eq(cart.id, cartId));
+    } catch (error) {
+        if (error instanceof CartError) {
+            throw error;
+        }
+        console.error('Error adding item to cart:', error);
+        throw new CartError('Failed to add item to cart');
     }
-
-    // Update cart timestamp
-    await db.update(cart)
-        .set({ updatedAt: sql`(unixepoch())` })
-        .where(eq(cart.id, cartId));
 }
 
 /**
@@ -382,50 +411,27 @@ export async function removeDiscountFromCart(cartId: string): Promise<void> {
 /**
  * Calculate cart summary
  */
-export function calculateCartSummary(cartWithItems: {
-    items: CartItemBase[];
-    discountAmount?: number | null;
-    discountCode?: string | null;
-} | null) {
-    // Type guards to ensure cart and items exist
-    if (!cartWithItems || !cartWithItems.items) {
+export function calculateCartSummary(items: CartItemBase[]): CartSummaryViewModel {
+    if (!items || items.length === 0) {
         return {
             subtotal: 0,
-            discount: 0,
+            discountAmount: 0,
             total: 0,
             itemCount: 0
         };
     }
 
-    const items = cartWithItems.items;
-    if (items.length === 0) {
-        return {
-            subtotal: 0,
-            discount: 0,
-            total: 0,
-            itemCount: 0
-        };
-    }
-
-    const subtotal = items.reduce(
-        (sum: number, item: CartItemBase) => sum + (item.price * item.quantity),
-        0
+    const summary = items.reduce(
+        (acc, item) => ({
+            subtotal: acc.subtotal + (item.price * item.quantity),
+            itemCount: acc.itemCount + item.quantity,
+            discountAmount: 0,
+            total: acc.total + (item.price * item.quantity)
+        }),
+        { subtotal: 0, itemCount: 0, discountAmount: 0, total: 0 }
     );
 
-    const discount = cartWithItems.discountAmount || 0;
-    const total = Math.max(0, subtotal - discount);
-    const itemCount = items.reduce(
-        (count: number, item: CartItemBase) => count + item.quantity,
-        0
-    );
-
-    return {
-        subtotal,
-        discount,
-        total,
-        itemCount,
-        discountCode: cartWithItems.discountCode
-    };
+    return summary;
 }
 
 /**
@@ -498,86 +504,12 @@ export async function assignCartToUser(
 }
 
 /**
- * Helper function to determine stock status
- */
-function getStockStatus(quantity: number): 'in_stock' | 'low_stock' | 'out_of_stock' {
-    if (quantity <= 0) return 'out_of_stock';
-    if (quantity < 5) return 'low_stock';
-    return 'in_stock';
-}
-
-/**
  * Get cart data as view model for the client
  */
 export async function getCartViewModel(sessionId: string, userId?: string): Promise<CartViewModel> {
-    try {
-        // Get or create cart
-        const userCart = await getOrCreateCart(sessionId, userId);
+    const cart = await getOrCreateCart(sessionId, userId);
 
-        // Get cart with items
-        const cartWithItems = await getCartWithItems(userCart.id);
-
-        if (!cartWithItems || !cartWithItems.items || !Array.isArray(cartWithItems.items)) {
-            // Return empty cart if no items found
-            return {
-                id: userCart.id,
-                items: [],
-                discountCode: userCart.discountCode,
-                discountAmount: 0,
-                subtotal: 0,
-                total: 0,
-                itemCount: 0
-            };
-        }
-
-        // Transform cart items for the view - filter out items without a valid productVariant
-        const cartItemsWithDetails = cartWithItems.items
-            .filter(item => item.productVariant != null)
-            .map((item): CartItemViewModel => {
-                // Safe to use non-null assertion as we've filtered out null/undefined variants
-                const variant = item.productVariant!;
-
-                return {
-                    id: item.id,
-                    quantity: item.quantity,
-                    price: item.price,
-                    productVariantId: item.productVariantId,
-                    imageUrl: typeof variant.attributes?.image === 'string' ? variant.attributes.image : '',
-                    name: variant.name,
-                    variant: {
-                        id: variant.id,
-                        name: variant.name,
-                        price: variant.price,
-                        stock_quantity: variant.stockQuantity,
-                        attributes: variant.attributes || {},
-                        sku: variant.sku,
-                        stockStatus: getStockStatus(variant.stockQuantity)
-                    },
-                    product: {
-                        id: variant.productId,
-                        name: variant.name.split(' - ')[0], // Simple derivation of product name
-                        slug: '', // Not needed for cart display
-                        description: null
-                    }
-                };
-            });
-
-        // Calculate totals
-        const summary = calculateCartSummary(cartWithItems);
-
-        // Create the cart view model
-        return {
-            id: userCart.id,
-            items: cartItemsWithDetails,
-            discountCode: userCart.discountCode,
-            discountAmount: userCart.discountAmount || 0,
-            subtotal: summary.subtotal,
-            total: summary.total,
-            itemCount: summary.itemCount
-        };
-    } catch (error) {
-        console.error('Error getting cart view model:', error);
-        // Return empty cart in case of error
+    if (!cart) {
         return {
             id: '',
             items: [],
@@ -588,6 +520,53 @@ export async function getCartViewModel(sessionId: string, userId?: string): Prom
             itemCount: 0
         };
     }
+
+    const cartWithItems = await getCartWithItems(cart.id) as CartWithItems | null;
+    const items = cartWithItems?.items || [];
+    const summary = calculateCartSummary(items.map(item => ({
+        price: item.price,
+        quantity: item.quantity
+    })));
+
+    return {
+        id: cart.id,
+        items: items
+            .filter(item => item.variant)
+            .map(item => ({
+                id: item.id,
+                productVariantId: item.productVariantId,
+                quantity: item.quantity,
+                price: item.price,
+                variant: {
+                    id: item.variant.id,
+                    sku: item.variant.sku,
+                    name: item.variant.name,
+                    price: item.variant.price,
+                    stock_quantity: item.variant.stockQuantity,
+                    attributes: item.variant.attributes || {},
+                    stockStatus: getStockStatus(item.variant.stockQuantity)
+                },
+                imageUrl: item.variant.attributes?.image || '',
+                name: item.variant.name,
+                product: {
+                    id: item.variant.productId,
+                    name: item.variant.name.split(' - ')[0],
+                    slug: '',
+                    description: null
+                }
+            })),
+        discountCode: cart.discountCode,
+        discountAmount: cart.discountAmount || 0,
+        subtotal: summary.subtotal,
+        total: summary.total,
+        itemCount: summary.itemCount
+    };
+}
+
+function getStockStatus(quantity: number): 'in_stock' | 'low_stock' | 'out_of_stock' {
+    if (quantity <= 0) return 'out_of_stock';
+    if (quantity < 5) return 'low_stock';
+    return 'in_stock';
 }
 
 /**
@@ -595,24 +574,25 @@ export async function getCartViewModel(sessionId: string, userId?: string): Prom
  */
 export async function getCartSummaryViewModel(sessionId: string, userId?: string): Promise<CartSummaryViewModel> {
     try {
-        // Get or create cart
         const userCart = await getOrCreateCart(sessionId, userId);
+        if (!userCart) {
+            return {
+                subtotal: 0,
+                discountAmount: 0,
+                total: 0,
+                itemCount: 0
+            };
+        }
 
-        // Get cart with items
         const cartWithItems = await getCartWithItems(userCart.id);
+        const items = cartWithItems?.items || [];
 
-        // Calculate summary
-        const summary = calculateCartSummary(cartWithItems);
-
-        return {
-            subtotal: summary.subtotal,
-            discountAmount: userCart.discountAmount || 0,
-            total: summary.total,
-            itemCount: summary.itemCount
-        };
+        return calculateCartSummary(items.map(item => ({
+            price: item.price,
+            quantity: item.quantity
+        })));
     } catch (error) {
-        console.error('Error getting cart summary view model:', error);
-        // Return empty summary in case of error
+        console.error('Failed to get cart summary:', error);
         return {
             subtotal: 0,
             discountAmount: 0,
