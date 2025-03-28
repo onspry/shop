@@ -168,5 +168,16 @@
 	"shipping_express_desc": "Delivery in 1-2 business days",
 	"shipping_overnight": "Overnight Shipping",
 	"shipping_overnight_desc": "Next business day delivery",
-	"checkout_delivery_address": "Delivery Address"
+	"checkout_delivery_address": "Delivery Address",
+
+	"orders_title": "My Orders",
+	"orders_login_required": "Login Required",
+	"orders_login_message": "Please sign in to view your orders",
+	"orders_empty_title": "No Orders Yet",
+	"orders_empty_message": "You haven't placed any orders yet",
+	"orders_browse_products": "Browse Products",
+	"orders_order_number": "Order #{number}",
+	"orders_placed_on": "Placed on {date}",
+	"orders_quantity": "Quantity: {quantity}",
+	"orders_shipping_address": "Shipping Address"
 }

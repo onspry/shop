@@ -1,32 +1,28 @@
 import { sql } from 'drizzle-orm';
 import * as t from "drizzle-orm/sqlite-core";
-import { product } from './product';
 import { productVariant } from './product_variant';
+import { order } from './order';
 
-export const inventoryTransactionType = ['order', 'restock', 'adjustment'] as const;
-export type InventoryTransactionType = typeof inventoryTransactionType[number];
+export const transactionType = ['order', 'manual_adjustment', 'return'] as const;
+export type TransactionType = typeof transactionType[number];
 
-export const inventoryTransactions = t.sqliteTable('inventory_transactions', {
+export const inventoryTransaction = t.sqliteTable('inventory_transaction', {
     id: t.text('id').primaryKey(),
-    productId: t.text('product_id')
+    productVariantId: t.text('product_variant_id')
         .notNull()
-        .references(() => product.id),
-    variantId: t.text('variant_id')
         .references(() => productVariant.id),
-    quantity: t.integer('quantity').notNull(), // negative for outgoing, positive for incoming
-    type: t.text('type', { enum: inventoryTransactionType }).notNull(),
-    referenceId: t.text('reference_id'), // order ID or other reference
+    orderId: t.text('order_id')
+        .references(() => order.id),
+    type: t.text('type', { enum: transactionType }).notNull(),
+    quantity: t.integer('quantity').notNull(), // Negative for outgoing, positive for incoming
     note: t.text('note'),
-    createdAt: t.integer('created_at', { mode: 'timestamp' })
-        .notNull()
-        .default(sql`(unixepoch())`)
-}, (table) => ({
-    productIdIndex: t.index('inventory_transactions_product_id_idx').on(table.productId),
-    variantIdIndex: t.index('inventory_transactions_variant_id_idx').on(table.variantId),
-    typeIndex: t.index('inventory_transactions_type_idx').on(table.type),
-    createdAtIndex: t.index('inventory_transactions_created_at_idx').on(table.createdAt)
-}));
+    createdAt: t.integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+}, (table) => [
+    t.index('inventory_transaction_product_variant_id_idx').on(table.productVariantId),
+    t.index('inventory_transaction_order_id_idx').on(table.orderId),
+    t.index('inventory_transaction_type_idx').on(table.type)
+]);
 
 // Export types
-export type InventoryTransaction = typeof inventoryTransactions.$inferSelect;
-export type NewInventoryTransaction = typeof inventoryTransactions.$inferInsert; 
+export type InventoryTransaction = typeof inventoryTransaction.$inferSelect;
+export type NewInventoryTransaction = typeof inventoryTransaction.$inferInsert; 

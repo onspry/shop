@@ -1,1 +1,0 @@
-ALTER TABLE `cart` ADD `guest_email` text;

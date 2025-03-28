@@ -1,3 +1,5 @@
+// Export all schemas
+export * from './types';
 export * from './user';
 export * from './product';
 export * from './product_variant';
@@ -10,4 +12,7 @@ export * from './order-address';
 export * from './order-status-history';
 export * from './payment-transaction';
 export * from './refund';
-export * from './inventory-transaction'; 
+export * from './inventory-transaction';
+export * from './session';
+export * from './email-verification-request';
+export * from './password-reset-session'; 

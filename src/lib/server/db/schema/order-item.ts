@@ -1,37 +1,39 @@
 import { sql } from 'drizzle-orm';
 import * as t from "drizzle-orm/sqlite-core";
-import { orders } from './order';
-import { product } from './product';
+import { order } from './order';
 import { productVariant } from './product_variant';
+import { relations } from 'drizzle-orm';
 
-export const orderItems = t.sqliteTable('order_items', {
+export const orderItem = t.sqliteTable('order_item', {
     id: t.text('id').primaryKey(),
     orderId: t.text('order_id')
         .notNull()
-        .references(() => orders.id),
-    productId: t.text('product_id')
+        .references(() => order.id, { onDelete: 'cascade' }),
+    productVariantId: t.text('product_variant_id')
         .notNull()
-        .references(() => product.id),
-    variantId: t.text('variant_id')
         .references(() => productVariant.id),
     quantity: t.integer('quantity').notNull(),
-    unitPrice: t.integer('unit_price', { mode: 'number' }).notNull(),
-    totalPrice: t.integer('total_price', { mode: 'number' }).notNull(),
-    createdAt: t.integer('created_at', { mode: 'timestamp' })
-        .notNull()
-        .default(sql`(unixepoch())`),
-    updatedAt: t.integer('updated_at', { mode: 'timestamp' })
-        .notNull()
-        .default(sql`(unixepoch())`)
-}, (table) => ({
-    // Index for order lookups
-    orderIdIndex: t.index('order_items_order_id_idx').on(table.orderId),
-    // Index for product lookups
-    productIdIndex: t.index('order_items_product_id_idx').on(table.productId),
-    // Index for variant lookups
-    variantIdIndex: t.index('order_items_variant_id_idx').on(table.variantId)
+    price: t.integer('price').notNull(), // Store price in cents at time of order
+    name: t.text('name').notNull(), // Store product name at time of order
+    variantName: t.text('variant_name').notNull(), // Store variant name at time of order
+    createdAt: t.integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+    updatedAt: t.integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+}, (table) => [
+    t.index('order_item_order_id_idx').on(table.orderId),
+    t.index('order_item_product_variant_id_idx').on(table.productVariantId)
+]);
+
+export const orderItemRelations = relations(orderItem, ({ one }) => ({
+    order: one(order, {
+        fields: [orderItem.orderId],
+        references: [order.id]
+    }),
+    productVariant: one(productVariant, {
+        fields: [orderItem.productVariantId],
+        references: [productVariant.id]
+    })
 }));
 
 // Export types
-export type OrderItem = typeof orderItems.$inferSelect;
-export type NewOrderItem = typeof orderItems.$inferInsert; 
+export type OrderItem = typeof orderItem.$inferSelect;
+export type NewOrderItem = typeof orderItem.$inferInsert; 

@@ -1,5 +1,5 @@
 import * as t from "drizzle-orm/sqlite-core";
-
+import { relations } from 'drizzle-orm';
 import { product } from './product';
 
 export const productImage = t.sqliteTable('product_image', {
@@ -14,6 +14,13 @@ export const productImage = t.sqliteTable('product_image', {
     t.index('product_image_product_id_idx').on(table.productId),
     t.index('product_image_position_idx').on(table.position)
 ]);
+
+export const productImageRelations = relations(productImage, ({ one }) => ({
+    product: one(product, {
+        fields: [productImage.productId],
+        references: [product.id],
+    }),
+}));
 
 // Export types
 export type ProductImage = typeof productImage.$inferSelect; 

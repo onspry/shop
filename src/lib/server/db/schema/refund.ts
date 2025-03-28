@@ -1,37 +1,36 @@
 import { sql } from 'drizzle-orm';
-import { text, integer, sqliteTable, index } from 'drizzle-orm/sqlite-core';
-import { orders } from './order';
-import { paymentTransactions } from './payment-transaction';
+import * as t from "drizzle-orm/sqlite-core";
+import { order } from './order';
+import { paymentTransaction } from './payment-transaction';
 
 export const refundStatus = ['pending', 'succeeded', 'failed'] as const;
 export type RefundStatus = typeof refundStatus[number];
 
-export const refunds = sqliteTable('refunds', {
-    id: text('id').primaryKey(),
-    orderId: text('order_id')
+export const refund = t.sqliteTable('refund', {
+    id: t.text('id').primaryKey(),
+    orderId: t.text('order_id')
         .notNull()
-        .references(() => orders.id),
-    transactionId: text('transaction_id')
+        .references(() => order.id),
+    status: t.text('status', { enum: refundStatus }).notNull().default('pending'),
+    amount: t.integer('amount').notNull(), // Store amount in cents
+    reason: t.text('reason').notNull(),
+    note: t.text('note'),
+    stripeRefundId: t.text('stripe_refund_id'),
+    errorMessage: t.text('error_message'),
+    createdAt: t.integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+    updatedAt: t.integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+    transactionId: t.text('transaction_id')
         .notNull()
-        .references(() => paymentTransactions.id),
-    amount: integer('amount', { mode: 'number' }).notNull(),
-    reason: text('reason'),
-    status: text('status', { enum: refundStatus }).notNull(),
-    refundId: text('refund_id'),
-    createdAt: text('created_at')
-        .notNull()
-        .default(sql`CURRENT_TIMESTAMP`)
-}, (table) => ({
-    // Index for order lookups
-    orderIdIndex: index('refunds_order_id_idx').on(table.orderId),
-    // Index for transaction lookups
-    transactionIdIndex: index('refunds_transaction_id_idx').on(table.transactionId),
-    // Index for status-based lookups
-    statusIndex: index('refunds_status_idx').on(table.status),
-    // Index for refund ID lookups
-    refundIdIndex: index('refunds_refund_id_idx').on(table.refundId)
-}));
+        .references(() => paymentTransaction.id),
+    refundId: t.text('refund_id')
+}, (table) => [
+    t.index('refund_order_id_idx').on(table.orderId),
+    t.index('refund_status_idx').on(table.status),
+    t.index('refund_stripe_refund_id_idx').on(table.stripeRefundId),
+    t.index('refund_transaction_id_idx').on(table.transactionId),
+    t.index('refund_refund_id_idx').on(table.refundId)
+]);
 
 // Export types
-export type Refund = typeof refunds.$inferSelect;
-export type NewRefund = typeof refunds.$inferInsert; 
+export type Refund = typeof refund.$inferSelect;
+export type NewRefund = typeof refund.$inferInsert; 

@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { user } from '$lib/server/db';
+import { user } from '$lib/server/db/schema/user';
 import type { Provider, User } from '$lib/server/db';
 import { eq, and } from 'drizzle-orm';
 import { hashPassword } from './password';
@@ -48,12 +48,12 @@ export async function getUserPasswordHash(userId: string): Promise<string | unde
         .from(user)
         .where(eq(user.id, userId));
 
-    return result.passwordHash;
+    return result.passwordHash ?? undefined;
 }
 
 export async function setUserAsEmailVerifiedIfEmailMatches(userId: string, email: string): Promise<boolean> {
     const result = await db.update(user)
-        .set({ email_verified: true })
+        .set({ emailVerified: true })
         .where(and(
             eq(user.id, userId),
             eq(user.email, email)
@@ -75,7 +75,7 @@ export async function updateUserEmailAndSetEmailAsVerified(userId: string, email
     await db.update(user)
         .set({
             email,
-            email_verified: true
+            emailVerified: true
         })
         .where(eq(user.id, userId))
         .run();

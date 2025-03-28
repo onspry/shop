@@ -1,29 +1,35 @@
 import { db } from '$lib/server/db';
-import { eq, desc, and, between } from 'drizzle-orm';
+import { eq, desc, between } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import type {
     OrderStatus,
-    TransactionStatus,
+    PaymentStatus,
     PaymentTransaction,
-    Refund
+    Refund,
+    Order,
+    OrderItem,
+    OrderAddress
 } from '$lib/server/db/schema';
 import {
-    orders,
-    orderItems,
-    orderAddresses,
+    order,
+    orderItem,
+    orderAddress,
     orderStatusHistory,
-    paymentTransactions,
-    refunds,
-    inventoryTransactions
+    paymentTransaction,
+    refund,
+    inventoryTransaction
 } from '$lib/server/db/schema';
 
 interface CreateOrderData {
     userId?: string;
+    cartId: string;
     items: Array<{
         productId: string;
         variantId?: string;
         quantity: number;
         unitPrice: number;
+        name: string;
+        variantName: string;
     }>;
     shipping: {
         method: string;
@@ -31,8 +37,8 @@ interface CreateOrderData {
         address: {
             firstName: string;
             lastName: string;
-            addressLine1: string;
-            addressLine2?: string;
+            address1: string;
+            address2?: string;
             city: string;
             state: string;
             postalCode: string;
@@ -54,7 +60,7 @@ interface CreateOrderData {
 interface OrderViewModel {
     id: string;
     status: OrderStatus;
-    totalAmount: number;
+    total: number;
     subtotal: number;
     taxAmount: number;
     shippingAmount: number;
@@ -70,12 +76,14 @@ interface OrderViewModel {
         quantity: number;
         unitPrice: number;
         totalPrice: number;
+        name: string;
+        variantName: string;
     }>;
     shippingAddress: {
         firstName: string;
         lastName: string;
-        addressLine1: string;
-        addressLine2?: string;
+        address1: string;
+        address2?: string;
         city: string;
         state: string;
         postalCode: string;
@@ -83,6 +91,11 @@ interface OrderViewModel {
         phone?: string;
         email: string;
     };
+}
+
+interface OrderQueryResult extends Order {
+    items: Array<OrderItem>;
+    addresses: Array<OrderAddress>;
 }
 
 export class OrderRepository {
@@ -108,7 +121,7 @@ export class OrderRepository {
         if (!data.shipping.address.firstName || !data.shipping.address.lastName) {
             throw new Error('Shipping name is required');
         }
-        if (!data.shipping.address.addressLine1 || !data.shipping.address.city ||
+        if (!data.shipping.address.address1 || !data.shipping.address.city ||
             !data.shipping.address.state || !data.shipping.address.postalCode ||
             !data.shipping.address.country) {
             throw new Error('Complete shipping address is required');
@@ -124,111 +137,147 @@ export class OrderRepository {
         await db.transaction(async (tx) => {
             // Create order
             await tx
-                .insert(orders)
+                .insert(order)
                 .values({
                     id: orderId,
                     userId: data.userId,
-                    status: 'pending',
-                    totalAmount,
+                    cartId: data.cartId,
+                    status: 'pending_payment',
+                    email: data.shipping.address.email,
+                    firstName: data.shipping.address.firstName,
+                    lastName: data.shipping.address.lastName,
                     subtotal: data.subtotal,
-                    taxAmount: data.taxAmount,
-                    shippingAmount: data.shipping.amount,
-                    discountAmount: data.discountAmount,
-                    currency: data.currency || 'USD',
-                    shippingMethod: data.shipping.method,
-                    paymentMethod: data.payment.method,
-                    paymentIntentId: data.payment.intentId
+                    discountAmount: data.discountAmount || 0,
+                    total: totalAmount,
+                    stripePaymentIntentId: data.payment.intentId
                 });
 
             // Create order items
             const orderItemsData = data.items.map(item => ({
                 id: nanoid(),
                 orderId,
-                productId: item.productId,
-                variantId: item.variantId,
+                productVariantId: item.variantId || '',
                 quantity: item.quantity,
-                unitPrice: item.unitPrice,
-                totalPrice: item.quantity * item.unitPrice
+                price: item.unitPrice,
+                name: item.name,
+                variantName: item.variantName
             }));
 
-            await tx.insert(orderItems).values(orderItemsData);
+            await tx.insert(orderItem).values(orderItemsData);
 
             // Create shipping address
-            await tx.insert(orderAddresses).values({
+            await tx.insert(orderAddress).values({
                 id: nanoid(),
                 orderId,
                 type: 'shipping',
-                ...data.shipping.address
+                firstName: data.shipping.address.firstName,
+                lastName: data.shipping.address.lastName,
+                address1: data.shipping.address.address1,
+                address2: data.shipping.address.address2,
+                city: data.shipping.address.city,
+                state: data.shipping.address.state,
+                postalCode: data.shipping.address.postalCode,
+                country: data.shipping.address.country,
+                phone: data.shipping.address.phone
             });
 
             // Create initial status history
             await tx.insert(orderStatusHistory).values({
                 id: nanoid(),
                 orderId,
-                status: 'pending',
+                status: 'pending_payment',
                 note: 'Order created'
             });
 
             // Update inventory
             for (const item of data.items) {
-                await tx.insert(inventoryTransactions).values({
-                    id: nanoid(),
-                    productId: item.productId,
-                    variantId: item.variantId,
-                    quantity: -item.quantity,
-                    type: 'order',
-                    referenceId: orderId,
-                    note: `Order ${orderId}`
-                });
-            }
-        });
-
-        const order = await this.getOrderById(orderId);
-        if (!order) {
-            throw new Error('Failed to create order');
-        }
-        return order;
-    }
-
-    async getOrderById(id: string): Promise<OrderViewModel | null> {
-        const order = await db.query.orders.findFirst({
-            where: eq(orders.id, id),
-            with: {
-                items: true,
-                addresses: {
-                    where: eq(orderAddresses.type, 'shipping')
+                if (item.variantId) {
+                    await tx.insert(inventoryTransaction).values({
+                        id: nanoid(),
+                        productVariantId: item.variantId,
+                        orderId,
+                        type: 'order',
+                        quantity: -item.quantity,
+                        note: `Order ${orderId}`
+                    });
                 }
             }
         });
 
-        if (!order) return null;
+        const createdOrder = await this.getOrderById(orderId);
+        if (!createdOrder) {
+            throw new Error('Failed to create order');
+        }
+        return createdOrder;
+    }
+
+    private mapToViewModel(orderData: OrderQueryResult): OrderViewModel | null {
+        const shippingAddress = orderData.addresses?.[0];
+        if (!shippingAddress) return null;
 
         return {
-            id: order.id,
-            status: order.status,
-            totalAmount: order.totalAmount,
-            subtotal: order.subtotal,
-            taxAmount: order.taxAmount,
-            shippingAmount: order.shippingAmount,
-            discountAmount: order.discountAmount ?? undefined,
-            currency: order.currency,
-            shippingMethod: order.shippingMethod,
-            paymentMethod: order.paymentMethod,
-            createdAt: order.createdAt,
-            items: order.items,
-            shippingAddress: order.addresses[0]
+            id: orderData.id,
+            status: orderData.status,
+            total: orderData.total,
+            subtotal: orderData.subtotal,
+            taxAmount: 0, // Tax is included in total
+            shippingAmount: 0, // Shipping is included in total
+            discountAmount: orderData.discountAmount || undefined,
+            currency: 'USD',
+            shippingMethod: 'standard', // Default shipping method
+            paymentMethod: orderData.stripePaymentIntentId ? 'stripe' : 'unknown',
+            createdAt: orderData.createdAt.toISOString(),
+            items: orderData.items.map((item) => ({
+                id: item.id,
+                productId: item.productVariantId,
+                variantId: item.productVariantId,
+                quantity: item.quantity,
+                unitPrice: item.price,
+                totalPrice: item.quantity * item.price,
+                name: item.name,
+                variantName: item.variantName
+            })),
+            shippingAddress: {
+                firstName: shippingAddress.firstName,
+                lastName: shippingAddress.lastName,
+                address1: shippingAddress.address1,
+                address2: shippingAddress.address2 || undefined,
+                city: shippingAddress.city,
+                state: shippingAddress.state,
+                postalCode: shippingAddress.postalCode,
+                country: shippingAddress.country,
+                phone: shippingAddress.phone || undefined,
+                email: orderData.email
+            }
         };
+    }
+
+    async getOrderById(id: string): Promise<OrderViewModel | null> {
+        const result = await db.query.order.findFirst({
+            where: eq(order.id, id),
+            with: {
+                items: true,
+                addresses: {
+                    where: eq(orderAddress.type, 'shipping')
+                }
+            }
+        }) as OrderQueryResult | null;
+
+        if (!result) return null;
+        if (!result.items?.length || !result.addresses?.length) return null;
+
+        return this.mapToViewModel(result);
     }
 
     async updateOrderStatus(id: string, status: OrderStatus, note?: string): Promise<void> {
         await db.transaction(async (tx) => {
             await tx
-                .update(orders)
+                .update(order)
                 .set({
                     status,
-                    updatedAt: new Date().toISOString()
+                    updatedAt: new Date()
                 })
-                .where(eq(orders.id, id));
+                .where(eq(order.id, id));
 
             await tx.insert(orderStatusHistory).values({
                 id: nanoid(),
@@ -244,15 +293,16 @@ export class OrderRepository {
         amount: number,
         paymentMethod: string,
         paymentIntentId?: string,
-        status: TransactionStatus = 'pending'
+        status: PaymentStatus = 'pending'
     ): Promise<void> {
-        await db.insert(paymentTransactions).values({
+        await db.insert(paymentTransaction).values({
             id: nanoid(),
             orderId,
-            amount,
             status,
-            paymentMethod,
-            paymentIntentId
+            amount,
+            currency: 'USD',
+            stripePaymentIntentId: paymentIntentId || nanoid(),
+            stripePaymentMethodId: paymentMethod
         });
     }
 
@@ -264,14 +314,14 @@ export class OrderRepository {
         refundId?: string
     ): Promise<void> {
         await db.transaction(async (tx) => {
-            await tx.insert(refunds).values({
+            await tx.insert(refund).values({
                 id: nanoid(),
                 orderId,
                 transactionId,
                 amount,
-                reason,
+                reason: reason || 'Refund requested',
                 status: 'pending',
-                refundId
+                stripeRefundId: refundId || undefined
             });
 
             await this.updateOrderStatus(orderId, 'refunded', reason);
@@ -279,32 +329,19 @@ export class OrderRepository {
     }
 
     async getOrdersByUserId(userId: string): Promise<OrderViewModel[]> {
-        const userOrders = await db.query.orders.findMany({
-            where: eq(orders.userId, userId),
+        const results = await db.query.order.findMany({
+            where: eq(order.userId, userId),
             with: {
                 items: true,
                 addresses: {
-                    where: eq(orderAddresses.type, 'shipping')
+                    where: eq(orderAddress.type, 'shipping')
                 }
             },
-            orderBy: [desc(orders.createdAt)]
-        });
+            orderBy: [desc(order.createdAt)]
+        }) as OrderQueryResult[];
 
-        return userOrders.map(order => ({
-            id: order.id,
-            status: order.status,
-            totalAmount: order.totalAmount,
-            subtotal: order.subtotal,
-            taxAmount: order.taxAmount,
-            shippingAmount: order.shippingAmount,
-            discountAmount: order.discountAmount ?? undefined,
-            currency: order.currency,
-            shippingMethod: order.shippingMethod,
-            paymentMethod: order.paymentMethod,
-            createdAt: order.createdAt,
-            items: order.items,
-            shippingAddress: order.addresses[0]
-        }));
+        const orders = results.map(result => this.mapToViewModel(result));
+        return orders.filter((order): order is OrderViewModel => order !== null);
     }
 
     async getOrderStatusHistory(orderId: string): Promise<Array<{ status: OrderStatus; note?: string; createdAt: string }>> {
@@ -316,116 +353,74 @@ export class OrderRepository {
         return history.map(item => ({
             status: item.status,
             note: item.note ?? undefined,
-            createdAt: item.createdAt
+            createdAt: item.createdAt.toISOString()
         }));
     }
 
     async getOrdersByEmail(email: string): Promise<OrderViewModel[]> {
-        const userOrders = await db.query.orders.findMany({
-            where: and(
-                eq(orderAddresses.email, email),
-                eq(orderAddresses.type, 'shipping')
-            ),
+        const results = await db.query.order.findMany({
+            where: eq(order.email, email),
             with: {
                 items: true,
                 addresses: {
-                    where: eq(orderAddresses.type, 'shipping')
+                    where: eq(orderAddress.type, 'shipping')
                 }
             },
-            orderBy: [desc(orders.createdAt)]
-        });
+            orderBy: [desc(order.createdAt)]
+        }) as OrderQueryResult[];
 
-        return userOrders.map(order => ({
-            id: order.id,
-            status: order.status,
-            totalAmount: order.totalAmount,
-            subtotal: order.subtotal,
-            taxAmount: order.taxAmount,
-            shippingAmount: order.shippingAmount,
-            discountAmount: order.discountAmount ?? undefined,
-            currency: order.currency,
-            shippingMethod: order.shippingMethod,
-            paymentMethod: order.paymentMethod,
-            createdAt: order.createdAt,
-            items: order.items,
-            shippingAddress: order.addresses[0]
-        }));
+        const orders = results.map(result => this.mapToViewModel(result));
+        return orders.filter((order): order is OrderViewModel => order !== null);
     }
 
     async getOrdersByDateRange(startDate: Date, endDate: Date): Promise<OrderViewModel[]> {
-        const dateRangeOrders = await db.query.orders.findMany({
-            where: between(orders.createdAt, startDate.toISOString(), endDate.toISOString()),
+        const results = await db.query.order.findMany({
+            where: between(order.createdAt, startDate, endDate),
             with: {
                 items: true,
                 addresses: {
-                    where: eq(orderAddresses.type, 'shipping')
+                    where: eq(orderAddress.type, 'shipping')
                 }
             },
-            orderBy: [desc(orders.createdAt)]
-        });
+            orderBy: [desc(order.createdAt)]
+        }) as OrderQueryResult[];
 
-        return dateRangeOrders.map(order => ({
-            id: order.id,
-            status: order.status,
-            totalAmount: order.totalAmount,
-            subtotal: order.subtotal,
-            taxAmount: order.taxAmount,
-            shippingAmount: order.shippingAmount,
-            discountAmount: order.discountAmount ?? undefined,
-            currency: order.currency,
-            shippingMethod: order.shippingMethod,
-            paymentMethod: order.paymentMethod,
-            createdAt: order.createdAt,
-            items: order.items,
-            shippingAddress: order.addresses[0]
-        }));
+        const orders = results.map(result => this.mapToViewModel(result));
+        return orders.filter((order): order is OrderViewModel => order !== null);
     }
 
     async getOrdersByStatus(status: OrderStatus): Promise<OrderViewModel[]> {
-        const statusOrders = await db.query.orders.findMany({
-            where: eq(orders.status, status),
+        const results = await db.query.order.findMany({
+            where: eq(order.status, status),
             with: {
                 items: true,
                 addresses: {
-                    where: eq(orderAddresses.type, 'shipping')
+                    where: eq(orderAddress.type, 'shipping')
                 }
             },
-            orderBy: [desc(orders.createdAt)]
-        });
+            orderBy: [desc(order.createdAt)]
+        }) as OrderQueryResult[];
 
-        return statusOrders.map(order => ({
-            id: order.id,
-            status: order.status,
-            totalAmount: order.totalAmount,
-            subtotal: order.subtotal,
-            taxAmount: order.taxAmount,
-            shippingAmount: order.shippingAmount,
-            discountAmount: order.discountAmount ?? undefined,
-            currency: order.currency,
-            shippingMethod: order.shippingMethod,
-            paymentMethod: order.paymentMethod,
-            createdAt: order.createdAt,
-            items: order.items,
-            shippingAddress: order.addresses[0]
-        }));
+        const orders = results.map(result => this.mapToViewModel(result));
+        return orders.filter((order): order is OrderViewModel => order !== null);
     }
 
     async getOrderPaymentTransactions(orderId: string): Promise<PaymentTransaction[]> {
-        const transactions = await db.query.paymentTransactions.findMany({
-            where: eq(paymentTransactions.orderId, orderId),
-            orderBy: [desc(paymentTransactions.createdAt)]
+        const transactions = await db.query.paymentTransaction.findMany({
+            where: eq(paymentTransaction.orderId, orderId),
+            orderBy: [desc(paymentTransaction.createdAt)]
         });
 
         return transactions;
     }
 
     async getOrderRefunds(orderId: string): Promise<Refund[]> {
-        const orderRefunds = await db.query.refunds.findMany({
-            where: eq(refunds.orderId, orderId),
+        const orderRefunds = await db.query.refund.findMany({
+            where: eq(refund.orderId, orderId),
             with: {
                 transaction: true
             },
-            orderBy: [desc(refunds.createdAt)]
+            orderBy: [desc(refund.createdAt)]
         });
 
         return orderRefunds;

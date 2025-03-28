@@ -1,7 +1,11 @@
 import { db } from '$lib/server/db';
-import { product, productVariant, productImage } from '$lib/server/db';
+import { product } from '$lib/server/db/schema/product';
+import { productVariant } from '$lib/server/db/schema/product_variant';
+import { productImage } from '$lib/server/db/schema/product_image';
+import type { Product } from '$lib/server/db/schema/product';
+import type { ProductVariant } from '$lib/server/db/schema/product_variant';
+import type { ProductImage } from '$lib/server/db/schema/product_image';
 import { eq, asc, inArray } from 'drizzle-orm';
-import type { Product, ProductVariant, ProductImage } from '$lib/server/db';
 import type { ProductViewModel } from '$lib/models/product';
 import { toProductViewModel } from '$lib/models/product';
 import { toCatalogueViewModel } from '$lib/models/catalogue';
@@ -67,18 +71,7 @@ async function queryProducts(options: {
 } = {}): Promise<QueryResult[]> {
     // First, get the products
     const query = db.select({
-        product: {
-            id: product.id,
-            name: product.name,
-            category: product.category,
-            slug: product.slug,
-            isAccessory: product.isAccessory,
-            description: product.description,
-            features: product.features,
-            specifications: product.specifications,
-            createdAt: product.createdAt,
-            updatedAt: product.updatedAt
-        }
+        product: product
     })
         .from(product)
         .limit(options.limit ?? 50)
@@ -105,7 +98,9 @@ async function queryProducts(options: {
             sku: productVariant.sku,
             price: productVariant.price,
             stockQuantity: productVariant.stockQuantity,
-            attributes: productVariant.attributes
+            attributes: productVariant.attributes,
+            createdAt: productVariant.createdAt,
+            updatedAt: productVariant.updatedAt
         })
             .from(productVariant)
             .where(inArray(productVariant.productId, productIds)),
@@ -139,6 +134,7 @@ async function getBySlug(slug: string): Promise<ProductWithRelations | null> {
     return groupResults(results)[0];
 }
 
+// Category priority for sorting
 const CATEGORY_PRIORITIES = {
     KEYBOARD: 0,
     SWITCH: 1,
@@ -196,12 +192,11 @@ export const productRepo = {
      * @returns Catalogue view model with products grouped by category
      */
     async getCatalogue(page: number = 1, pageSize: number = 50): Promise<ReturnType<typeof toCatalogueViewModel>> {
-        const startTime = performance.now();
         console.log(`[ProductRepo] Starting getCatalogue for page: ${page}`);
-
         const { products, total } = await this.getProducts(undefined, page, pageSize);
 
-        const productGroups = products.reduce((acc, product) => {
+        // Group products by category
+        const productsByCategory = products.reduce((acc, product) => {
             const category = product.category || 'Uncategorized';
             if (!acc[category]) {
                 acc[category] = [];
@@ -210,20 +205,20 @@ export const productRepo = {
             return acc;
         }, {} as Record<string, ProductViewModel[]>);
 
-        const sortedGroups = Object.entries(productGroups)
+        // Sort categories by priority and name
+        const productGroups = Object.entries(productsByCategory)
             .sort(([a], [b]) => {
                 const priorityA = CATEGORY_PRIORITIES[a.toUpperCase() as keyof typeof CATEGORY_PRIORITIES] ?? Number.MAX_SAFE_INTEGER;
                 const priorityB = CATEGORY_PRIORITIES[b.toUpperCase() as keyof typeof CATEGORY_PRIORITIES] ?? Number.MAX_SAFE_INTEGER;
                 if (priorityA !== priorityB) return priorityA - priorityB;
                 return a.localeCompare(b);
             })
-            .map(([category, products]) => ({ category, products }));
+            .map(([category, products]) => ({
+                category,
+                products
+            }));
 
-        const endTime = performance.now();
-        console.log(`[ProductRepo] getCatalogue completed in ${(endTime - startTime).toFixed(2)}ms`);
-        console.log(`[ProductRepo] Grouped into ${sortedGroups.length} categories`);
-
-        return toCatalogueViewModel(sortedGroups, total);
+        return toCatalogueViewModel(productGroups, total);
     },
 
     /**

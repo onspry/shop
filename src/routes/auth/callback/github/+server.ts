@@ -1,10 +1,11 @@
 import { generateSessionToken, createSession, setSessionTokenCookie } from "$lib/server/auth/session";
-import { getUserByProviderId, createUser, getUserByEmail } from "$lib/server/auth/user"
+import { userRepo } from "$lib/server/db/repositories/user";
 import { github } from "$lib/server/auth/oauth";
 import { randomUUID } from 'crypto';
 import type { RequestEvent } from "@sveltejs/kit";
 import type { OAuth2Tokens } from "arctic";
-import { Providers } from "$lib/server/db";
+import { Providers } from "$lib/server/db/schema/user";
+import { transferCartToUser } from "$lib/server/db/repositories/cart";
 
 export async function GET(event: RequestEvent): Promise<Response> {
     const code = event.url.searchParams.get("code");
@@ -37,61 +38,73 @@ export async function GET(event: RequestEvent): Promise<Response> {
     });
     const githubUser = await githubUserResponse.json();
     const githubUserId = githubUser.id;
-    const githubUsername = githubUser.login;
     const primaryEmail = githubUser.email;
 
     // First check for existing user by provider ID
-    const existingUser = await getUserByProviderId(Providers.github, githubUserId.toString());
+    const existingUser = await userRepo.getByProviderId(Providers.GITHUB, githubUserId.toString());
     if (existingUser) {
         const sessionToken = generateSessionToken();
         const session = await createSession(sessionToken, existingUser.id);
         setSessionTokenCookie(event, sessionToken, session.expiresAt);
+
+        // Transfer guest cart to user
+        await transferCartToUser(event.cookies.get('session') || '', existingUser.id);
+
         return new Response(null, {
-            status: 302,
-            headers: { Location: "/" }
+            status: 303,
+            headers: {
+                Location: "/"
+            }
         });
     }
 
-    // Then check if email is already in use by another account
-    if (primaryEmail) {
-        const existingUserWithEmail = await getUserByEmail(primaryEmail);
-        if (existingUserWithEmail) {
-            // Redirect with more detailed error information
-            const searchParams = new URLSearchParams({
-                error: 'email_exists',
-                email: primaryEmail,
-                provider: existingUserWithEmail.provider,
-                attempted_provider: 'github'
-            });
+    // If no user found by provider ID, check by email
+    const existingUserByEmail = await userRepo.getByEmail(githubUser.email);
+    if (existingUserByEmail) {
+        // Redirect with more detailed error information
+        const searchParams = new URLSearchParams({
+            error: 'email_exists',
+            email: primaryEmail,
+            provider: existingUserByEmail.provider,
+            attempted_provider: 'github'
+        });
 
-            return new Response(null, {
-                status: 302,
-                headers: {
-                    Location: `/auth/error?${searchParams.toString()}`
-                }
-            });
-        }
+        return new Response(null, {
+            status: 302,
+            headers: {
+                Location: `/auth/error?${searchParams.toString()}`
+            }
+        });
     }
 
-    const user = await createUser({
+    // Create new user
+    const newUser = await userRepo.create({
         id: randomUUID(),
-        provider: 'github',
+        provider: Providers.GITHUB,
         providerId: githubUserId.toString(),
-        email: primaryEmail,
+        email: githubUser.email,
+        firstname: githubUser.name ? githubUser.name.split(' ')[0] : githubUser.login,
+        lastname: githubUser.name ? githubUser.name.split(' ').slice(1).join(' ') : '',
         image: githubUser.avatar_url,
-        username: githubUsername,
-        passwordHash: '',  // Empty for OAuth users
-        email_verified: 1,
+        status: 'active',
+        emailVerified: true,
+        passwordHash: null,
         isAdmin: false,
-        stripeCustomerId: `gh_${githubUserId}` // Prefix with gh_ for GitHub users
+        stripeCustomerId: null,
+        lastLoginAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date()
     });
 
     const sessionToken = generateSessionToken();
-    const session = await createSession(sessionToken, user.id);
+    const session = await createSession(sessionToken, newUser.id);
     setSessionTokenCookie(event, sessionToken, session.expiresAt);
 
+    // Transfer guest cart to new user
+    await transferCartToUser(event.cookies.get('session') || '', newUser.id);
+
     return new Response(null, {
-        status: 302,
+        status: 303,
         headers: {
             Location: "/"
         }

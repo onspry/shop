@@ -85,35 +85,46 @@ export async function getOrCreateCart(sessionId: string, userId?: string): Promi
  */
 export async function getCartWithItems(cartId: string): Promise<CartWithItems | null> {
     try {
+        // Get cart
         const cartData = await db.query.cart.findFirst({
-            where: eq(cart.id, cartId),
-            with: {
-                items: {
-                    with: {
-                        variant: {
-                            columns: {
-                                id: true,
-                                sku: true,
-                                name: true,
-                                price: true,
-                                stockQuantity: true,
-                                attributes: true,
-                                productId: true
-                            }
-                        }
-                    }
-                }
-            }
+            where: eq(cart.id, cartId)
         });
 
         if (!cartData) {
             return null;
         }
 
-        // Transform the result to match CartWithItems type
+        // Get cart items
+        const items = await db.select()
+            .from(cartItem)
+            .where(eq(cartItem.cartId, cartId));
+
+        // Get variants for all items
+        const itemsWithVariants = await Promise.all(
+            items.map(async (item) => {
+                const variant = await db.select({
+                    id: productVariant.id,
+                    sku: productVariant.sku,
+                    name: productVariant.name,
+                    price: productVariant.price,
+                    stockQuantity: productVariant.stockQuantity,
+                    attributes: productVariant.attributes,
+                    productId: productVariant.productId,
+                })
+                    .from(productVariant)
+                    .where(eq(productVariant.id, item.productVariantId))
+                    .then(rows => rows[0] || null);
+
+                return {
+                    ...item,
+                    variant
+                };
+            })
+        );
+
         return {
             ...cartData,
-            items: cartData.items.filter(item => item.variant !== null)
+            items: itemsWithVariants.filter(item => item.variant !== null)
         } as CartWithItems;
     } catch (error) {
         console.error('Error fetching cart with items:', error);

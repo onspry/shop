@@ -1,38 +1,29 @@
 import { sql } from 'drizzle-orm';
 import * as t from "drizzle-orm/sqlite-core";
-import { orders } from './order';
+import { order } from './order';
 
-export const transactionStatus = [
-    'succeeded',
-    'pending',
-    'failed'
-] as const;
+export const paymentStatus = ['pending', 'succeeded', 'failed', 'refunded'] as const;
+export type PaymentStatus = typeof paymentStatus[number];
 
-export type TransactionStatus = typeof transactionStatus[number];
-
-export const paymentTransactions = t.sqliteTable('payment_transactions', {
+export const paymentTransaction = t.sqliteTable('payment_transaction', {
     id: t.text('id').primaryKey(),
     orderId: t.text('order_id')
         .notNull()
-        .references(() => orders.id),
-    amount: t.integer('amount', { mode: 'number' }).notNull(),
+        .references(() => order.id),
+    status: t.text('status', { enum: paymentStatus }).notNull().default('pending'),
+    amount: t.integer('amount').notNull(), // Store amount in cents
     currency: t.text('currency').notNull().default('USD'),
-    status: t.text('status', { enum: transactionStatus }).notNull(),
-    paymentMethod: t.text('payment_method').notNull(),
-    paymentIntentId: t.text('payment_intent_id'),
+    stripePaymentIntentId: t.text('stripe_payment_intent_id').notNull(),
+    stripePaymentMethodId: t.text('stripe_payment_method_id'),
     errorMessage: t.text('error_message'),
-    createdAt: t.integer('created_at', { mode: 'timestamp' })
-        .notNull()
-        .default(sql`(unixepoch())`)
-}, (table) => ({
-    // Index for order lookups
-    orderIdIndex: t.index('payment_transactions_order_id_idx').on(table.orderId),
-    // Index for status-based lookups
-    statusIndex: t.index('payment_transactions_status_idx').on(table.status),
-    // Index for payment intent lookups
-    paymentIntentIdIndex: t.index('payment_transactions_payment_intent_id_idx').on(table.paymentIntentId)
-}));
+    createdAt: t.integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+    updatedAt: t.integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+}, (table) => [
+    t.index('payment_transaction_order_id_idx').on(table.orderId),
+    t.index('payment_transaction_status_idx').on(table.status),
+    t.index('payment_transaction_stripe_payment_intent_id_idx').on(table.stripePaymentIntentId)
+]);
 
 // Export types
-export type PaymentTransaction = typeof paymentTransactions.$inferSelect;
-export type NewPaymentTransaction = typeof paymentTransactions.$inferInsert; 
+export type PaymentTransaction = typeof paymentTransaction.$inferSelect;
+export type NewPaymentTransaction = typeof paymentTransaction.$inferInsert; 
