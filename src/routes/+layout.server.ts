@@ -1,5 +1,5 @@
 import type { LayoutServerLoad } from './$types';
-import * as cartRepository from '$lib/server/db/repositories/cart';
+import * as cartRepository from '$lib/server/repositories/cart';
 import { randomUUID } from 'crypto';
 
 export const load: LayoutServerLoad = async ({ locals, cookies }) => {

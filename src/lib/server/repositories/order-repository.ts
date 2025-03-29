@@ -12,13 +12,13 @@ import {
     type OrderAddress
 } from '$lib/server/db';
 
-import { order } from '../schema/order';
-import { orderItem } from '../schema/order-item';
-import { orderAddress } from '../schema/order-address';
-import { orderStatusHistory } from '../schema/order-status-history';
-import { inventoryTransaction } from '../schema/inventory-transaction';
-import { paymentTransaction } from '../schema/payment-transaction';
-import { refund } from '../schema/refund';
+import { order } from '../db/schema/order';
+import { orderItem } from '../db/schema/order-item';
+import { orderAddress } from '../db/schema/order-address';
+import { orderStatusHistory } from '../db/schema/order-status-history';
+import { inventoryTransaction } from '../db/schema/inventory-transaction';
+import { paymentTransaction } from '../db/schema/payment-transaction';
+import { refund } from '../db/schema/refund';
 
 
 interface CreateOrderData {

@@ -1,4 +1,4 @@
-import { getUserByEmail } from "$lib/server/auth/user";
+import { userRepo } from "$lib/server/repositories/user";
 import {
     createPasswordResetSession,
     invalidateUserPasswordResetSessions,
@@ -35,7 +35,7 @@ export const actions: Actions = {
 
         const { email } = form.data;
 
-        const user = await getUserByEmail(email);
+        const user = await userRepo.getByEmail(email);
         if (!user) {
             console.log("[Forgot Password] User not found:", email);
             return message(form, "Account not found", { status: 400 });

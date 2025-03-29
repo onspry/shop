@@ -1,9 +1,9 @@
-import { productRepo } from '$lib/server/db/repositories/product';
+import { productRepo } from '$lib/server/repositories/product';
 import type { ProductViewModel } from '$lib/models/product';
 import type { PageServerLoad } from './$types';
 import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types';
-import * as cartRepository from '$lib/server/db/repositories/cart';
+import * as cartRepository from '$lib/server/repositories/cart';
 import { randomUUID } from 'crypto';
 
 export const load: PageServerLoad = async ({ params, url }) => {

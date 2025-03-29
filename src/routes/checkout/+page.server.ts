@@ -1,5 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
-import * as cartRepository from '$lib/server/db/repositories/cart';
+import * as cartRepository from '$lib/server/repositories/cart';
 import { superValidate } from 'sveltekit-superforms/server';
 import { zod } from 'sveltekit-superforms/adapters';
 import { loginSchema } from '$lib/schemas/auth';

@@ -3,7 +3,7 @@ import { superValidate, message } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { registerSchema } from '$lib/schemas/auth';
 import { randomUUID } from 'crypto';
-import { userRepo } from '$lib/server/db/repositories/user';
+import { userRepo } from '$lib/server/repositories/user';
 import { hashPassword } from '$lib/server/auth/password';
 import { createSession, generateSessionToken, setSessionTokenCookie } from '$lib/server/auth/session';
 import {

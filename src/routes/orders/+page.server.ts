@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { OrderRepository } from '$lib/server/db/repositories/order-repository';
+import { OrderRepository } from '$lib/server/repositories/order-repository';
 
 export const load: PageServerLoad = async ({ locals }) => {
     // Check if user is authenticated

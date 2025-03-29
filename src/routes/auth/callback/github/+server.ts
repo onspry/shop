@@ -1,11 +1,11 @@
 import { generateSessionToken, createSession, setSessionTokenCookie } from "$lib/server/auth/session";
-import { userRepo } from "$lib/server/db/repositories/user";
+import { userRepo } from "$lib/server/repositories/user";
 import { github } from "$lib/server/auth/oauth";
 import { randomUUID } from 'crypto';
 import type { RequestEvent } from "@sveltejs/kit";
 import type { OAuth2Tokens } from "arctic";
-import { Providers } from "$lib/server/db/schema/user";
-import { transferCartToUser } from "$lib/server/db/repositories/cart";
+import { transferCartToUser } from "$lib/server/repositories/cart";
+import { Providers } from "$lib/server/db";
 
 export async function GET(event: RequestEvent): Promise<Response> {
     const code = event.url.searchParams.get("code");

@@ -2,7 +2,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import { Separator } from '$lib/components/ui/separator';
 	import {
 		Card,
 		CardContent,
@@ -23,8 +22,8 @@
 	import { ArrowRight, ShoppingBag, User, Truck } from 'lucide-svelte';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { z } from 'zod';
-	import ShippingForm from '$lib/components/checkout/shipping-form.svelte';
-	import PaymentForm from '$lib/components/checkout/payment-form.svelte';
+	import ShippingForm from '$lib/components/shipping-form.svelte';
+	import PaymentForm from '$lib/components/payment-form.svelte';
 	import type { SuperForm } from 'sveltekit-superforms';
 	import type { PageData } from './$types';
 	import { userStore } from '$lib/stores/auth';

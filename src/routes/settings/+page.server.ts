@@ -6,7 +6,7 @@ import {
 import { fail, redirect } from "@sveltejs/kit";
 import { checkEmailAvailability, verifyEmailInput } from "$lib/server/auth/email";
 import { verifyPasswordHash, verifyPasswordStrength } from "$lib/server/auth/password";
-import { getUserPasswordHash, updateUserPassword } from "$lib/server/auth/user";
+import { userRepo } from "$lib/server/repositories/user";
 import {
     createSession,
     generateSessionToken,
@@ -67,7 +67,7 @@ async function updatePasswordAction(event: RequestEvent) {
         });
     }
 
-    const passwordHash = await getUserPasswordHash(event.locals.user.id);
+    const passwordHash = await userRepo.getPasswordHash(event.locals.user.id);
     if (!passwordHash) {
         return fail(400, {
             password: {
@@ -84,7 +84,7 @@ async function updatePasswordAction(event: RequestEvent) {
         });
     }
     invalidateUserSessions(event.locals.user.id);
-    await updateUserPassword(event.locals.user.id, newPassword);
+    await userRepo.updatePassword(event.locals.user.id, newPassword);
 
     const sessionToken = await generateSessionToken();
 

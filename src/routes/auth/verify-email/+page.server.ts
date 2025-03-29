@@ -8,7 +8,7 @@ import {
     setEmailVerificationRequestCookie
 } from "$lib/server/auth/email-verification";
 //import { invalidateUserPasswordResetSessions } from "$lib/server/auth/password-reset";
-import { updateUserEmailAndSetEmailAsVerified } from "$lib/server/auth/user";
+import { userRepo } from "$lib/server/repositories/user";
 import { rateLimit } from "$lib/server/auth/rate-limit";
 import { validateVerificationCode } from "$lib/server/auth/validation";
 
@@ -113,7 +113,7 @@ export const actions: Actions = {
         // Success - update user and clean up
         await Promise.all([
             deleteUserEmailVerificationRequest(event.locals.user.id),
-            updateUserEmailAndSetEmailAsVerified(event.locals.user.id, verificationRequest.email)
+            userRepo.updateEmailAndSetVerified(event.locals.user.id, verificationRequest.email)
         ]);
 
         deleteEmailVerificationRequestCookie(event);

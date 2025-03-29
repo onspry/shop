@@ -12,10 +12,10 @@ import {
     invalidateUserSessions,
     setSessionTokenCookie
 } from "$lib/server/auth/session";
-import { updateUserPassword } from "$lib/server/auth/user";
 import { superValidate, message } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { passwordUpdateSchema } from '$lib/schemas/auth';
+import { userRepo } from "$lib/server/repositories/user";
 
 import type { Actions, PageServerLoad } from "./$types";
 
@@ -94,7 +94,7 @@ export const actions: Actions = {
             await invalidateUserSessions(passwordResetSession.userId);
 
             // Update password
-            await updateUserPassword(passwordResetSession.userId, password);
+            await userRepo.updatePassword(passwordResetSession.userId, password);
 
             // Create new session
             const sessionToken = generateSessionToken();

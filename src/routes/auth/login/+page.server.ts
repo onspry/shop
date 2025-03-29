@@ -3,9 +3,9 @@ import { superValidate, message } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { loginSchema } from '$lib/schemas/auth';
 import type { PageServerLoad, Actions } from "./$types";
-import { getUserByEmail, getUserPasswordHash } from "$lib/server/auth/user";
 import { verifyPasswordHash } from "$lib/server/auth/password";
 import { createSession, generateSessionToken, setSessionTokenCookie } from "$lib/server/auth/session";
+import { userRepo } from "$lib/server/repositories/user";
 
 export const load: PageServerLoad = async ({ locals, url }) => {
     if (locals.session !== null && locals.user !== null) {
@@ -43,7 +43,7 @@ export const actions: Actions = {
 
         const { email, password } = form.data;
 
-        const user = await getUserByEmail(email);
+        const user = await userRepo.getByEmail(email);
         if (!user) {
             const errorForm = await superValidate(
                 { ...form.data, password: '' }, // Clear password for security
@@ -57,7 +57,7 @@ export const actions: Actions = {
             );
         }
 
-        const passwordHash = await getUserPasswordHash(user.id);
+        const passwordHash = await userRepo.getPasswordHash(user.id);
         if (!passwordHash) {
             const errorForm = await superValidate(
                 { ...form.data, password: '' }, // Clear password for security
