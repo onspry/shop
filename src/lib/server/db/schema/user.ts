@@ -3,11 +3,10 @@ import * as t from "drizzle-orm/sqlite-core";
 import { relations } from 'drizzle-orm';
 import { cart } from './cart';
 import { order } from './order';
-import { session } from './session.js';
-import { emailVerificationRequest } from './email-verification-request.js';
-import { passwordResetSession } from './password-reset-session.js';
-import { Providers, userStatus } from './types.js';
-import type { Provider } from './types.js';
+import { session } from './session';
+import { emailVerificationRequest } from './email-verification-request';
+import { passwordResetSession } from './password-reset-session';
+import { type Provider, Providers, userStatus } from './types';
 
 export const user = t.sqliteTable('user', {
     id: t.text('id').unique().notNull(),

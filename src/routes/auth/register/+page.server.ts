@@ -3,7 +3,7 @@ import { superValidate, message } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { registerSchema } from '$lib/schemas/auth';
 import { randomUUID } from 'crypto';
-import { createUser, isEmailTaken } from '$lib/server/auth/user';
+import { userRepo } from '$lib/server/db/repositories/user';
 import { hashPassword } from '$lib/server/auth/password';
 import { createSession, generateSessionToken, setSessionTokenCookie } from '$lib/server/auth/session';
 import {
@@ -44,7 +44,7 @@ export const actions: Actions = {
         const { firstName, lastName, email, password } = form.data;
 
         // Check if email is already taken
-        if (await isEmailTaken(email)) {
+        if (await userRepo.isEmailTaken(email)) {
             const errorForm = await superValidate(
                 { ...form.data, password: '' }, // Clear password for security
                 zod(registerSchema)
@@ -59,18 +59,22 @@ export const actions: Actions = {
 
         try {
             const id = randomUUID();
-            const user = await createUser({
+            const user = await userRepo.create({
                 id: id,
-                provider: 'email',
+                provider: 'credentials',
                 providerId: id,
                 email: email,
                 image: null,
                 firstname: firstName,
                 lastname: lastName,
                 passwordHash: await hashPassword(password),
-                email_verified: false,
+                emailVerified: false,
                 isAdmin: false,
-                stripeCustomerId: `e_${id}`
+                stripeCustomerId: `e_${id}`,
+                status: 'active',
+                lastLoginAt: new Date(),
+                createdAt: new Date(),
+                updatedAt: new Date()
             });
 
             const emailVerificationRequest = await createEmailVerificationRequest(user.id, user.email);

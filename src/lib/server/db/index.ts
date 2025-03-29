@@ -4,11 +4,11 @@ import { createClient } from '@libsql/client';
 import { env } from '$env/dynamic/private';
 
 // Import all schemas
-import {
-	user, session, emailVerificationRequest, passwordResetSession,
-	userStatus, Providers, type Provider, type User, type NewUser,
-	type Session, type EmailVerificationRequest, type PasswordResetSession
-} from './schema/user';
+import { user, type User, type NewUser } from './schema/user';
+import { session, type Session } from './schema/session';
+import { emailVerificationRequest, type EmailVerificationRequest } from './schema/email-verification-request';
+import { passwordResetSession, type PasswordResetSession } from './schema/password-reset-session';
+import { Providers, userStatus, type Provider } from './schema/types';
 
 import {
 	product, type Product

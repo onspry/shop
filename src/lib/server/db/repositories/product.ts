@@ -1,3 +1,4 @@
+import { eq, asc, inArray } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { product } from '$lib/server/db/schema/product';
 import { productVariant } from '$lib/server/db/schema/product_variant';
@@ -5,7 +6,6 @@ import { productImage } from '$lib/server/db/schema/product_image';
 import type { Product } from '$lib/server/db/schema/product';
 import type { ProductVariant } from '$lib/server/db/schema/product_variant';
 import type { ProductImage } from '$lib/server/db/schema/product_image';
-import { eq, asc, inArray } from 'drizzle-orm';
 import type { ProductViewModel } from '$lib/models/product';
 import { toProductViewModel } from '$lib/models/product';
 import { toCatalogueViewModel } from '$lib/models/catalogue';

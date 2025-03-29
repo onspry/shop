@@ -1,24 +1,25 @@
-import { db } from '$lib/server/db';
 import { eq, desc, between } from 'drizzle-orm';
-import { nanoid } from 'nanoid';
-import type {
-    OrderStatus,
-    PaymentStatus,
-    PaymentTransaction,
-    Refund,
-    Order,
-    OrderItem,
-    OrderAddress
-} from '$lib/server/db/schema';
+import { randomUUID } from 'crypto';
+
 import {
-    order,
-    orderItem,
-    orderAddress,
-    orderStatusHistory,
-    paymentTransaction,
-    refund,
-    inventoryTransaction
-} from '$lib/server/db/schema';
+    db,
+    type OrderStatus,
+    type PaymentStatus,
+    type PaymentTransaction,
+    type Refund,
+    type Order,
+    type OrderItem,
+    type OrderAddress
+} from '$lib/server/db';
+
+import { order } from '../schema/order';
+import { orderItem } from '../schema/order-item';
+import { orderAddress } from '../schema/order-address';
+import { orderStatusHistory } from '../schema/order-status-history';
+import { inventoryTransaction } from '../schema/inventory-transaction';
+import { paymentTransaction } from '../schema/payment-transaction';
+import { refund } from '../schema/refund';
+
 
 interface CreateOrderData {
     userId?: string;
@@ -131,7 +132,7 @@ export class OrderRepository {
     async createOrder(data: CreateOrderData): Promise<OrderViewModel> {
         this.validate(data);
 
-        const orderId = nanoid();
+        const orderId = randomUUID();
         const totalAmount = data.subtotal + data.taxAmount + data.shipping.amount - (data.discountAmount || 0);
 
         await db.transaction(async (tx) => {
@@ -154,7 +155,7 @@ export class OrderRepository {
 
             // Create order items
             const orderItemsData = data.items.map(item => ({
-                id: nanoid(),
+                id: randomUUID(),
                 orderId,
                 productVariantId: item.variantId || '',
                 quantity: item.quantity,
@@ -167,7 +168,7 @@ export class OrderRepository {
 
             // Create shipping address
             await tx.insert(orderAddress).values({
-                id: nanoid(),
+                id: randomUUID(),
                 orderId,
                 type: 'shipping',
                 firstName: data.shipping.address.firstName,
@@ -183,7 +184,7 @@ export class OrderRepository {
 
             // Create initial status history
             await tx.insert(orderStatusHistory).values({
-                id: nanoid(),
+                id: randomUUID(),
                 orderId,
                 status: 'pending_payment',
                 note: 'Order created'
@@ -193,7 +194,7 @@ export class OrderRepository {
             for (const item of data.items) {
                 if (item.variantId) {
                     await tx.insert(inventoryTransaction).values({
-                        id: nanoid(),
+                        id: randomUUID(),
                         productVariantId: item.variantId,
                         orderId,
                         type: 'order',
@@ -280,7 +281,7 @@ export class OrderRepository {
                 .where(eq(order.id, id));
 
             await tx.insert(orderStatusHistory).values({
-                id: nanoid(),
+                id: randomUUID(),
                 orderId: id,
                 status,
                 note
@@ -296,12 +297,12 @@ export class OrderRepository {
         status: PaymentStatus = 'pending'
     ): Promise<void> {
         await db.insert(paymentTransaction).values({
-            id: nanoid(),
+            id: randomUUID(),
             orderId,
             status,
             amount,
             currency: 'USD',
-            stripePaymentIntentId: paymentIntentId || nanoid(),
+            stripePaymentIntentId: paymentIntentId || randomUUID(),
             stripePaymentMethodId: paymentMethod
         });
     }
@@ -315,7 +316,7 @@ export class OrderRepository {
     ): Promise<void> {
         await db.transaction(async (tx) => {
             await tx.insert(refund).values({
-                id: nanoid(),
+                id: randomUUID(),
                 orderId,
                 transactionId,
                 amount,

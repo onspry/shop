@@ -1,15 +1,15 @@
-import { db } from '$lib/server/db';
-import * as table from '$lib/server/db';
-
-import { encodeHexLowerCase } from "@oslojs/encoding";
-import { generateRandomOTP } from "./utils";
-import { sha256 } from "@oslojs/crypto/sha2";
 import { eq } from 'drizzle-orm';
+import { encodeHexLowerCase } from "@oslojs/encoding";
+import { sha256 } from "@oslojs/crypto/sha2";
+import type { RequestEvent } from "@sveltejs/kit";
+
+import { db, type User } from '$lib/server/db';
+import { passwordResetSession } from '$lib/server/db/schema/password-reset-session';
+import { user as userTable } from '$lib/server/db/schema/user';
+
+import { generateRandomOTP } from "./utils";
 import { sendVerificationEmail } from './email-verification';
 
-import type { User } from '$lib/server/db';
-
-import type { RequestEvent } from "@sveltejs/kit";
 
 // Cookie name constant to ensure consistency
 export const PASSWORD_RESET_COOKIE_NAME = "password_reset_session";
@@ -27,7 +27,7 @@ export function createPasswordResetSession(token: string, userId: string, email:
     };
 
     try {
-        db.insert(table.passwordResetSession).values({
+        db.insert(passwordResetSession).values({
             id: session.id,
             userId: session.userId,
             email: session.email,
@@ -50,12 +50,12 @@ export async function validatePasswordResetSessionToken(token: string): Promise<
 
         const [result] = await db
             .select({
-                session: table.passwordResetSession,
-                user: table.user
+                session: passwordResetSession,
+                user: userTable
             })
-            .from(table.passwordResetSession)
-            .innerJoin(table.user, eq(table.passwordResetSession.userId, table.user.id))
-            .where(eq(table.passwordResetSession.id, sessionId));
+            .from(passwordResetSession)
+            .innerJoin(userTable, eq(passwordResetSession.userId, userTable.id))
+            .where(eq(passwordResetSession.id, sessionId));
 
         if (!result) {
             console.log("[Password Reset] No session found for token");
@@ -80,18 +80,22 @@ export async function validatePasswordResetSessionToken(token: string): Promise<
             firstname: dbUser.firstname,
             lastname: dbUser.lastname,
             image: dbUser.image,
-            email_verified: dbUser.email_verified,
+            emailVerified: dbUser.emailVerified,
             isAdmin: dbUser.isAdmin,
-            provider: 'email',
+            provider: 'credentials',
             providerId: dbUser.id,
             passwordHash: '',
-            stripeCustomerId: `email_${dbUser.id}`
+            stripeCustomerId: `email_${dbUser.id}`,
+            status: 'active',
+            lastLoginAt: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date()
         };
 
         if (Date.now() >= session.expiresAt.getTime()) {
             console.log("[Password Reset] Session expired");
-            await db.delete(table.passwordResetSession)
-                .where(eq(table.passwordResetSession.id, session.id));
+            await db.delete(passwordResetSession)
+                .where(eq(passwordResetSession.id, session.id));
             return { session: null, user: null };
         }
 
@@ -104,14 +108,14 @@ export async function validatePasswordResetSessionToken(token: string): Promise<
 }
 
 export async function setPasswordResetSessionAsEmailVerified(sessionId: string): Promise<void> {
-    await db.update(table.passwordResetSession)
+    await db.update(passwordResetSession)
         .set({ email_verified: true })
-        .where(eq(table.passwordResetSession.id, sessionId));
+        .where(eq(passwordResetSession.id, sessionId));
 }
 
 export async function invalidateUserPasswordResetSessions(userId: string): Promise<void> {
-    await db.delete(table.passwordResetSession)
-        .where(eq(table.passwordResetSession.userId, userId));
+    await db.delete(passwordResetSession)
+        .where(eq(passwordResetSession.userId, userId));
 }
 
 export async function validatePasswordResetSessionRequest(event: RequestEvent): Promise<PasswordResetSessionValidationResult> {

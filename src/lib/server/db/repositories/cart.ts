@@ -1,10 +1,10 @@
 import { eq, and, sql } from 'drizzle-orm';
+import { randomUUID } from 'crypto';
 import { db } from '$lib/server/db';
 import { cart, type NewCart, type Cart } from '$lib/server/db/schema/cart';
 import { cartItem, type NewCartItem, type CartItem } from '$lib/server/db/schema/cart_item';
 import { productVariant, type ProductVariant } from '$lib/server/db/schema/product_variant';
 import { discount } from '$lib/server/db/schema/discount';
-import { nanoid } from 'nanoid';
 import type { CartViewModel, CartSummaryViewModel } from '$lib/models/cart';
 
 // Define type for cart with items to avoid 'any'
@@ -61,7 +61,7 @@ export async function getOrCreateCart(sessionId: string, userId?: string): Promi
     // If no cart found, create a new one
     if (!existingCart) {
         const newCart: NewCart = {
-            id: nanoid(),
+            id: randomUUID(),
             sessionId,
             userId: userId || null
         };
@@ -179,7 +179,7 @@ export async function addItemToCart(
                 .where(eq(cartItem.id, existingItem.id));
         } else {
             const newItem: NewCartItem = {
-                id: nanoid(),
+                id: randomUUID(),
                 cartId,
                 productVariantId,
                 quantity,
@@ -464,7 +464,7 @@ export async function assignCartToUser(
         // If no session cart exists, create one for the user
         if (!userCart) {
             await db.insert(cart).values({
-                id: nanoid(),
+                id: randomUUID(),
                 userId,
                 sessionId
             });
