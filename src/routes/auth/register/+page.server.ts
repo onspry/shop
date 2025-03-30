@@ -81,9 +81,9 @@ export const actions: Actions = {
             sendVerificationEmail(emailVerificationRequest.email, emailVerificationRequest.code);
             setEmailVerificationRequestCookie(event, emailVerificationRequest);
 
-            const sessionToken = await generateSessionToken();
+            const sessionToken = generateSessionToken();
             const session = await createSession(sessionToken, user.id);
-            setSessionTokenCookie(event, sessionToken, session.expiresAt);
+            setSessionTokenCookie(event.cookies, sessionToken, session.expiresAt);
 
             throw redirect(302, "/auth/verify-email");
         } catch (error) {

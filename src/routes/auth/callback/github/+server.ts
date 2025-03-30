@@ -45,7 +45,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
     if (existingUser) {
         const sessionToken = generateSessionToken();
         const session = await createSession(sessionToken, existingUser.id);
-        setSessionTokenCookie(event, sessionToken, session.expiresAt);
+        setSessionTokenCookie(event.cookies, sessionToken, session.expiresAt);
 
         // Transfer guest cart to user
         await transferCartToUser(event.cookies.get('session') || '', existingUser.id);
@@ -98,7 +98,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
 
     const sessionToken = generateSessionToken();
     const session = await createSession(sessionToken, newUser.id);
-    setSessionTokenCookie(event, sessionToken, session.expiresAt);
+    setSessionTokenCookie(event.cookies, sessionToken, session.expiresAt);
 
     // Transfer guest cart to new user
     await transferCartToUser(event.cookies.get('session') || '', newUser.id);

@@ -13,7 +13,7 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 
 	const { session, user } = await validateSessionToken(sessionToken);
 	if (session) {
-		setSessionTokenCookie(event, sessionToken, session.expiresAt);
+		setSessionTokenCookie(event.cookies, sessionToken, session.expiresAt);
 		event.locals.user = user;
 		event.locals.session = session;
 	} else {

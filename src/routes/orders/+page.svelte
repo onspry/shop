@@ -23,19 +23,15 @@
 	});
 
 	// Get status icon based on order status
+	const statusIcons: Record<string, typeof Clock | typeof Package | typeof ShoppingBag> = {
+		pending: Clock,
+		processing: Package,
+		shipped: Package,
+		delivered: Package
+	};
+
 	function getStatusIcon(status: string) {
-		switch (status.toLowerCase()) {
-			case 'pending':
-				return Clock;
-			case 'processing':
-				return Package;
-			case 'shipped':
-				return Package;
-			case 'delivered':
-				return Package;
-			default:
-				return ShoppingBag;
-		}
+		return statusIcons[status.toLowerCase()] || ShoppingBag;
 	}
 
 	// Get status color based on order status
@@ -100,11 +96,13 @@
 									</p>
 								</div>
 								<div class="flex items-center gap-2">
-									<svelte:component
-										this={getStatusIcon(order.status)}
-										size={20}
-										class={getStatusColor(order.status)}
-									/>
+									{#if order.status.toLowerCase() === 'pending'}
+										<Clock size={20} class={getStatusColor(order.status)} />
+									{:else if ['processing', 'shipped', 'delivered'].includes(order.status.toLowerCase())}
+										<Package size={20} class={getStatusColor(order.status)} />
+									{:else}
+										<ShoppingBag size={20} class={getStatusColor(order.status)} />
+									{/if}
 									<span class="font-medium capitalize">{order.status}</span>
 								</div>
 							</div>

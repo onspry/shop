@@ -86,10 +86,9 @@ async function updatePasswordAction(event: RequestEvent) {
     invalidateUserSessions(event.locals.user.id);
     await userRepo.updatePassword(event.locals.user.id, newPassword);
 
-    const sessionToken = await generateSessionToken();
-
+    const sessionToken = generateSessionToken();
     const session = await createSession(sessionToken, event.locals.user.id);
-    setSessionTokenCookie(event, sessionToken, session.expiresAt);
+    setSessionTokenCookie(event.cookies, sessionToken, session.expiresAt);
     return {
         password: {
             message: "Updated password"

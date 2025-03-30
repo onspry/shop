@@ -5,6 +5,7 @@ import { encodeBase64url, encodeHexLowerCase } from '@oslojs/encoding';
 import { db, type Session } from '$lib/server/db';
 import { user } from '$lib/server/db/schema/user';
 import { session } from '$lib/server/db/schema/session';
+import type { Cookies } from '@sveltejs/kit';
 
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
 
@@ -79,8 +80,8 @@ export async function invalidateUserSessions(userId: string) {
     await db.delete(session).where(eq(session.userId, userId));
 }
 
-export function setSessionTokenCookie(event: RequestEvent, token: string, expiresAt: Date) {
-    event.cookies.set(sessionCookieName, token, {
+export function setSessionTokenCookie(cookies: Cookies, token: string, expiresAt: Date) {
+    cookies.set(sessionCookieName, token, {
         expires: expiresAt,
         path: '/'
     });

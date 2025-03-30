@@ -11,23 +11,28 @@ import { passwordResetSession, type PasswordResetSession } from './schema/passwo
 import { Providers, userStatus, type Provider } from './schema/types';
 
 import {
-	product, type Product
+	product, type Product,
+	productRelations
 } from './schema/product';
 
 import {
-	productVariant, type ProductVariant
+	productVariant, type ProductVariant,
+	productVariantRelations
 } from './schema/product_variant';
 
 import {
-	productImage, type ProductImage
+	productImage, type ProductImage,
+	productImageRelations
 } from './schema/product_image';
 
 import {
-	cart, cartStatus, type CartStatus, type Cart, type NewCart
+	cart, cartStatus, type CartStatus, type Cart, type NewCart,
+	cartToCartItemRelations, cartToUserRelations
 } from './schema/cart';
 
 import {
-	cartItem, type CartItem, type NewCartItem
+	cartItem, type CartItem, type NewCartItem,
+	cartItemToProductVariantRelations, cartItemToCartRelations
 } from './schema/cart_item';
 
 import {
@@ -67,7 +72,7 @@ if (!dev && !env.DATABASE_AUTH_TOKEN) throw new Error('DATABASE_AUTH_TOKEN is no
 
 const client = createClient({ url: env.DATABASE_URL, authToken: env.DATABASE_AUTH_TOKEN });
 
-// Define schema tables
+// Define schema tables and relations
 const schema = {
 	user,
 	session,
@@ -85,7 +90,15 @@ const schema = {
 	orderStatusHistory,
 	paymentTransaction,
 	refund,
-	inventoryTransaction
+	inventoryTransaction,
+	// Register relations
+	cartToCartItemRelations,
+	cartToUserRelations,
+	cartItemToProductVariantRelations,
+	cartItemToCartRelations,
+	productRelations,
+	productVariantRelations,
+	productImageRelations
 };
 
 export const db = drizzle(client, { schema });

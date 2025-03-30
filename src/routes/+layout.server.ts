@@ -3,14 +3,11 @@ import * as cartRepository from '$lib/server/repositories/cart';
 import { randomUUID } from 'crypto';
 
 export const load: LayoutServerLoad = async ({ locals, cookies }) => {
-    // Get user data
     const user = locals.user;
-
-    // Get session or user ID for cart
     let sessionId = cookies.get('sessionId') || '';
     const userId = user?.id;
 
-    // Create session ID if needed
+    // Create session ID only if user is not logged in and no session exists
     if (!sessionId && !userId) {
         sessionId = `session_${randomUUID()}`;
         cookies.set('sessionId', sessionId, {
@@ -21,10 +18,9 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => {
         });
     }
 
-    // Get cart data using repository pattern
+    // Get cart data based on auth status
     const cartData = await cartRepository.getCartViewModel(sessionId, userId);
 
-    // Return user and cart data
     return {
         user,
         cart: cartData

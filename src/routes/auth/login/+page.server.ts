@@ -6,6 +6,7 @@ import type { PageServerLoad, Actions } from "./$types";
 import { verifyPasswordHash } from "$lib/server/auth/password";
 import { createSession, generateSessionToken, setSessionTokenCookie } from "$lib/server/auth/session";
 import { userRepo } from "$lib/server/repositories/user";
+import { cartRepository } from "$lib/server/repositories/cart";
 
 export const load: PageServerLoad = async ({ locals, url }) => {
     if (locals.session !== null && locals.user !== null) {
@@ -27,8 +28,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 };
 
 export const actions: Actions = {
-    email: async (event) => {
-        const { request, url } = event;
+    default: async ({ request, cookies, url }) => {
+        const sessionId = cookies.get('sessionId') || '';
 
         // Validate the form with Superform and Zod
         const form = await superValidate(request, zod(loginSchema));
@@ -87,7 +88,10 @@ export const actions: Actions = {
 
         const sessionToken = generateSessionToken();
         const session = await createSession(sessionToken, user.id);
-        setSessionTokenCookie(event, sessionToken, session.expiresAt);
+        setSessionTokenCookie(cookies, sessionToken, session.expiresAt);
+
+        // Transfer session cart to user and clean up old carts
+        await cartRepository.handleUserLogin(sessionId, user.id);
 
         // Use the redirectTo from form data first, fallback to URL query param
         if (redirectTo && redirectTo.startsWith('/')) {

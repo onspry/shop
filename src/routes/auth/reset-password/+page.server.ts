@@ -101,7 +101,7 @@ export const actions: Actions = {
             const session = await createSession(sessionToken, user.id);
 
             // Set session cookie and delete reset cookie
-            setSessionTokenCookie(event, sessionToken, session.expiresAt);
+            setSessionTokenCookie(event.cookies, sessionToken, session.expiresAt);
             deletePasswordResetSessionTokenCookie(event);
 
             console.log("[Reset Password] Password updated successfully");

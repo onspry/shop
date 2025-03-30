@@ -1,4 +1,4 @@
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, ne } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import { db } from '$lib/server/db';
 import { cart, type NewCart, type Cart } from '$lib/server/db/schema/cart';
@@ -6,6 +6,7 @@ import { cartItem, type NewCartItem, type CartItem } from '$lib/server/db/schema
 import { productVariant, type ProductVariant } from '$lib/server/db/schema/product_variant';
 import { discount } from '$lib/server/db/schema/discount';
 import type { CartViewModel, CartSummaryViewModel } from '$lib/models/cart';
+import { toProductVariantViewModel } from '$lib/models/product';
 
 // Define type for cart with items to avoid 'any'
 export type CartWithItems = Cart & {
@@ -85,47 +86,23 @@ export async function getOrCreateCart(sessionId: string, userId?: string): Promi
  */
 export async function getCartWithItems(cartId: string): Promise<CartWithItems | null> {
     try {
-        // Get cart
+        // Get cart with items and their variants using relations
         const cartData = await db.query.cart.findFirst({
-            where: eq(cart.id, cartId)
+            where: eq(cart.id, cartId),
+            with: {
+                items: {
+                    with: {
+                        variant: true
+                    }
+                }
+            }
         });
 
         if (!cartData) {
             return null;
         }
 
-        // Get cart items
-        const items = await db.select()
-            .from(cartItem)
-            .where(eq(cartItem.cartId, cartId));
-
-        // Get variants for all items
-        const itemsWithVariants = await Promise.all(
-            items.map(async (item) => {
-                const variant = await db.select({
-                    id: productVariant.id,
-                    sku: productVariant.sku,
-                    name: productVariant.name,
-                    price: productVariant.price,
-                    stockQuantity: productVariant.stockQuantity,
-                    attributes: productVariant.attributes,
-                    productId: productVariant.productId,
-                })
-                    .from(productVariant)
-                    .where(eq(productVariant.id, item.productVariantId))
-                    .then(rows => rows[0] || null);
-
-                return {
-                    ...item,
-                    variant
-                };
-            })
-        );
-
-        return {
-            ...cartData,
-            items: itemsWithVariants.filter(item => item.variant !== null)
-        } as CartWithItems;
+        return cartData as CartWithItems;
     } catch (error) {
         console.error('Error fetching cart with items:', error);
         return null;
@@ -517,10 +494,67 @@ export async function assignCartToUser(
 /**
  * Get cart data as view model for the client
  */
-export async function getCartViewModel(sessionId: string, userId?: string): Promise<CartViewModel> {
-    const cart = await getOrCreateCart(sessionId, userId);
+export async function getCartViewModel(sessionId: string, userId?: string | null): Promise<CartViewModel> {
+    // If user is logged in, get cart by userId
+    if (userId) {
+        return await getCartByUserId(userId);
+    }
+    // Otherwise get cart by sessionId
+    return await getCartBySessionId(sessionId);
+}
 
-    if (!cart) {
+export async function handleUserLogin(sessionId: string, userId: string) {
+    return await db.transaction(async (tx) => {
+        // Find the current session cart
+        const sessionCart = await tx.query.cart.findFirst({
+            where: eq(cart.sessionId, sessionId)
+        });
+
+        if (sessionCart) {
+            // Update the session cart to be owned by the user
+            await tx.update(cart)
+                .set({
+                    userId,
+                    sessionId: '', // Clear session ID as we'll work with userId now
+                    updatedAt: sql`(unixepoch())`
+                })
+                .where(eq(cart.id, sessionCart.id));
+
+            // Delete all other carts and their items for this user
+            const otherCarts = await tx.query.cart.findMany({
+                where: and(
+                    eq(cart.userId, userId),
+                    ne(cart.id, sessionCart.id)
+                )
+            });
+
+            for (const oldCart of otherCarts) {
+                // Delete cart items first
+                await tx.delete(cartItem)
+                    .where(eq(cartItem.cartId, oldCart.id));
+
+                // Then delete the cart
+                await tx.delete(cart)
+                    .where(eq(cart.id, oldCart.id));
+            }
+        }
+    });
+}
+
+// Helper functions
+async function getCartByUserId(userId: string): Promise<CartViewModel> {
+    const cartData = await db.query.cart.findFirst({
+        where: eq(cart.userId, userId),
+        with: {
+            items: {
+                with: {
+                    variant: true
+                }
+            }
+        }
+    }) as (Cart & { items: (CartItem & { variant: ProductVariant })[] }) | null;
+
+    if (!cartData) {
         return {
             id: '',
             items: [],
@@ -532,52 +566,82 @@ export async function getCartViewModel(sessionId: string, userId?: string): Prom
         };
     }
 
-    const cartWithItems = await getCartWithItems(cart.id) as CartWithItems | null;
-    const items = cartWithItems?.items || [];
-    const summary = calculateCartSummary(items.map(item => ({
-        price: item.price,
-        quantity: item.quantity
-    })));
+    const items = cartData.items.map(item => {
+        const variant = toProductVariantViewModel(item.variant);
+
+        return {
+            id: item.id,
+            quantity: item.quantity,
+            price: item.price,
+            productVariantId: item.productVariantId,
+            variant,
+            imageUrl: item.variant.attributes?.image || '/placeholder.jpg',
+            name: item.variant.name
+        };
+    });
+
+    const subtotal = items.reduce((sum: number, item) => sum + (item.price * item.quantity), 0);
 
     return {
-        id: cart.id,
-        items: items
-            .filter(item => item.variant)
-            .map(item => ({
-                id: item.id,
-                productVariantId: item.productVariantId,
-                quantity: item.quantity,
-                price: item.price,
-                variant: {
-                    id: item.variant.id,
-                    sku: item.variant.sku,
-                    name: item.variant.name,
-                    price: item.variant.price,
-                    stock_quantity: item.variant.stockQuantity,
-                    attributes: item.variant.attributes || {},
-                    stockStatus: getStockStatus(item.variant.stockQuantity)
-                },
-                imageUrl: item.variant.attributes?.image || '',
-                name: item.variant.name,
-                product: {
-                    id: item.variant.productId,
-                    name: item.variant.name.split(' - ')[0],
-                    slug: '',
-                    description: null
-                }
-            })),
-        discountCode: cart.discountCode,
-        discountAmount: cart.discountAmount || 0,
-        subtotal: summary.subtotal,
-        total: summary.total,
-        itemCount: summary.itemCount
+        id: cartData.id,
+        items,
+        discountCode: cartData.discountCode,
+        discountAmount: cartData.discountAmount || 0,
+        subtotal,
+        total: subtotal - (cartData.discountAmount || 0),
+        itemCount: items.reduce((sum: number, item) => sum + item.quantity, 0)
     };
 }
 
-function getStockStatus(quantity: number): 'in_stock' | 'low_stock' | 'out_of_stock' {
-    if (quantity <= 0) return 'out_of_stock';
-    if (quantity < 5) return 'low_stock';
-    return 'in_stock';
+async function getCartBySessionId(sessionId: string): Promise<CartViewModel> {
+    const cartData = await db.query.cart.findFirst({
+        where: eq(cart.sessionId, sessionId),
+        with: {
+            items: {
+                with: {
+                    variant: true
+                }
+            }
+        }
+    }) as (Cart & { items: (CartItem & { variant: ProductVariant })[] }) | null;
+
+    if (!cartData) {
+        return {
+            id: '',
+            items: [],
+            discountCode: null,
+            discountAmount: 0,
+            subtotal: 0,
+            total: 0,
+            itemCount: 0
+        };
+    }
+
+    const items = cartData.items.map(item => {
+        const variant = toProductVariantViewModel(item.variant);
+
+        return {
+            id: item.id,
+            quantity: item.quantity,
+            price: item.price,
+            productVariantId: item.productVariantId,
+            variant,
+            imageUrl: item.variant.attributes?.image || '/placeholder.jpg',
+            name: item.variant.name
+        };
+    });
+
+    const subtotal = items.reduce((sum: number, item) => sum + (item.price * item.quantity), 0);
+
+    return {
+        id: cartData.id,
+        items,
+        discountCode: cartData.discountCode,
+        discountAmount: cartData.discountAmount || 0,
+        subtotal,
+        total: subtotal - (cartData.discountAmount || 0),
+        itemCount: items.reduce((sum: number, item) => sum + item.quantity, 0)
+    };
 }
 
 /**
@@ -699,4 +763,22 @@ export async function setGuestEmail(sessionId: string, email: string): Promise<v
         console.error('Error setting guest email:', error);
         throw error;
     }
-} 
+}
+
+export const cartRepository = {
+    getOrCreateCart,
+    getCartWithItems,
+    addItemToCart,
+    updateCartItemQuantity,
+    removeCartItem,
+    clearCart,
+    applyDiscountToCart,
+    removeDiscountFromCart,
+    calculateCartSummary,
+    assignCartToUser,
+    getCartViewModel,
+    handleUserLogin,
+    getCartSummaryViewModel,
+    transferCartToUser,
+    setGuestEmail
+}; 

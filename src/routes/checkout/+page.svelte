@@ -24,7 +24,6 @@
 	import type { z } from 'zod';
 	import ShippingForm from '$lib/components/shipping-form.svelte';
 	import PaymentForm from '$lib/components/payment-form.svelte';
-	import type { SuperForm } from 'sveltekit-superforms';
 	import type { PageData } from './$types';
 	import { userStore } from '$lib/stores/auth';
 
@@ -200,7 +199,15 @@
 							<h2 class="text-2xl font-semibold">{m.checkout_tab_payment()}</h2>
 						</CardHeader>
 						<CardContent>
-							<PaymentForm />
+							<PaymentForm
+								onPayment={(event) => {
+									if (event.success) {
+										// TODO: Handle successful payment
+									} else {
+										// TODO: Handle payment error
+									}
+								}}
+							/>
 						</CardContent>
 					</Card>
 				</TabsContent>

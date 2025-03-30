@@ -2,7 +2,6 @@ import { sql, relations } from 'drizzle-orm';
 import * as t from "drizzle-orm/sqlite-core";
 import { user } from './user';
 import { cartItem } from './cart_item';
-import { productVariant } from './product_variant';
 
 export const cartStatus = ['active', 'merged', 'converted_to_order', 'abandoned'] as const;
 export type CartStatus = typeof cartStatus[number];
@@ -37,13 +36,6 @@ export const cartToUserRelations = relations(cart, ({ one }) => ({
     user: one(user, {
         fields: [cart.userId],
         references: [user.id]
-    })
-}));
-
-export const cartItemToProductVariantRelations = relations(cartItem, ({ one }) => ({
-    variant: one(productVariant, {
-        fields: [cartItem.productVariantId],
-        references: [productVariant.id]
     })
 }));
 
