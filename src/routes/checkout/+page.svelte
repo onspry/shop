@@ -145,23 +145,8 @@
 						<CardDescription>{m.checkout_guest_description()}</CardDescription>
 					</CardHeader>
 					<CardContent>
-						<form onsubmit={handleGuestCheckout} class="space-y-4">
-							<div class="grid gap-2">
-								<Label for="guest-email">{m.checkout_guest_email()}</Label>
-								<Input
-									id="guest-email"
-									name="email"
-									type="email"
-									bind:value={guestEmail}
-									placeholder="name@example.com"
-									required
-									disabled={guestSubmitting}
-								/>
-								{#if guestError}
-									<p class="text-sm text-destructive">{guestError}</p>
-								{/if}
-							</div>
-
+						<form method="POST" action="?/guestCheckout" class="space-y-4">
+							<input type="hidden" name="email" value={guestEmail} />
 							<Button type="submit" class="w-full" disabled={guestSubmitting || !guestEmail}>
 								{#if guestSubmitting}
 									<LoadingSpinner size={16} className="mr-2" />

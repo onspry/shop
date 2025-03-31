@@ -3,8 +3,7 @@ import type { ProductViewModel } from '$lib/models/product';
 import type { PageServerLoad } from './$types';
 import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types';
-import * as cartRepository from '$lib/server/repositories/cart';
-import { randomUUID } from 'crypto';
+import { cartRepository } from '$lib/server/repositories/cart';
 
 export const load: PageServerLoad = async ({ params, url }) => {
     const result = await productRepo.getProduct(params.slug);
@@ -36,10 +35,11 @@ export const actions: Actions = {
     /**
      * Add item to cart
      */
-    addItem: async ({ request, cookies, locals }) => {
+    addToCart: async ({ request, cookies, locals }) => {
         const formData = await request.formData();
         const productVariantId = formData.get('productVariantId')?.toString();
         const quantity = Number(formData.get('quantity')) || 1;
+        const userId = locals.user?.id;
 
         // Validate input
         if (!productVariantId) {
@@ -51,21 +51,13 @@ export const actions: Actions = {
         }
 
         try {
-            // Get or create session ID
-            let sessionId = cookies.get('sessionId') || '';
-            if (!sessionId) {
-                sessionId = `session_${randomUUID()}`;
-                // Set cookie with 30 day expiry
-                cookies.set('sessionId', sessionId, {
-                    path: '/',
-                    httpOnly: true,
-                    sameSite: 'strict',
-                    maxAge: 60 * 60 * 24 * 30 // 30 days
-                });
-            }
+            // Get session ID from cookies - should already exist from layout
+            const sessionId = cookies.get('cart-session') || '';
 
-            // Get user ID if logged in
-            const userId = locals.user?.id;
+            // If somehow there's no session ID, return an error
+            if (!sessionId && !userId) {
+                return fail(400, { message: 'No cart session available. Please refresh the page and try again.' });
+            }
 
             // Get or create cart
             const userCart = await cartRepository.getOrCreateCart(sessionId, userId);

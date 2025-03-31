@@ -29,7 +29,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
 export const actions: Actions = {
     default: async ({ request, cookies, url }) => {
-        const sessionId = cookies.get('sessionId') || '';
+        // Get the cart session before any authentication changes
+        const cartSessionId = cookies.get('cart-session') || '';
 
         // Validate the form with Superform and Zod
         const form = await superValidate(request, zod(loginSchema));
@@ -86,12 +87,23 @@ export const actions: Actions = {
             );
         }
 
+        // Create authentication session
         const sessionToken = generateSessionToken();
         const session = await createSession(sessionToken, user.id);
         setSessionTokenCookie(cookies, sessionToken, session.expiresAt);
 
-        // Transfer session cart to user and clean up old carts
-        await cartRepository.handleUserLogin(sessionId, user.id);
+        // Associate cart with user (if cart session exists)
+        if (cartSessionId) {
+            await cartRepository.handleUserLoginMerge(cartSessionId, user.id);
+
+            // IMPORTANT: Ensure the cart session cookie is preserved after login
+            cookies.set('cart-session', cartSessionId, {
+                path: '/',
+                httpOnly: true,
+                sameSite: 'strict',
+                maxAge: 60 * 60 * 24 * 30 // 30 days
+            });
+        }
 
         // Use the redirectTo from form data first, fallback to URL query param
         if (redirectTo && redirectTo.startsWith('/')) {

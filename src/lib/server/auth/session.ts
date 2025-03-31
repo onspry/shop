@@ -80,11 +80,22 @@ export async function invalidateUserSessions(userId: string) {
     await db.delete(session).where(eq(session.userId, userId));
 }
 
-export function setSessionTokenCookie(cookies: Cookies, token: string, expiresAt: Date) {
-    cookies.set(sessionCookieName, token, {
+export function setSessionTokenCookie(cookies: Cookies, token: string, expiresAt: Date, response?: Response) {
+    const cookieValue = {
         expires: expiresAt,
-        path: '/'
-    });
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax' as const,
+        secure: process.env.NODE_ENV === 'production'
+    };
+
+    cookies.set(sessionCookieName, token, cookieValue);
+
+    // If a response object is provided, also add the cookie header to the response
+    if (response) {
+        const cookieStr = `${sessionCookieName}=${token}; Path=${cookieValue.path}; ${cookieValue.httpOnly ? 'HttpOnly;' : ''} SameSite=${cookieValue.sameSite}; ${cookieValue.secure ? 'Secure;' : ''} Expires=${expiresAt.toUTCString()}`;
+        response.headers.append('Set-Cookie', cookieStr);
+    }
 }
 
 export function deleteSessionTokenCookie(event: RequestEvent) {

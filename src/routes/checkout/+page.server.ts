@@ -1,14 +1,16 @@
 import { fail, redirect } from '@sveltejs/kit';
-import * as cartRepository from '$lib/server/repositories/cart';
+import { cartRepository } from '$lib/server/repositories/cart';
 import { superValidate } from 'sveltekit-superforms/server';
 import { zod } from 'sveltekit-superforms/adapters';
 import { loginSchema } from '$lib/schemas/auth';
 import { shippingSchema } from '$lib/schemas/shipping';
+import { userRepo } from '$lib/server/repositories/user';
+import { verifyEmailInput } from '$lib/server/auth/email';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ cookies, locals }) => {
     // Get session or user ID
-    const sessionId = cookies.get('sessionId') || '';
+    const sessionId = cookies.get('cart-session') || '';
     const userId = locals.user?.id;
 
     if (!sessionId && !userId) {
@@ -42,7 +44,7 @@ export const load: PageServerLoad = async ({ cookies, locals }) => {
 
 export const actions: Actions = {
     // Login action for checkout page
-    login: async ({ request, cookies, locals, fetch }) => {
+    login: async ({ request, cookies, locals }) => {
         const form = await superValidate(request, zod(loginSchema));
 
         if (!form.valid) {
@@ -50,32 +52,16 @@ export const actions: Actions = {
         }
 
         try {
-            // Use a direct fetch to the login endpoint instead of relying on locals.auth
-            const loginResponse = await fetch('/auth/login', {
-                method: 'POST',
-                body: JSON.stringify({
-                    email: form.data.email,
-                    password: form.data.password
-                }),
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!loginResponse.ok) {
-                form.message = 'Invalid credentials';
-                return fail(400, { form });
-            }
-
             // Transfer cart from session to user if needed
-            const sessionId = cookies.get('sessionId');
+            const sessionId = cookies.get('cart-session');
             const userId = locals.user?.id;
 
             if (sessionId && userId) {
-                await cartRepository.transferCartToUser(sessionId, userId);
+                await cartRepository.handleUserLoginMerge(sessionId, userId);
             }
 
-            return { success: true };
+            // Redirect to the same page to trigger a new load with the updated session
+            return redirect(303, '/checkout');
         } catch (error) {
             console.error('Login failed:', error);
             form.message = 'Login failed';
@@ -84,37 +70,37 @@ export const actions: Actions = {
     },
 
     // Process guest checkout without database migration
-    guestCheckout: async ({ request, cookies }) => {
+    guestCheckout: async ({ request, cookies, locals }) => {
         const formData = await request.formData();
-        const email = formData.get('email')?.toString();
+        const email = formData.get('email');
+        const userId = locals.user?.id;
 
-        if (!email) {
-            return fail(400, { message: 'Email is required for guest checkout' });
+        if (!email || typeof email !== 'string') {
+            return fail(400, {
+                message: 'Email is required'
+            });
         }
 
-        try {
-            const sessionId = cookies.get('sessionId');
-            if (!sessionId) {
-                return fail(400, { message: 'No session found' });
-            }
-
-            // Store guest email in a separate cookie
-            const cookieOptions = {
-                path: '/',
-                httpOnly: true,
-                sameSite: 'strict' as const,
-                secure: process.env.NODE_ENV === 'production',
-                maxAge: 60 * 60 * 24 * 7 // 1 week
-            };
-
-            cookies.set('guestEmail', email, cookieOptions);
-
-            // Redirect directly to shipping
-            throw redirect(303, '/checkout/shipping');
-        } catch (error) {
-            console.error('Guest checkout failed:', error);
-            return fail(500, { message: 'Failed to process guest checkout' });
+        if (!verifyEmailInput(email)) {
+            return fail(400, {
+                message: 'Invalid email format'
+            });
         }
+
+        // Check if email is already registered
+        const existingUser = await userRepo.getByEmail(email);
+        if (existingUser) {
+            return fail(400, {
+                message: 'This email is already registered. Please sign in instead.'
+            });
+        }
+
+        // Create a guest session
+        const sessionId = cookies.get('cart-session') || '';
+        await cartRepository.setGuestEmail(sessionId, email, userId);
+
+        // Redirect to shipping step
+        return redirect(303, '/checkout?step=shipping');
     },
 
     shipping: async ({ request }) => {

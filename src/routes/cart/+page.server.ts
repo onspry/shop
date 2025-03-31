@@ -1,11 +1,11 @@
 import type { PageServerLoad } from './$types';
 import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types';
-import * as cartRepository from '$lib/server/repositories/cart';
+import { cartRepository } from '$lib/server/repositories/cart';
 
 export const load: PageServerLoad = async ({ cookies, locals }) => {
     // Get session or user ID
-    const sessionId = cookies.get('sessionId') || '';
+    const sessionId = cookies.get('cart-session') || '';
     const userId = locals.user?.id;
 
     if (!sessionId && !userId) {
@@ -62,7 +62,7 @@ export const actions: Actions = {
         }
 
         try {
-            const sessionId = cookies.get('sessionId') || '';
+            const sessionId = cookies.get('cart-session') || '';
             const userId = locals.user?.id;
 
             if (!sessionId && !userId) {
@@ -139,7 +139,7 @@ export const actions: Actions = {
         }
 
         try {
-            const sessionId = cookies.get('sessionId') || '';
+            const sessionId = cookies.get('cart-session') || '';
             const userId = locals.user?.id;
 
             if (!sessionId && !userId) {
@@ -170,7 +170,7 @@ export const actions: Actions = {
      */
     removeDiscount: async ({ cookies, locals }) => {
         try {
-            const sessionId = cookies.get('sessionId') || '';
+            const sessionId = cookies.get('cart-session') || '';
             const userId = locals.user?.id;
 
             if (!sessionId && !userId) {
@@ -195,7 +195,7 @@ export const actions: Actions = {
      */
     clearCart: async ({ cookies, locals }) => {
         try {
-            const sessionId = cookies.get('sessionId') || '';
+            const sessionId = cookies.get('cart-session') || '';
             const userId = locals.user?.id;
 
             if (!sessionId && !userId) {
