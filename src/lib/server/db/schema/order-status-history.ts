@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import * as t from "drizzle-orm/sqlite-core";
-import { order, orderStatus } from './order';
+import { order } from './order';
+import { orderStatus } from './types';
 
 export const orderStatusHistory = t.sqliteTable('order_status_history', {
     id: t.text('id').primaryKey(),

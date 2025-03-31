@@ -4,6 +4,7 @@ import { db } from '$lib/server/db';
 import { cart, type NewCart, type Cart } from '$lib/server/db/schema/cart';
 import { cartItem, type NewCartItem, type CartItem } from '$lib/server/db/schema/cart_item';
 import { productVariant, type ProductVariant } from '$lib/server/db/schema/product_variant';
+import type { ProductImage } from '$lib/server/db/schema/product_image';
 import { discount } from '$lib/server/db/schema/discount';
 import type { CartViewModel, CartSummaryViewModel } from '$lib/models/cart';
 import { toProductVariantViewModel } from '$lib/models/product';
@@ -11,7 +12,11 @@ import { toProductVariantViewModel } from '$lib/models/product';
 // Define type for cart with items to avoid 'any'
 export type CartWithItems = Cart & {
     items: Array<CartItem & {
-        variant: Pick<ProductVariant, 'id' | 'sku' | 'name' | 'price' | 'stockQuantity' | 'attributes' | 'productId'>;
+        variant: Pick<ProductVariant, 'id' | 'sku' | 'name' | 'price' | 'stockQuantity' | 'attributes' | 'productId'> & {
+            product: {
+                images: ProductImage[];
+            };
+        };
     }>;
 };
 
@@ -251,7 +256,15 @@ export const cartRepository = {
                 with: {
                     items: {
                         with: {
-                            variant: true
+                            variant: {
+                                with: {
+                                    product: {
+                                        with: {
+                                            images: true
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -269,7 +282,7 @@ export const cartRepository = {
     },
 
     /**
-     * Get cart data as view model by Cart ID
+     * Get cart view model by ID (internal helper)
      */
     async _getCartViewModelById(cartId: string): Promise<CartViewModel> {
         const cartData = await this._getCartWithItems(cartId);
@@ -288,16 +301,38 @@ export const cartRepository = {
             };
         }
 
-        const items = cartData.items.map((item: CartItem & { variant: Pick<ProductVariant, 'id' | 'sku' | 'name' | 'price' | 'stockQuantity' | 'attributes' | 'productId'> }) => {
-            const variantViewModel = toProductVariantViewModel(item.variant as ProductVariant);
+        const items = cartData.items.map((item) => {
+            const variantViewModel = toProductVariantViewModel({
+                ...item.variant,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            });
+            const firstImage = item.variant.product?.images?.[0];
             return {
                 id: item.id,
+                cartId: item.cartId,
                 quantity: item.quantity,
                 price: item.price,
                 productVariantId: item.productVariantId,
                 variant: variantViewModel,
-                imageUrl: item.variant.attributes?.image || '/placeholder.jpg',
-                name: item.variant.name
+                imageUrl: firstImage?.url || '',
+                name: item.variant.name,
+                composites: (item.composites || []).map(composite => ({
+                    variantId: composite.variantId,
+                    name: composite.name,
+                    quantity: composite.quantity,
+                    variant: toProductVariantViewModel({
+                        id: composite.variantId,
+                        name: composite.name,
+                        price: 0,
+                        stockQuantity: 0,
+                        attributes: null,
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                        productId: '',
+                        sku: ''
+                    })
+                }))
             };
         });
 
@@ -320,66 +355,145 @@ export const cartRepository = {
     async addItemToCart(
         cartId: string,
         productVariantId: string,
-        quantity: number = 1
+        quantity: number = 1,
+        composites: Array<{
+            variantId: string;
+            name: string;
+            quantity: number;
+        }> = []
     ): Promise<void> {
         try {
-            const variant = await db.query.productVariant.findFirst({
-                where: eq(productVariant.id, productVariantId),
-                columns: {
-                    id: true,
-                    price: true,
-                    stockQuantity: true
-                }
+            console.log(`[CART] Adding item to cart ${cartId}:`, {
+                productVariantId,
+                quantity,
+                composites
             });
 
-            if (!variant) {
-                throw new CartError('Product variant not found');
-            }
+            // Start a transaction
+            await db.transaction(async (tx) => {
+                // Check main variant stock
+                const variant = await tx.query.productVariant.findFirst({
+                    where: eq(productVariant.id, productVariantId),
+                    columns: {
+                        id: true,
+                        price: true,
+                        stockQuantity: true
+                    }
+                });
 
-            if (variant.stockQuantity < quantity) {
-                throw new StockError(`Not enough stock available. Requested: ${quantity}, Available: ${variant.stockQuantity}`);
-            }
+                console.log(`[CART] Found variant:`, variant);
 
-            const existingItem = await db.query.cartItem.findFirst({
-                where: and(
-                    eq(cartItem.cartId, cartId),
-                    eq(cartItem.productVariantId, productVariantId)
-                )
-            });
-
-            if (existingItem) {
-                const newQuantity = existingItem.quantity + quantity;
-                if (newQuantity > variant.stockQuantity) {
-                    throw new StockError(`Not enough stock available for total quantity. Requested: ${newQuantity}, Available: ${variant.stockQuantity}`);
+                if (!variant) {
+                    throw new CartError('Product variant not found');
                 }
 
-                await db.update(cartItem)
-                    .set({
-                        quantity: newQuantity,
-                        updatedAt: sql`(unixepoch())`
-                    })
-                    .where(eq(cartItem.id, existingItem.id));
-            } else {
-                const newItem: NewCartItem = {
-                    id: randomUUID(),
-                    cartId,
-                    productVariantId,
-                    quantity,
-                    price: variant.price
-                };
+                if (variant.stockQuantity < quantity) {
+                    throw new StockError(`Not enough stock available. Requested: ${quantity}, Available: ${variant.stockQuantity}`);
+                }
 
-                await db.insert(cartItem).values(newItem);
-            }
+                // Get all cart items for this variant
+                const existingItems = await tx.query.cartItem.findMany({
+                    where: and(
+                        eq(cartItem.cartId, cartId),
+                        eq(cartItem.productVariantId, productVariantId)
+                    )
+                });
 
-            await db.update(cart)
-                .set({ updatedAt: sql`(unixepoch())` })
-                .where(eq(cart.id, cartId));
+                console.log(`[CART] Found existing items:`, existingItems);
+
+                // Find an item with matching composites
+                const matchingItem = existingItems.find(item => {
+                    const itemComposites = item.composites || [];
+                    console.log(`[CART] Comparing composites:`, {
+                        existing: itemComposites,
+                        new: composites
+                    });
+
+                    // If lengths don't match, it's not the same configuration
+                    if (itemComposites.length !== composites.length) {
+                        return false;
+                    }
+
+                    // Check if all composites match
+                    return composites.every(newComposite => {
+                        return itemComposites.some(existing =>
+                            existing.variantId === newComposite.variantId &&
+                            existing.name === newComposite.name &&
+                            existing.quantity === newComposite.quantity
+                        );
+                    });
+                });
+
+                console.log(`[CART] Found matching item:`, matchingItem);
+
+                if (matchingItem) {
+                    // Update existing item with same configuration
+                    const newQuantity = matchingItem.quantity + quantity;
+                    if (newQuantity > variant.stockQuantity) {
+                        throw new StockError(`Not enough stock available for total quantity. Requested: ${newQuantity}, Available: ${variant.stockQuantity}`);
+                    }
+
+                    console.log(`[CART] Updating existing item quantity to:`, newQuantity);
+
+                    await tx.update(cartItem)
+                        .set({
+                            quantity: newQuantity,
+                            updatedAt: sql`(unixepoch())`
+                        })
+                        .where(eq(cartItem.id, matchingItem.id));
+                } else {
+                    // Create new item with new configuration
+                    const newItem: NewCartItem = {
+                        id: randomUUID(),
+                        cartId,
+                        productVariantId,
+                        quantity,
+                        price: variant.price,
+                        composites: composites
+                    };
+
+                    console.log(`[CART] Creating new item:`, newItem);
+
+                    await tx.insert(cartItem).values(newItem);
+                }
+
+                // Check and update composite items stock
+                for (const composite of composites) {
+                    const compositeVariant = await tx.query.productVariant.findFirst({
+                        where: eq(productVariant.id, composite.variantId),
+                        columns: {
+                            id: true,
+                            stockQuantity: true
+                        }
+                    });
+
+                    console.log(`[CART] Checking composite variant:`, {
+                        composite,
+                        variant: compositeVariant
+                    });
+
+                    if (!compositeVariant) {
+                        throw new CartError(`Composite product variant not found: ${composite.variantId}`);
+                    }
+
+                    if (compositeVariant.stockQuantity < composite.quantity * quantity) {
+                        throw new StockError(`Not enough stock available for composite item. Requested: ${composite.quantity * quantity}, Available: ${compositeVariant.stockQuantity}`);
+                    }
+                }
+
+                await tx.update(cart)
+                    .set({ updatedAt: sql`(unixepoch())` })
+                    .where(eq(cart.id, cartId));
+            });
+
+            console.log(`[CART] Successfully added item to cart ${cartId}`);
         } catch (error) {
+            console.error('[CART] Error details:', error);
             if (error instanceof CartError || error instanceof StockError) {
                 throw error;
             }
-            console.error('Error adding item to cart:', error);
-            throw new CartError('Failed to add item to cart');
+            console.error('[CART] Error adding item to cart:', error);
+            throw new CartError('Failed to add item to cart: ' + (error instanceof Error ? error.message : String(error)));
         }
     },
 
@@ -715,75 +829,56 @@ export const cartRepository = {
 
                 // ⚠️ IMPORTANT: Always keep the session cart in this scenario
                 // This ensures we preserve the cart that's associated with the current session cookie
-                console.log(`[CART] Login Merge: Keeping session cart ${sessionCart.id} (${sessionCartItems.length} items) and merging items from user cart ${userCart.id} (${userCartItems.length} items)`);
+                console.log(`[CART] Login Merge: Keeping session cart ${sessionCart.id} and deleting user cart ${userCart.id}`);
 
-                // Update session cart to associate with user
+                // Delete the user cart
+                await db.delete(cart).where(eq(cart.id, userCart.id));
+
+                // Update the session cart with the user ID
                 await db.update(cart)
                     .set({
-                        userId: userId,
+                        userId,
                         updatedAt: sql`(unixepoch())`
                     })
                     .where(eq(cart.id, sessionCart.id));
-
-                console.log(`[CART] Login Merge: Updated session cart ${sessionCart.id} with user ID ${userId}`);
-
-                // Transfer any items from user cart to session cart if needed
-                if (userCartItems.length > 0) {
-                    console.log(`[CART] Login Merge: Transferring ${userCartItems.length} items from user cart to session cart`);
-                    // Transfer logic would go here - not implementing full transfer for now
-                }
-
-                // Delete the user cart and its items (cascade delete)
-                await db.delete(cart).where(eq(cart.id, userCart.id));
-                console.log(`[CART] Login Merge: Deleted user cart ${userCart.id}`);
 
                 return sessionCart.id;
             } else if (sessionCart) {
-                // Only session cart exists
-                console.log(`[CART] Login Merge: Found only session cart ${sessionCart.id}`);
-
-                // Update session cart to associate with user
+                // Only session cart exists - update it with user ID
+                console.log(`[CART] Login Merge: Only session cart ${sessionCart.id} exists, updating with user ID`);
                 await db.update(cart)
                     .set({
-                        userId: userId,
+                        userId,
                         updatedAt: sql`(unixepoch())`
                     })
                     .where(eq(cart.id, sessionCart.id));
-
-                console.log(`[CART] Login Merge: Updated session cart ${sessionCart.id} with user ${userId}`);
                 return sessionCart.id;
             } else if (userCart) {
-                // Only user cart exists - update its session ID to match the current session
-                console.log(`[CART] Login Merge: Found only user cart ${userCart.id}`);
-
-                // Update user cart to use current session ID
+                // Only user cart exists - update it with session ID
+                console.log(`[CART] Login Merge: Only user cart ${userCart.id} exists, updating with session ID`);
                 await db.update(cart)
                     .set({
-                        sessionId: sessionId,
+                        sessionId,
                         updatedAt: sql`(unixepoch())`
                     })
                     .where(eq(cart.id, userCart.id));
-
-                console.log(`[CART] Login Merge: Updated user cart ${userCart.id} with session "${sessionId}"`);
                 return userCart.id;
-            } else {
-                // No carts found - create a new one with both session ID and user ID
-                console.log(`[CART] Login Merge: No carts found for session "${sessionId}" or user ${userId}. Creating new cart.`);
-
-                const newCartData: NewCart = {
-                    id: randomUUID(),
-                    sessionId: sessionId,
-                    userId: userId
-                };
-
-                await db.insert(cart).values(newCartData);
-                console.log(`[CART] Login Merge: Created new cart ${newCartData.id} with session "${sessionId}" and user ${userId}`);
-
-                return newCartData.id;
             }
+
+            // No carts exist - create a new one
+            console.log(`[CART] Login Merge: No carts found, creating new cart for user ${userId}`);
+            const newCart: NewCart = {
+                id: randomUUID(),
+                userId,
+                sessionId,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+            await db.insert(cart).values(newCart);
+            return newCart.id;
         } catch (error) {
-            console.error(`[CART] Login Merge ERROR: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            console.error('[CART] Login Merge: Error during merge:', error);
             return null;
         }
-    },
-}; 
+    }
+};

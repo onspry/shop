@@ -85,23 +85,6 @@
 </script>
 
 <div class="space-y-6">
-	<!-- Contact Information -->
-	<div class="space-y-4">
-		<h3 class="font-medium">{m.checkout_contact_info_title()}</h3>
-		<div class="grid gap-4">
-			<div class="grid gap-2">
-				<Label for="email">Email</Label>
-				<Input
-					id="email"
-					type="email"
-					placeholder="name@example.com"
-					value={isAuthenticated ? userEmail : guestEmail}
-					disabled
-				/>
-			</div>
-		</div>
-	</div>
-
 	<!-- Shipping Address -->
 	<div class="space-y-4">
 		<h3 class="font-medium">{m.checkout_delivery_address()}</h3>

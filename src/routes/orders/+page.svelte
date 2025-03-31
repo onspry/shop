@@ -112,30 +112,41 @@
 								<!-- Order Items -->
 								<div class="space-y-2">
 									{#each order.items as item}
-										<div class="flex justify-between items-center py-2 border-b last:border-0">
-											<div class="flex gap-3 items-center">
-												<div
-													class="bg-muted rounded-md w-12 h-12 flex items-center justify-center overflow-hidden"
-												>
-													{#if item.imageUrl}
-														<img
-															src={item.imageUrl}
-															alt={item.name}
-															class="w-full h-full object-cover"
-														/>
-													{:else}
-														<ShoppingBag size={20} class="text-muted-foreground" />
-													{/if}
+										<div class="flex justify-between items-start py-2 border-b last:border-0">
+											<div class="flex-1">
+												<div class="flex gap-3">
+													<div
+														class="bg-muted rounded-md w-12 h-12 flex items-center justify-center overflow-hidden relative"
+													>
+														{#if item.imageUrl}
+															<img
+																src={item.imageUrl}
+																alt={item.name}
+																class="w-full h-full object-cover"
+															/>
+														{:else}
+															<ShoppingBag size={20} class="text-muted-foreground" />
+														{/if}
+													</div>
+													<div class="flex-1">
+														<p class="font-medium">{item.name}</p>
+														{#if item.composites && item.composites.length > 0}
+															<div class="mt-1">
+																{#each item.composites as composite}
+																	<p class="text-xs text-muted-foreground">
+																		{composite.name} × {composite.quantity}
+																	</p>
+																{/each}
+															</div>
+														{/if}
+														<div class="flex justify-between items-center w-full mt-1">
+															<p class="text-sm text-muted-foreground">
+																{m.orders_quantity({ quantity: item.quantity })}
+															</p>
+															<p class="text-sm font-medium">{formatPrice(item.totalPrice)}</p>
+														</div>
+													</div>
 												</div>
-												<div>
-													<p class="font-medium">{item.name}</p>
-													<p class="text-sm text-muted-foreground">
-														{m.orders_quantity({ quantity: item.quantity })}
-													</p>
-												</div>
-											</div>
-											<div class="font-medium">
-												{formatPrice(item.totalPrice)}
 											</div>
 										</div>
 									{/each}

@@ -34,9 +34,10 @@ export const actions: Actions = {
 
         // Validate the form with Superform and Zod
         const form = await superValidate(request, zod(loginSchema));
+        const formData = await request.formData();
 
-        // Get redirectTo from URL query params first, then from form data
-        const redirectTo = url.searchParams.get('redirect') || form.data.redirectTo || '/';
+        // Get redirectTo from form data first (which includes the URL param), then fallback to URL param, then home
+        const redirectTo = formData.get('redirectTo')?.toString() || url.searchParams.get('redirect') || '/';
 
         // Return validation errors if any
         if (!form.valid) {
@@ -105,7 +106,7 @@ export const actions: Actions = {
             });
         }
 
-        // Use the redirectTo from form data first, fallback to URL query param
+        // After successful login, redirect to the saved URL if it's internal
         if (redirectTo && redirectTo.startsWith('/')) {
             throw redirect(303, redirectTo);
         }

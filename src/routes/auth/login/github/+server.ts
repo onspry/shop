@@ -4,6 +4,10 @@ import { generateState } from "arctic";
 import type { RequestEvent } from "./$types";
 
 export function GET(event: RequestEvent): Response {
+    // Get the redirect URL from query parameters
+    const redirectTo = event.url.searchParams.get('redirect') || '/';
+    console.log(`[GITHUB-LOGIN] Redirect URL: ${redirectTo}`);
+
     // Capture the current cart session ID
     const cartSessionId = event.cookies.get('cart-session') || '';
     console.log(`[GITHUB-LOGIN] Current cart session ID: "${cartSessionId}"`);
@@ -14,6 +18,15 @@ export function GET(event: RequestEvent): Response {
 
     // Set the GitHub OAuth state cookie
     event.cookies.set("github_oauth_state", state, {
+        httpOnly: true,
+        maxAge: 60 * 10, // 10 minutes
+        secure: import.meta.env.PROD,
+        path: "/",
+        sameSite: "lax"
+    });
+
+    // Store the redirect URL in a cookie
+    event.cookies.set("oauth_redirect", redirectTo, {
         httpOnly: true,
         maxAge: 60 * 10, // 10 minutes
         secure: import.meta.env.PROD,

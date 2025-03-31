@@ -10,6 +10,10 @@ import { Providers } from "$lib/server/db";
 export async function GET(event: RequestEvent): Promise<Response> {
     console.log('[GITHUB-OAUTH] ==================== START GITHUB OAUTH CALLBACK ====================');
 
+    // Get the stored redirect URL from the cookie
+    const redirectTo = event.cookies.get('oauth_redirect') || '/';
+    console.log(`[GITHUB-OAUTH] Stored redirect URL: ${redirectTo}`);
+
     // Check code and state
     const code = event.url.searchParams.get("code");
     const state = event.url.searchParams.get("state");
@@ -110,12 +114,17 @@ export async function GET(event: RequestEvent): Promise<Response> {
         });
 
         console.log(`[GITHUB-OAUTH] Set cookies using SvelteKit cookies API - auth-session and cart-session: "${cartSessionId}"`);
+        console.log(`[GITHUB-OAUTH] Redirecting to: ${redirectTo}`);
         console.log('[GITHUB-OAUTH] ==================== END GITHUB OAUTH CALLBACK ====================');
+
+        // Clean up OAuth cookies
+        event.cookies.delete('oauth_redirect', { path: '/' });
+        event.cookies.delete('github_oauth_state', { path: '/' });
 
         return new Response(null, {
             status: 303,
             headers: {
-                Location: "/"
+                Location: redirectTo
             }
         });
     }
@@ -189,12 +198,17 @@ export async function GET(event: RequestEvent): Promise<Response> {
     });
 
     console.log(`[GITHUB-OAUTH] Set cookies using SvelteKit cookies API - auth-session and cart-session: "${cartSessionId}"`);
+    console.log(`[GITHUB-OAUTH] Redirecting to: ${redirectTo}`);
     console.log('[GITHUB-OAUTH] ==================== END GITHUB OAUTH CALLBACK ====================');
+
+    // Clean up OAuth cookies
+    event.cookies.delete('oauth_redirect', { path: '/' });
+    event.cookies.delete('github_oauth_state', { path: '/' });
 
     return new Response(null, {
         status: 303,
         headers: {
-            Location: "/"
+            Location: redirectTo
         }
     });
 }

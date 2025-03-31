@@ -1,7 +1,5 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
-	import { Label } from '$lib/components/ui/label';
 	import {
 		Card,
 		CardContent,
@@ -19,7 +17,7 @@
 	import * as m from '$lib/paraglide/messages';
 	import { formatPrice } from '$lib/utils/price';
 	import LoadingSpinner from '$lib/components/loading-spinner.svelte';
-	import { ArrowRight, ShoppingBag, User, Truck } from 'lucide-svelte';
+	import { ShoppingBag, User, Truck, ImageOff } from 'lucide-svelte';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { z } from 'zod';
 	import ShippingForm from '$lib/components/shipping-form.svelte';
@@ -56,6 +54,8 @@
 	let activeTab = $state('shipping');
 	let guestEmail = $state('');
 	let shippingValidated = $state(false);
+	let emailValidated = $state(false);
+	let imageStates = $state(new Map<string, { error: boolean; loaded: boolean }>());
 
 	// Derived state for shipping form validation
 	let isShippingValid = $derived(
@@ -87,32 +87,45 @@
 		activeTab = 'payment';
 	}
 
-	// Handle guest checkout
-	async function handleGuestCheckout(event: SubmitEvent) {
-		event.preventDefault();
-		guestSubmitting = true;
-		guestError = '';
+	// Handle guest email validation
+	async function handleGuestEmailValidation(event: Event) {
+		const input = event.target as HTMLInputElement;
+		if (input.validity.valid && guestEmail) {
+			try {
+				const formData = new FormData();
+				formData.append('email', guestEmail);
 
-		const formData = new FormData();
-		formData.append('email', guestEmail);
+				const response = await fetch('?/guestCheckout', {
+					method: 'POST',
+					body: formData
+				});
 
-		try {
-			const response = await fetch('?/guestCheckout', {
-				method: 'POST',
-				body: formData
-			});
+				const result = await response.json();
 
-			const result = await response.json();
-
-			if (!response.ok) {
-				guestError = result.message || m.checkout_error_guest();
+				if (response.ok) {
+					emailValidated = true;
+					guestError = '';
+				} else {
+					guestError = result.message || m.checkout_error_guest();
+					emailValidated = false;
+				}
+			} catch (error) {
+				guestError = m.checkout_error_guest();
+				emailValidated = false;
 			}
-			// Successful submission will cause a redirect
-		} catch (error) {
-			guestError = m.checkout_error_guest();
-		} finally {
-			guestSubmitting = false;
+		} else {
+			emailValidated = false;
 		}
+	}
+
+	function handleImageError(itemId: string) {
+		imageStates.set(itemId, { error: true, loaded: false });
+		imageStates = imageStates;
+	}
+
+	function handleImageLoad(itemId: string) {
+		imageStates.set(itemId, { error: false, loaded: true });
+		imageStates = imageStates;
 	}
 
 	// Derived values for order summary
@@ -129,38 +142,74 @@
 		<!-- Main checkout flow -->
 		<div class="lg:col-span-2">
 			{#if !isAuthenticated}
-				<div class="bg-muted/40 p-4 rounded-lg mb-6 flex justify-between items-center">
-					<div class="flex items-center gap-2">
-						<User size={18} />
-						<span>{m.checkout_have_account()}</span>
+				<div class="flex flex-col gap-6 mb-8">
+					<!-- Sign In Option -->
+					<div
+						class="bg-muted/40 p-6 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-4"
+					>
+						<div class="flex items-center gap-2">
+							<User size={20} />
+							<span class="font-medium">{m.checkout_have_account()}</span>
+						</div>
+						<Button
+							variant="outline"
+							href="/auth/login?redirect=/checkout"
+							class="w-full sm:w-auto"
+						>
+							{m.sign_in()}
+						</Button>
 					</div>
-					<Button variant="outline" href="/auth/login?redirect=/checkout">
-						{m.sign_in()}
-					</Button>
-				</div>
 
-				<Card class="mb-6">
-					<CardHeader>
-						<CardTitle>{m.checkout_guest_title()}</CardTitle>
-						<CardDescription>{m.checkout_guest_description()}</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<form method="POST" action="?/guestCheckout" class="space-y-4">
-							<input type="hidden" name="email" value={guestEmail} />
-							<Button type="submit" class="w-full" disabled={guestSubmitting || !guestEmail}>
-								{#if guestSubmitting}
-									<LoadingSpinner size={16} className="mr-2" />
+					<!-- Guest Checkout -->
+					<div class="relative">
+						<div class="absolute inset-0 flex items-center">
+							<div class="w-full border-t border-muted-foreground/20">
+								<CardDescription>{m.checkout_guest_description()}</CardDescription>
+							</div>
+						</div>
+						<div class="relative flex justify-center text-xs uppercase">
+							<span class="bg-background px-2 text-muted-foreground">{m.checkout_or()}</span>
+						</div>
+					</div>
+
+					<Card>
+						<CardHeader>
+							<CardTitle>{m.checkout_guest_title()}</CardTitle>
+							<CardDescription>
+								{m.checkout_guest_description()}
+								{m.checkout_email_description()}
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<div class="space-y-2">
+								<label for="guest-email" class="text-sm font-medium">
+									{m.checkout_email_label()}
+								</label>
+								<input
+									type="email"
+									id="guest-email"
+									name="email"
+									bind:value={guestEmail}
+									oninput={handleGuestEmailValidation}
+									class="w-full rounded-md border border-input bg-background px-3 py-2"
+									placeholder="your-email@example.com"
+									required
+								/>
+								{#if guestError}
+									<p class="text-sm text-destructive">{guestError}</p>
 								{/if}
-								{m.checkout_continue_as_guest()}
-							</Button>
-						</form>
-					</CardContent>
-				</Card>
+								<p class="text-sm text-muted-foreground">
+									{m.checkout_email_usage_hint()}
+								</p>
+							</div>
+						</CardContent>
+					</Card>
+				</div>
 			{/if}
 
 			<Tabs value={activeTab} onValueChange={(value) => (activeTab = value)} class="w-full">
 				<TabsList class="grid w-full grid-cols-2">
-					<TabsTrigger value="shipping">
+					<TabsTrigger value="shipping" disabled={!isAuthenticated && !emailValidated}>
 						{m.checkout_tab_shipping()}
 					</TabsTrigger>
 					<TabsTrigger value="payment" disabled={!shippingValidated}>
@@ -209,27 +258,54 @@
 					<!-- Cart items summary -->
 					<div class="space-y-3">
 						{#each data.cart.items as item}
-							<div class="flex justify-between items-center py-2 border-b">
-								<div class="flex gap-3 items-center">
-									<div
-										class="bg-muted rounded-md w-12 h-12 flex items-center justify-center overflow-hidden"
-									>
-										{#if item.imageUrl}
-											<img src={item.imageUrl} alt={item.name} class="w-full h-full object-cover" />
-										{:else}
-											<ShoppingBag size={20} class="text-muted-foreground" />
-										{/if}
+							<div class="flex justify-between items-start py-2 border-b">
+								<div class="flex-1">
+									<div class="flex gap-3">
+										<div class="relative">
+											<div
+												class="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium shadow-sm z-10"
+											>
+												{item.quantity}
+											</div>
+											<div class="relative w-12 h-12 overflow-hidden rounded-md">
+												{#if imageStates.get(item.id)?.error}
+													<div class="absolute inset-0 flex items-center justify-center bg-muted">
+														<ImageOff class="h-4 w-4 text-muted-foreground" />
+													</div>
+												{:else}
+													{#if !imageStates.get(item.id)?.loaded}
+														<div class="absolute inset-0">
+															<div class="h-full w-full animate-pulse bg-muted-foreground/20"></div>
+														</div>
+													{/if}
+													<img
+														src={item.imageUrl}
+														alt={item.name}
+														class="h-full w-full object-cover transition-opacity duration-300"
+														class:opacity-0={!imageStates.get(item.id)?.loaded}
+														class:opacity-100={imageStates.get(item.id)?.loaded}
+														onerror={() => handleImageError(item.id)}
+														onload={() => handleImageLoad(item.id)}
+													/>
+												{/if}
+											</div>
+										</div>
+										<div class="flex-1">
+											<div class="flex justify-between items-start">
+												<p class="font-medium">{item.name}</p>
+												<p class="font-medium ml-4">{formatPrice(item.price * item.quantity)}</p>
+											</div>
+											{#if item.composites && item.composites.length > 0}
+												<div class="mt-1">
+													{#each item.composites as composite}
+														<p class="text-xs text-muted-foreground">
+															{composite.name}
+														</p>
+													{/each}
+												</div>
+											{/if}
+										</div>
 									</div>
-									<div>
-										<p class="font-medium">{item.name}</p>
-										<p class="text-sm text-muted-foreground">
-											{m.checkout_quantity()}
-											{item.quantity}
-										</p>
-									</div>
-								</div>
-								<div class="font-medium">
-									{formatPrice(item.price * item.quantity)}
 								</div>
 							</div>
 						{/each}

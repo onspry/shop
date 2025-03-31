@@ -46,9 +46,13 @@
 
 	function handleSocialLogin(provider: string) {
 		loadingProvider = provider;
-		// Append the redirect parameter to the social login URL
-		const redirectParam = redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : '';
-		window.location.href = `/auth/login/${provider}${redirectParam}`;
+		// Ensure we pass the redirect parameter correctly
+		const searchParams = new URLSearchParams();
+		if (data.redirectTo && data.redirectTo !== '/') {
+			searchParams.set('redirect', data.redirectTo);
+		}
+		const queryString = searchParams.toString();
+		window.location.href = `/auth/login/${provider}${queryString ? `?${queryString}` : ''}`;
 	}
 
 	const socialProviders = [
@@ -136,22 +140,22 @@
 					use:enhance
 				>
 					<!-- Hidden input to preserve the redirect parameter -->
-					<input type="hidden" name="redirectTo" value={redirectTo} />
+					<input type="hidden" name="redirectTo" value={data.redirectTo} />
 
 					<div class="grid gap-2">
-						<Label for="email">Email address</Label>
+						<Label for="email">{m.checkout_email()}</Label>
 						<Input
 							id="email"
 							name="email"
 							type="email"
 							bind:value={$form.email}
 							placeholder="name@example.com"
-							autocomplete="email"
-							aria-invalid={$errors.email ? 'true' : undefined}
+							required
+							aria-invalid={$errors.email?.[0] ? 'true' : undefined}
 							disabled={$submitting || loadingProvider !== null}
 						/>
-						{#if $errors.email}
-							<p class="text-sm text-destructive">{$errors.email}</p>
+						{#if $errors.email?.[0]}
+							<p class="text-sm text-destructive">{$errors.email[0]}</p>
 						{/if}
 					</div>
 					<div class="grid gap-2">

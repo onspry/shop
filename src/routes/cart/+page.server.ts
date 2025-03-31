@@ -56,6 +56,17 @@ export const actions: Actions = {
         const formData = await request.formData();
         const productVariantId = formData.get('productVariantId')?.toString();
         const quantity = parseInt(formData.get('quantity')?.toString() || '1', 10);
+        const compositesJson = formData.get('composites')?.toString();
+        let composites = [];
+
+        if (compositesJson) {
+            try {
+                composites = JSON.parse(compositesJson);
+            } catch (error) {
+                console.error('Error parsing composites:', error);
+                return fail(400, { message: 'Invalid composites data' });
+            }
+        }
 
         if (!productVariantId) {
             return fail(400, { message: 'Product variant ID is required' });
@@ -73,7 +84,7 @@ export const actions: Actions = {
             const userCart = await cartRepository.getOrCreateCart(sessionId, userId);
 
             // Add item to cart
-            await cartRepository.addItemToCart(userCart.id, productVariantId, quantity);
+            await cartRepository.addItemToCart(userCart.id, productVariantId, quantity, composites);
 
             return { success: true };
         } catch (error) {

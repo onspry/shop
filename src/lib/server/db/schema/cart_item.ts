@@ -13,12 +13,16 @@ export const cartItem = t.sqliteTable('cart_item', {
         .references(() => productVariant.id),
     quantity: t.integer('quantity').notNull().default(1),
     price: t.integer('price').notNull(), // Store price in cents at time of adding to cart
+    composites: t.text('composites', { mode: 'json' }).$type<Array<{
+        variantId: string;
+        name: string;
+        quantity: number;
+    }>>().default([]),
     createdAt: t.integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
     updatedAt: t.integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
 }, (table) => [
     t.index('cart_item_cart_id_idx').on(table.cartId),
-    t.index('cart_item_product_variant_id_idx').on(table.productVariantId),
-    t.uniqueIndex('cart_item_cart_id_product_variant_id_unique_idx').on(table.cartId, table.productVariantId)
+    t.index('cart_item_product_variant_id_idx').on(table.productVariantId)
 ]);
 
 export const cartItemToProductVariantRelations = relations(cartItem, ({ one }) => ({

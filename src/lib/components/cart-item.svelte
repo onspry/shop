@@ -113,7 +113,7 @@
 
 <div class="relative">
 	<div class="flex border rounded-lg overflow-hidden bg-background">
-		<div class="w-32 h-32 flex-shrink-0">
+		<div class="w-32 h-32 flex-shrink-0 relative">
 			<div class="relative aspect-square h-full overflow-hidden">
 				{#if imageError}
 					<div class="absolute inset-0 flex items-center justify-center bg-muted">
@@ -142,7 +142,13 @@
 			<div class="flex justify-between">
 				<div>
 					<h3 class="font-medium text-sm sm:text-base">{variantName}</h3>
-					<p class="text-muted-foreground text-xs sm:text-sm">{formatPrice(price)}</p>
+					{#if item.composites && item.composites.length > 0}
+						<div class="mt-1 space-y-1">
+							{#each item.composites as composite}
+								<p class="text-xs text-muted-foreground">{composite.name}</p>
+							{/each}
+						</div>
+					{/if}
 				</div>
 				<div class="flex items-start">
 					<Button

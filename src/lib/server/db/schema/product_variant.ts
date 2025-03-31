@@ -27,7 +27,7 @@ export const productVariantRelations = relations(productVariant, ({ one, many })
         fields: [productVariant.productId],
         references: [product.id],
     }),
-    cartItems: many(cartItem),
+    cartItems: many(cartItem)
 }));
 
 // Export types

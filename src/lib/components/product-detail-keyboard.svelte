@@ -234,9 +234,30 @@
 		isAddingToCart = true;
 
 		try {
+			const composites = [];
+
+			// Add selected switch if available
+			if (selectedSwitch) {
+				composites.push({
+					variantId: selectedSwitch.id,
+					name: selectedSwitch.name,
+					quantity: quantity
+				});
+			}
+
+			// Add selected keycap if available
+			if (selectedKeycap) {
+				composites.push({
+					variantId: selectedKeycap.id,
+					name: selectedKeycap.name,
+					quantity: quantity
+				});
+			}
+
 			const success = await cartActions.addToCart({
 				productVariantId: currentVariantId,
-				quantity
+				quantity,
+				composites
 			});
 
 			if (success) {
@@ -487,7 +508,7 @@
 											variant={switchVariant}
 											isSelected={currentSwitchId === switchVariant.id}
 											onClick={() => selectSwitch(switchVariant.id)}
-											showPrice={true}
+											showPrice={false}
 											disabled={isLoading || isAddingToCart}
 										/>
 									{/each}
@@ -513,7 +534,7 @@
 											variant={keycapVariant}
 											isSelected={currentKeycapId === keycapVariant.id}
 											onClick={() => selectKeycap(keycapVariant.id)}
-											showPrice={true}
+											showPrice={false}
 											disabled={isLoading || isAddingToCart}
 										/>
 									{/each}

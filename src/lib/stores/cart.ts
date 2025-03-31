@@ -136,8 +136,22 @@ export async function clearCart(): Promise<CartOperationResult> {
 
 // Cart actions object for component usage
 export const cartActions = {
-    addToCart: async ({ productVariantId, quantity = 1 }: { productVariantId: string; quantity: number }) => {
-        return addToCart(productVariantId, quantity);
+    addToCart: async ({ productVariantId, quantity = 1, composites = [] }: {
+        productVariantId: string;
+        quantity: number;
+        composites?: Array<{
+            variantId: string;
+            name: string;
+            quantity: number;
+        }>;
+    }) => {
+        const formData = new FormData();
+        formData.append('productVariantId', productVariantId);
+        formData.append('quantity', quantity.toString());
+        if (composites.length > 0) {
+            formData.append('composites', JSON.stringify(composites));
+        }
+        return executeCartAction('addItem', formData);
     },
     updateItem: updateCartItem,
     removeItem: removeCartItem,

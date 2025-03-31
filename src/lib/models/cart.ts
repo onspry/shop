@@ -1,5 +1,12 @@
 import type { ProductVariantViewModel } from './product';
 
+export interface CartItemCompositeViewModel {
+    variantId: string;
+    name: string;
+    quantity: number;
+    variant: ProductVariantViewModel;
+}
+
 export interface CartItemViewModel {
     id: string;
     productVariantId: string;
@@ -8,6 +15,7 @@ export interface CartItemViewModel {
     variant: ProductVariantViewModel;
     imageUrl: string;
     name: string;
+    composites: CartItemCompositeViewModel[];
     product?: {
         id: string;
         name: string;
@@ -29,11 +37,21 @@ export interface CartViewModel {
 export interface AddToCartPayload {
     productVariantId: string;
     quantity: number;
+    composites?: Array<{
+        variantId: string;
+        name: string;
+        quantity: number;
+    }>;
 }
 
 export interface UpdateCartItemPayload {
     cartItemId: string;
     quantity: number;
+    composites?: Array<{
+        variantId: string;
+        name: string;
+        quantity: number;
+    }>;
 }
 
 export interface RemoveCartItemPayload {

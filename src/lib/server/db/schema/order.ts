@@ -8,18 +8,9 @@ import { orderStatusHistory } from './order-status-history';
 import { paymentTransaction } from './payment-transaction';
 import { refund } from './refund';
 import { inventoryTransaction } from './inventory-transaction';
+import { orderStatus } from './types';
 
-export const orderStatus = [
-    'pending_payment',
-    'payment_failed',
-    'processing',
-    'shipped',
-    'delivered',
-    'cancelled',
-    'refunded'
-] as const;
-
-export type OrderStatus = typeof orderStatus[number];
+export type { OrderStatus } from './types';
 
 export const order = t.sqliteTable('order', {
     id: t.text('id').primaryKey(),
