@@ -4,6 +4,7 @@
 	import { product_starting_at, product_view_details } from '$lib/paraglide/messages';
 	import { formatPrice } from '$lib/utils/price';
 	import { ImageOff } from 'lucide-svelte';
+	import { Button } from '$lib/components/ui/button';
 
 	let { product, class: className = '' } = $props<{
 		product: ProductViewModel;
@@ -61,20 +62,25 @@
 		{/if}
 	</div>
 
-	<!-- Text Overlay (Dark theme style) -->
-	<div class="absolute bottom-0 left-0 right-0 p-4">
-		<h3 class="text-lg font-medium text-white truncate">
+	<!-- Text Overlay (Theme aware) -->
+	<div class="absolute bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm">
+		<h3 class="text-lg font-medium text-foreground truncate">
 			{product?.name || 'Product Name'}
 		</h3>
-		<div class="flex items-baseline gap-2 mt-1">
-			{#if hasMultipleVariants}
-				<span class="text-xs text-white/70">
-					{product_starting_at()}
+		<div class="flex items-center justify-between gap-2 mt-1">
+			<div class="flex items-baseline gap-2">
+				{#if hasMultipleVariants}
+					<span class="text-xs text-muted-foreground">
+						{product_starting_at()}
+					</span>
+				{/if}
+				<span class="text-xl font-bold text-foreground">
+					{formatPrice(basePrice)}
 				</span>
-			{/if}
-			<span class="text-xl font-bold text-white">
-				{formatPrice(basePrice)}
-			</span>
+			</div>
+			<Button href="/products/{product?.slug || ''}" variant="default" size="sm" class="h-8 px-3">
+				{product_view_details({ name: product.name })}
+			</Button>
 		</div>
 	</div>
 

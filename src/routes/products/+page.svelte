@@ -116,16 +116,7 @@
 	<!-- Accessories Carousel -->
 	<div class="mt-8 mb-6 md:mt-12">
 		<h2 class="text-xl md:text-2xl font-bold mb-3 md:mb-4">More Accessories</h2>
-		<Carousel.Root
-			opts={{
-				align: 'start',
-				loop: true,
-				direction: 'rtl',
-				dragFree: true
-			}}
-			plugins={[autoplayPlugin]}
-			class="w-full"
-		>
+		<Carousel.Root>
 			<Carousel.Content class="-ml-4">
 				{#each accessories as product (product.id)}
 					<Carousel.Item class="pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5">
@@ -135,6 +126,8 @@
 					</Carousel.Item>
 				{/each}
 			</Carousel.Content>
+			<Carousel.Previous />
+			<Carousel.Next />
 		</Carousel.Root>
 	</div>
 </div>

@@ -8,6 +8,7 @@
 		CardHeader,
 		CardTitle
 	} from '$lib/components/ui/card';
+	import { Input } from '$lib/components/ui/input';
 	// Import directly from the index file
 	import * as TabsPrimitive from '$lib/components/ui/tabs/index';
 	import { superForm } from 'sveltekit-superforms/client';
@@ -184,13 +185,12 @@
 									<label for="guest-email" class="text-sm font-medium">
 										{m.checkout_email_label()}
 									</label>
-									<input
+									<Input
 										type="email"
 										id="guest-email"
 										name="email"
 										bind:value={guestEmail}
 										oninput={handleGuestEmailValidation}
-										class="w-full rounded-md border border-input bg-background px-3 py-2"
 										placeholder="your-email@example.com"
 										required
 									/>
@@ -217,7 +217,7 @@
 					</TabsList>
 					<TabsContent value="shipping" class="mt-6">
 						<ShippingForm
-							form={$shippingForm}
+							form={data.shippingForm}
 							errors={$shippingErrors}
 							{isAuthenticated}
 							userEmail={user?.email || ''}
