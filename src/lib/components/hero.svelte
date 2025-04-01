@@ -20,7 +20,7 @@
 			{m.keyboard_name()}
 		</h1>
 
-		<div class="w-full max-w-4xl mx-auto px-4 relative">
+		<div class="w-full relative">
 			{#if !imageLoaded && !imageError}
 				<div class="w-full aspect-[16/9] bg-muted animate-pulse rounded-lg"></div>
 			{/if}
@@ -42,9 +42,7 @@
 			{/if}
 		</div>
 
-		<p
-			class="max-w-2xl mx-auto text-xl text-foreground/80 dark:text-foreground/90 mt-8 px-4 text-center"
-		>
+		<p class="max-w-2xl text-xl text-foreground/80 dark:text-foreground/90 mt-8 text-center">
 			Ergonomic design meets refined craftsmanship.
 		</p>
 	</div>

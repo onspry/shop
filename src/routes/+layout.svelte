@@ -32,19 +32,19 @@
 		<header
 			class="sticky top-0 z-50 w-full h-[var(--header-height)] border-b bg-background/80 backdrop-blur-sm"
 		>
-			<div class="layout-container h-full">
+			<div class="max-w-[1600px] mx-auto w-full h-full px-4 sm:px-6 md:px-8 lg:px-12">
 				<Navbar />
 			</div>
 		</header>
 
-		<main class="flex-1 w-full py-8">
-			<div class="layout-container">
+		<main class="flex-1 w-full">
+			<div class="max-w-[1600px] mx-auto w-full h-full px-4 py-4 sm:px-6 md:px-8 lg:px-12">
 				{@render children()}
 			</div>
 		</main>
 
 		<footer class="w-full h-[var(--footer-height)] border-t bg-background/80 backdrop-blur-sm">
-			<div class="layout-container h-full">
+			<div class="max-w-[1600px] mx-auto w-full h-full px-4 sm:px-6 md:px-8 lg:px-12">
 				<Footer />
 			</div>
 		</footer>

@@ -1,10 +1,10 @@
 <script lang="ts">
 	import type { CatalogueViewModel } from '$lib/models/catalogue';
 	import ProductCard from '$lib/components/product-card.svelte';
-	import { Button } from '$lib/components/ui/button';
-	import { goto } from '$app/navigation';
-	import { browser } from '$app/environment';
-	import { ChevronLeft, ChevronRight } from 'lucide-svelte';
+	import type { ProductViewModel } from '$lib/models/product';
+	import * as Carousel from '$lib/components/ui/carousel/index.js';
+	import Autoplay from 'embla-carousel-autoplay';
+	import type { AutoplayType } from 'embla-carousel-autoplay';
 	import { onMount } from 'svelte';
 
 	let { data } = $props<{ data: { catalogue: CatalogueViewModel } }>();
@@ -21,83 +21,120 @@
 		return () => clearTimeout(timer);
 	});
 
-	// Calculate pagination - only run in browser
-	const currentPage = $state(
-		browser ? Number(new URL(window.location.href).searchParams.get('page')) || 1 : 1
-	);
-	const pageSize = $state(
-		browser ? Number(new URL(window.location.href).searchParams.get('pageSize')) || 50 : 50
-	);
-	const totalPages = $derived(Math.ceil(data.catalogue.totalProducts / pageSize));
-
-	// Handle page change
-	function handlePageChange(page: number) {
-		if (!browser) return;
-		const url = new URL(window.location.href);
-		url.searchParams.set('page', page.toString());
-		goto(url.toString(), { replaceState: true });
+	function getProductByCategory(category: string, index: number = 0): ProductViewModel | null {
+		const group = data?.catalogue?.productGroups?.find(
+			(g: { category?: string | null }) =>
+				(g.category || '').toUpperCase() === category.toUpperCase()
+		);
+		return group?.products?.[index] || null;
 	}
+
+	function getFallbackProduct(index: number = 0): ProductViewModel | null {
+		return data?.catalogue?.productGroups?.[0]?.products?.[index] || null;
+	}
+
+	// Get products for the layout, falling back if specific categories aren't found
+	const mainProduct = $derived(getProductByCategory('KEYBOARD') || getFallbackProduct(0));
+	const topAccessory = $derived(getProductByCategory('SWITCH') || getFallbackProduct(1));
+	const bottomAccessory = $derived(getProductByCategory('KEYCAP') || getFallbackProduct(2));
+
+	// Get all accessories for the carousel
+	let accessories = $state<ProductViewModel[]>([]);
+	$effect(() => {
+		const allProducts =
+			data?.catalogue?.productGroups?.flatMap(
+				(group: { products?: ProductViewModel[] }) => group.products || []
+			) || [];
+
+		// Filter out the main product (keyboard) to show only accessories
+		accessories = allProducts.filter(
+			(product: ProductViewModel) => product?.id !== mainProduct?.id && product?.id !== undefined
+		);
+	});
+
+	// Create an autoplay plugin with continuous movement
+	const autoplayPlugin = Autoplay({
+		delay: 2000,
+		stopOnInteraction: false,
+		playOnInit: true
+	}) as AutoplayType;
 </script>
 
-<div class="min-h-screen bg-background">
-	<div
-		class="container py-16 px-4 sm:px-6 lg:px-8 transition-opacity duration-500"
-		class:opacity-0={!contentVisible}
-		class:opacity-100={contentVisible}
-	>
-		{#if !data.catalogue || data.catalogue.productGroups.length === 0}
-			<div class="flex flex-col items-center justify-center py-16 text-muted-foreground">
-				<div class="text-2xl font-medium mb-4">No products available</div>
-				<p class="text-center">Check back later for new products</p>
+<div
+	class="transition-opacity duration-500"
+	class:opacity-0={!contentVisible}
+	class:opacity-100={contentVisible}
+>
+	<!-- Mobile view (stacked layout) -->
+	<div class="grid grid-cols-1 gap-4 sm:hidden">
+		{#if mainProduct}
+			<div class="aspect-square w-full">
+				<ProductCard product={mainProduct} class="h-full" />
 			</div>
-		{:else}
-			{#each data.catalogue.productGroups as group}
-				<section class="mb-24">
-					<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
-						<h2 class="text-4xl font-bold tracking-tight text-foreground mb-4 sm:mb-0">
-							{group.category}
-						</h2>
-						<div class="h-1 w-24 bg-primary rounded-full hidden sm:block"></div>
-					</div>
+		{/if}
 
-					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-						{#each group.products as product (product.id)}
-							<div class="transform transition-all duration-300 hover:scale-[1.02]">
-								<ProductCard {product} />
-							</div>
-						{/each}
-					</div>
-				</section>
-			{/each}
+		{#if topAccessory}
+			<div class="aspect-square w-full">
+				<ProductCard product={topAccessory} class="h-full" />
+			</div>
+		{/if}
 
-			<!-- Pagination -->
-			{#if totalPages > 1}
-				<div class="flex justify-center items-center gap-4 mt-16 mb-8">
-					<Button
-						variant="outline"
-						class="flex items-center gap-2 px-6"
-						disabled={currentPage === 1}
-						onclick={() => handlePageChange(currentPage - 1)}
-					>
-						<ChevronLeft class="h-4 w-4" />
-						Previous
-					</Button>
-					<div class="flex items-center gap-2 text-sm">
-						<span class="px-3 py-1 rounded-md bg-muted">{currentPage}</span>
-						<span class="text-muted-foreground">of</span>
-						<span class="px-3 py-1 rounded-md bg-muted">{totalPages}</span>
-					</div>
-					<Button
-						variant="outline"
-						class="flex items-center gap-2 px-6"
-						disabled={currentPage === totalPages}
-						onclick={() => handlePageChange(currentPage + 1)}
-					>
-						Next
-						<ChevronRight class="h-4 w-4" />
-					</Button>
+		{#if bottomAccessory}
+			<div class="aspect-square w-full">
+				<ProductCard product={bottomAccessory} class="h-full" />
+			</div>
+		{/if}
+	</div>
+
+	<!-- Desktop layout with right cards matching left card height -->
+	<div class="hidden sm:flex sm:flex-row gap-4 md:gap-6">
+		<!-- Main product -->
+		<div class="w-2/3">
+			{#if mainProduct}
+				<div class="aspect-[4/3] w-full h-full">
+					<ProductCard product={mainProduct} class="h-full" />
 				</div>
 			{/if}
-		{/if}
+		</div>
+
+		<!-- Right accessory column - sized to match height of main product exactly -->
+		<div class="w-1/3 flex flex-col gap-4 md:gap-6">
+			<div class="flex-1">
+				{#if topAccessory}
+					<ProductCard product={topAccessory} class="h-full" />
+				{/if}
+			</div>
+
+			<div class="flex-1">
+				{#if bottomAccessory}
+					<ProductCard product={bottomAccessory} class="h-full" />
+				{/if}
+			</div>
+		</div>
+	</div>
+
+	<!-- Accessories Carousel -->
+	<div class="mt-8 mb-6 md:mt-12">
+		<h2 class="text-xl md:text-2xl font-bold mb-3 md:mb-4">More Accessories</h2>
+		<Carousel.Root
+			opts={{
+				align: 'start',
+				loop: true,
+				direction: 'rtl',
+				dragFree: true
+			}}
+			plugins={[autoplayPlugin]}
+			class="w-full"
+		>
+			<Carousel.Content class="-ml-4">
+				{#each accessories as product (product.id)}
+					<Carousel.Item class="pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5">
+						<div class="p-1 aspect-square w-full">
+							<ProductCard {product} class="h-full" />
+						</div>
+					</Carousel.Item>
+				{/each}
+			</Carousel.Content>
+		</Carousel.Root>
 	</div>
 </div>

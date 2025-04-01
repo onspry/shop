@@ -2,7 +2,7 @@
 	import { Button } from '$lib/components/ui/button';
 </script>
 
-<div class="w-full max-w-4xl mx-auto py-12 px-4 space-y-12">
+<div class="space-y-12">
 	<div class="space-y-4">
 		<h1 class="text-4xl font-bold">Our Story</h1>
 		<div class="prose prose-lg dark:prose-invert max-w-none">

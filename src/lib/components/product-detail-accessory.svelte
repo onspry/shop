@@ -333,8 +333,8 @@
 
 					{#if addedToCart}
 						<div class="flex justify-between gap-2 mt-2">
-							<Button variant="outline" class="flex-1" href="/cart">View Cart</Button>
-							<Button variant="outline" class="flex-1" href="/checkout">Checkout</Button>
+							<Button variant="outline" class="flex-1" href="/cart">{m.view_cart()}</Button>
+							<Button variant="outline" class="flex-1" href="/checkout">{m.checkout()}</Button>
 						</div>
 					{/if}
 				</div>

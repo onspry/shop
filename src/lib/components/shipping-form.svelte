@@ -84,12 +84,12 @@
 	}
 </script>
 
-<div class="space-y-6">
+<div class="space-y-8">
 	<!-- Shipping Address -->
-	<div class="space-y-4">
-		<h3 class="font-medium">{m.checkout_delivery_address()}</h3>
-		<div class="grid gap-4">
-			<div class="grid grid-cols-2 gap-4">
+	<div class="space-y-6">
+		<h3 class="text-lg font-medium">{m.checkout_delivery_address()}</h3>
+		<div class="grid gap-6">
+			<div class="grid grid-cols-2 gap-6">
 				<div class="grid gap-2">
 					<Label for="firstName">{m.checkout_first_name()}</Label>
 					<Input
@@ -97,6 +97,7 @@
 						bind:value={formData.firstName}
 						placeholder="John"
 						required
+						class="bg-muted/5 border-0 focus-visible:ring-1"
 						aria-invalid={errors?.firstName?.[0] ? 'true' : undefined}
 					/>
 					{#if errors?.firstName?.[0]}
@@ -110,6 +111,7 @@
 						bind:value={formData.lastName}
 						placeholder="Doe"
 						required
+						class="bg-muted/5 border-0 focus-visible:ring-1"
 						aria-invalid={errors?.lastName?.[0] ? 'true' : undefined}
 					/>
 					{#if errors?.lastName?.[0]}
@@ -124,6 +126,7 @@
 					bind:value={formData.addressLine1}
 					placeholder="123 Main St"
 					required
+					class="bg-muted/5 border-0 focus-visible:ring-1"
 					aria-invalid={errors?.addressLine1?.[0] ? 'true' : undefined}
 				/>
 				{#if errors?.addressLine1?.[0]}
@@ -132,9 +135,14 @@
 			</div>
 			<div class="grid gap-2">
 				<Label for="addressLine2">{m.checkout_apartment()}</Label>
-				<Input id="addressLine2" bind:value={formData.addressLine2} placeholder="Apt 4B" />
+				<Input
+					id="addressLine2"
+					bind:value={formData.addressLine2}
+					placeholder="Apt 4B"
+					class="bg-muted/5 border-0 focus-visible:ring-1"
+				/>
 			</div>
-			<div class="grid grid-cols-3 gap-4">
+			<div class="grid grid-cols-3 gap-6">
 				<div class="grid gap-2">
 					<Label for="city">{m.checkout_city()}</Label>
 					<Input
@@ -142,6 +150,7 @@
 						bind:value={formData.city}
 						placeholder="New York"
 						required
+						class="bg-muted/5 border-0 focus-visible:ring-1"
 						aria-invalid={errors?.city?.[0] ? 'true' : undefined}
 					/>
 					{#if errors?.city?.[0]}
@@ -155,6 +164,7 @@
 						bind:value={formData.state}
 						placeholder="NY"
 						required
+						class="bg-muted/5 border-0 focus-visible:ring-1"
 						aria-invalid={errors?.state?.[0] ? 'true' : undefined}
 					/>
 					{#if errors?.state?.[0]}
@@ -168,6 +178,7 @@
 						bind:value={formData.postalCode}
 						placeholder="10001"
 						required
+						class="bg-muted/5 border-0 focus-visible:ring-1"
 						aria-invalid={errors?.postalCode?.[0] ? 'true' : undefined}
 					/>
 					{#if errors?.postalCode?.[0]}
@@ -176,12 +187,13 @@
 				</div>
 			</div>
 			<div class="grid gap-2">
-				<Label for="country">Country</Label>
+				<Label for="country">{m.country()}</Label>
 				<Input
 					id="country"
 					bind:value={formData.country}
 					placeholder="United States"
 					required
+					class="bg-muted/5 border-0 focus-visible:ring-1"
 					aria-invalid={errors?.country?.[0] ? 'true' : undefined}
 				/>
 				{#if errors?.country?.[0]}
@@ -195,6 +207,7 @@
 					type="tel"
 					bind:value={formData.phone}
 					placeholder="(555) 555-5555"
+					class="bg-muted/5 border-0 focus-visible:ring-1"
 					aria-invalid={errors?.phone?.[0] ? 'true' : undefined}
 				/>
 				{#if errors?.phone?.[0]}
@@ -205,13 +218,13 @@
 	</div>
 
 	<!-- Shipping Method -->
-	<div class="space-y-4 pt-6 border-t">
-		<h3 class="font-medium">{m.checkout_shipping_method()}</h3>
+	<div class="space-y-6">
+		<h3 class="text-lg font-medium">{m.checkout_shipping_method()}</h3>
 		<div class="space-y-4">
 			{#each shippingMethods as method}
 				<button
 					type="button"
-					class={`w-full text-left flex items-start gap-4 p-4 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors ${selectedShippingMethod === method.id ? 'bg-muted/50' : ''}`}
+					class={`w-full text-left flex items-start gap-4 p-4 rounded-lg bg-muted/5 cursor-pointer hover:bg-muted/10 transition-colors ${selectedShippingMethod === method.id ? 'ring-1 ring-primary' : ''}`}
 					onclick={() => (selectedShippingMethod = method.id)}
 					onkeydown={(e) => e.key === 'Enter' && (selectedShippingMethod = method.id)}
 				>

@@ -87,6 +87,10 @@
 	"cart_total": "Total",
 	"cart_checkout": "Proceed to Checkout",
 	"cart_checkout_info": "Shipping and taxes will be calculated at checkout. We accept credit cards, PayPal, and Apple Pay.",
+	"cart_estimated_delivery": "Estimated delivery",
+	"cart_proceed_to_checkout": "Proceed to Checkout",
+	"cart_terms_agreement": "By proceeding to checkout, you agree to our terms of service",
+	"cart_secure_transaction": "This is a secure, encrypted transaction",
 	"cart_checkout_terms": "By proceeding to checkout, you agree to our terms of service",
 	"cart_update": "Update",
 	"cart_remove": "Remove",
@@ -181,5 +185,11 @@
 	"orders_order_number": "Order #{number}",
 	"orders_placed_on": "Placed on {date}",
 	"orders_quantity": "Quantity: {quantity}",
-	"orders_shipping_address": "Shipping Address"
+	"orders_shipping_address": "Shipping Address",
+	"view_cart": "View Cart",
+	"checkout": "Checkout",
+	"simulate_successful_payment": "Simulate Successful Payment",
+	"simulate_failed_payment": "Simulate Failed Payment",
+	"country": "Country",
+	"password": "Password"
 }

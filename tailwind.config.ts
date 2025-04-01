@@ -52,6 +52,12 @@ export default {
                 card: {
                     DEFAULT: 'hsl(var(--card))',
                     foreground: 'hsl(var(--card-foreground))'
+                },
+                custom: {
+                    grey: {
+                        light: 'rgb(250, 250, 250)',
+                        dark: 'rgb(154, 154, 154)'
+                    }
                 }
             }
         }

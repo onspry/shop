@@ -159,13 +159,13 @@
 						{/if}
 					</div>
 					<div class="grid gap-2">
-						<Label for="password">Password</Label>
+						<Label for="password">{m.password()}</Label>
 						<Input
 							id="password"
 							name="password"
 							type="password"
 							bind:value={$form.password}
-							placeholder="Enter your password"
+							placeholder={m.checkout_password_placeholder()}
 							autocomplete="current-password"
 							aria-invalid={$errors.password ? 'true' : undefined}
 							disabled={$submitting || loadingProvider !== null}

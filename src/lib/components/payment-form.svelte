@@ -26,13 +26,13 @@
 			class="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md"
 			onclick={() => handlePayment(true)}
 		>
-			Simulate Successful Payment
+			{m.simulate_successful_payment()}
 		</button>
 		<button
 			class="bg-destructive text-destructive-foreground hover:bg-destructive/90 px-4 py-2 rounded-md"
 			onclick={() => handlePayment(false)}
 		>
-			Simulate Failed Payment
+			{m.simulate_failed_payment()}
 		</button>
 	</div>
 </div>

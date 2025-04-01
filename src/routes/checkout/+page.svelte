@@ -135,139 +135,151 @@
 	);
 </script>
 
-<div class="container mx-auto px-4 py-8">
-	<h1 class="text-3xl font-bold mb-8">{m.checkout_title()}</h1>
+<div class="space-y-12">
+	<div class="space-y-4">
+		<h1 class="text-4xl font-bold">{m.checkout_title()}</h1>
 
-	<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-		<!-- Main checkout flow -->
-		<div class="lg:col-span-2">
-			{#if !isAuthenticated}
-				<div class="flex flex-col gap-6 mb-8">
-					<!-- Sign In Option -->
-					<div
-						class="bg-muted/40 p-6 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-4"
-					>
-						<div class="flex items-center gap-2">
-							<User size={20} />
-							<span class="font-medium">{m.checkout_have_account()}</span>
-						</div>
-						<Button
-							variant="outline"
-							href="/auth/login?redirect=/checkout"
-							class="w-full sm:w-auto"
+		<div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+			<!-- Main checkout flow -->
+			<div class="lg:col-span-2">
+				{#if !isAuthenticated}
+					<div class="flex flex-col gap-6 mb-8">
+						<!-- Sign In Option -->
+						<div
+							class="bg-muted/40 p-6 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-4"
 						>
-							{m.sign_in()}
-						</Button>
-					</div>
+							<div class="flex items-center gap-2">
+								<User size={20} />
+								<span class="font-medium">{m.checkout_have_account()}</span>
+							</div>
+							<Button
+								variant="outline"
+								href="/auth/login?redirect=/checkout"
+								class="w-full sm:w-auto"
+							>
+								{m.sign_in()}
+							</Button>
+						</div>
 
-					<!-- Guest Checkout -->
-					<div class="relative">
-						<div class="absolute inset-0 flex items-center">
-							<div class="w-full border-t border-muted-foreground/20">
-								<CardDescription>{m.checkout_guest_description()}</CardDescription>
+						<!-- Guest Checkout -->
+						<div class="relative">
+							<div class="absolute inset-0 flex items-center">
+								<div class="w-full border-t border-muted-foreground/20"></div>
+							</div>
+							<div class="relative flex justify-center text-xs uppercase">
+								<span class="bg-background px-2 text-muted-foreground">{m.checkout_or()}</span>
 							</div>
 						</div>
-						<div class="relative flex justify-center text-xs uppercase">
-							<span class="bg-background px-2 text-muted-foreground">{m.checkout_or()}</span>
-						</div>
-					</div>
 
-					<Card>
-						<CardHeader>
-							<CardTitle>{m.checkout_guest_title()}</CardTitle>
-							<CardDescription>
-								{m.checkout_guest_description()}
-								{m.checkout_email_description()}
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<div class="space-y-2">
-								<label for="guest-email" class="text-sm font-medium">
-									{m.checkout_email_label()}
-								</label>
-								<input
-									type="email"
-									id="guest-email"
-									name="email"
-									bind:value={guestEmail}
-									oninput={handleGuestEmailValidation}
-									class="w-full rounded-md border border-input bg-background px-3 py-2"
-									placeholder="your-email@example.com"
-									required
+						<Card class="border-0 bg-muted/5">
+							<CardHeader>
+								<CardTitle>{m.checkout_guest_title()}</CardTitle>
+								<CardDescription>
+									{m.checkout_guest_description()}
+									{m.checkout_email_description()}
+								</CardDescription>
+							</CardHeader>
+							<CardContent>
+								<div class="space-y-2">
+									<label for="guest-email" class="text-sm font-medium">
+										{m.checkout_email_label()}
+									</label>
+									<input
+										type="email"
+										id="guest-email"
+										name="email"
+										bind:value={guestEmail}
+										oninput={handleGuestEmailValidation}
+										class="w-full rounded-md border border-input bg-background px-3 py-2"
+										placeholder="your-email@example.com"
+										required
+									/>
+									{#if guestError}
+										<p class="text-sm text-destructive">{guestError}</p>
+									{/if}
+									<p class="text-sm text-muted-foreground">
+										{m.checkout_email_usage_hint()}
+									</p>
+								</div>
+							</CardContent>
+						</Card>
+					</div>
+				{/if}
+
+				<Tabs value={activeTab} onValueChange={(value) => (activeTab = value)} class="w-full">
+					<TabsList class="grid w-full grid-cols-2">
+						<TabsTrigger value="shipping" disabled={!isAuthenticated && !emailValidated}>
+							{m.checkout_tab_shipping()}
+						</TabsTrigger>
+						<TabsTrigger value="payment" disabled={!shippingValidated}>
+							{m.checkout_tab_payment()}
+						</TabsTrigger>
+					</TabsList>
+					<TabsContent value="shipping" class="mt-6">
+						<ShippingForm
+							form={$shippingForm}
+							errors={$shippingErrors}
+							{isAuthenticated}
+							userEmail={user?.email || ''}
+							{guestEmail}
+							onContinue={handleContinueToPayment}
+							onShippingCostUpdate={handleShippingCostUpdate}
+						/>
+					</TabsContent>
+					<TabsContent value="payment" class="mt-6">
+						<Card class="border-0 bg-muted/5">
+							<CardHeader>
+								<h2 class="text-2xl font-semibold">{m.checkout_tab_payment()}</h2>
+							</CardHeader>
+							<CardContent>
+								<PaymentForm
+									onPayment={(event) => {
+										if (event.success) {
+											// TODO: Handle successful payment
+										} else {
+											// TODO: Handle payment error
+										}
+									}}
 								/>
-								{#if guestError}
-									<p class="text-sm text-destructive">{guestError}</p>
-								{/if}
-								<p class="text-sm text-muted-foreground">
-									{m.checkout_email_usage_hint()}
-								</p>
-							</div>
-						</CardContent>
-					</Card>
-				</div>
-			{/if}
+							</CardContent>
+						</Card>
+					</TabsContent>
+				</Tabs>
+			</div>
 
-			<Tabs value={activeTab} onValueChange={(value) => (activeTab = value)} class="w-full">
-				<TabsList class="grid w-full grid-cols-2">
-					<TabsTrigger value="shipping" disabled={!isAuthenticated && !emailValidated}>
-						{m.checkout_tab_shipping()}
-					</TabsTrigger>
-					<TabsTrigger value="payment" disabled={!shippingValidated}>
-						{m.checkout_tab_payment()}
-					</TabsTrigger>
-				</TabsList>
-				<TabsContent value="shipping" class="space-y-6">
-					<ShippingForm
-						form={$shippingForm}
-						errors={$shippingErrors}
-						{isAuthenticated}
-						userEmail={user?.email || ''}
-						{guestEmail}
-						onContinue={handleContinueToPayment}
-						onShippingCostUpdate={handleShippingCostUpdate}
-					/>
-				</TabsContent>
-				<TabsContent value="payment">
-					<Card>
-						<CardHeader>
-							<h2 class="text-2xl font-semibold">{m.checkout_tab_payment()}</h2>
-						</CardHeader>
-						<CardContent>
-							<PaymentForm
-								onPayment={(event) => {
-									if (event.success) {
-										// TODO: Handle successful payment
-									} else {
-										// TODO: Handle payment error
-									}
-								}}
-							/>
-						</CardContent>
-					</Card>
-				</TabsContent>
-			</Tabs>
-		</div>
+			<!-- Order summary -->
+			<div class="lg:col-span-1">
+				<div class="bg-background rounded-lg p-6 space-y-6">
+					<div class="flex items-center gap-2">
+						<ShoppingBag class="h-6 w-6" />
+						<h2 class="text-2xl font-semibold">{m.checkout_order_summary()}</h2>
+					</div>
 
-		<!-- Order summary -->
-		<div class="lg:col-span-1">
-			<Card>
-				<CardHeader>
-					<CardTitle>{m.checkout_order_summary()}</CardTitle>
-				</CardHeader>
-				<CardContent class="space-y-4">
+					<div class="text-sm text-muted-foreground">
+						<div class="flex justify-between mb-1">
+							<span
+								>{data.cart.items.length}
+								{data.cart.items.length === 1 ? 'item' : 'items'} in cart</span
+							>
+							<span
+								>{data.cart.items.reduce((sum: number, item: any) => sum + item.quantity, 0)} units total</span
+							>
+						</div>
+					</div>
+
 					<!-- Cart items summary -->
-					<div class="space-y-3">
+					<div class="space-y-6">
 						{#each data.cart.items as item}
-							<div class="flex justify-between items-start py-2 border-b">
+							<div class="flex justify-between items-start">
 								<div class="flex-1">
-									<div class="flex gap-3">
+									<div class="flex gap-4">
 										<div class="relative">
 											<div
 												class="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium shadow-sm z-10"
 											>
 												{item.quantity}
 											</div>
-											<div class="relative w-12 h-12 overflow-hidden rounded-md">
+											<div class="relative w-12 h-12 overflow-hidden rounded-md bg-muted/10">
 												{#if imageStates.get(item.id)?.error}
 													<div class="absolute inset-0 flex items-center justify-center bg-muted">
 														<ImageOff class="h-4 w-4 text-muted-foreground" />
@@ -312,31 +324,30 @@
 					</div>
 
 					<!-- Price breakdown -->
-					<div class="space-y-1 pt-4">
-						<div class="flex justify-between text-sm">
-							<span class="text-muted-foreground">{m.cart_subtotal()}</span>
-							<span>{formatPrice(data.cart.subtotal)}</span>
-						</div>
-
-						{#if data.cart.discountAmount > 0}
-							<div class="flex justify-between text-sm text-green-600 dark:text-green-400">
-								<span>{m.cart_discount()}</span>
-								<span>-{formatPrice(data.cart.discountAmount)}</span>
-							</div>
-						{/if}
-
-						<!-- Shipping cost -->
-						<div class="flex justify-between text-sm">
-							<span class="text-muted-foreground">{m.cart_shipping()}</span>
+					<div class="space-y-4 pt-4">
+						<div class="flex justify-between text-muted-foreground">
+							<span>{m.cart_shipping()}</span>
 							{#if !shippingValidated}
-								<span class="text-muted-foreground">{m.cart_calculated_at_next_step()}</span>
+								<span>{m.cart_calculated_at_next_step()}</span>
 							{:else}
 								<span>{formatPrice(shippingCost)}</span>
 							{/if}
 						</div>
 
+						<div class="flex justify-between text-muted-foreground">
+							<span>{m.cart_tax()}</span>
+							<span>{m.cart_calculated_at_next_step()}</span>
+						</div>
+
+						{#if data.cart.discountAmount > 0}
+							<div class="flex justify-between text-green-600 dark:text-green-400">
+								<span>{m.cart_discount()}</span>
+								<span>-{formatPrice(data.cart.discountAmount)}</span>
+							</div>
+						{/if}
+
 						<!-- Total -->
-						<div class="flex justify-between font-bold text-base pt-3 mt-3 border-t">
+						<div class="flex justify-between text-xl font-semibold pt-4 mt-4 border-t">
 							<span>{m.cart_total()}</span>
 							<span>{formatPrice(orderTotal)}</span>
 						</div>
@@ -344,19 +355,16 @@
 
 					<!-- Estimated delivery -->
 					{#if shippingValidated}
-						<div class="flex flex-col pt-4 border-t">
-							<div class="flex items-center gap-2">
-								<div class="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
-									<Truck size={14} className="text-primary" />
-								</div>
-								<span class="font-medium">{m.checkout_estimated_delivery()}</span>
-								<span class="text-muted-foreground">•</span>
-								<span class="text-muted-foreground">
-									{estimatedDays}
-									{m.shipping_business_days()}
-								</span>
+						<div class="pt-4">
+							<div class="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+								<Truck class="h-4 w-4" />
+								<span>{m.checkout_estimated_delivery()}</span>
 							</div>
-							<div class="mt-2 text-xs text-muted-foreground space-y-0.5 ml-7">
+							<p class="text-sm font-medium">
+								{estimatedDays}
+								{m.shipping_business_days()}
+							</p>
+							<div class="mt-2 text-xs text-muted-foreground space-y-0.5">
 								<p class="font-medium">{m.checkout_delivery_address()}</p>
 								<p>{$shippingForm.firstName} {$shippingForm.lastName}</p>
 								<p>
@@ -370,11 +378,13 @@
 							</div>
 						</div>
 					{/if}
-				</CardContent>
-				<CardFooter class="text-xs text-muted-foreground text-center">
-					{m.checkout_secure_transaction()}
-				</CardFooter>
-			</Card>
+
+					<div class="text-xs text-muted-foreground/60 text-center space-y-1.5">
+						<p>{m.cart_terms_agreement()}</p>
+						<p>{m.checkout_secure_transaction()}</p>
+					</div>
+				</div>
+			</div>
 		</div>
 	</div>
 </div>

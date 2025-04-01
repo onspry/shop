@@ -112,9 +112,9 @@
 </script>
 
 <div class="relative">
-	<div class="flex border rounded-lg overflow-hidden bg-background">
+	<div class="flex bg-background rounded-lg p-4 hover:shadow-sm transition-shadow">
 		<div class="w-32 h-32 flex-shrink-0 relative">
-			<div class="relative aspect-square h-full overflow-hidden">
+			<div class="relative aspect-square h-full overflow-hidden rounded-md bg-muted/5">
 				{#if imageError}
 					<div class="absolute inset-0 flex items-center justify-center bg-muted">
 						<ImageOff class="h-8 w-8 text-muted-foreground" />
@@ -138,14 +138,14 @@
 			</div>
 		</div>
 
-		<div class="flex-1 p-4 flex flex-col justify-between">
+		<div class="flex-1 pl-6 flex flex-col justify-between">
 			<div class="flex justify-between">
 				<div>
-					<h3 class="font-medium text-sm sm:text-base">{variantName}</h3>
+					<h3 class="font-medium text-base">{variantName}</h3>
 					{#if item.composites && item.composites.length > 0}
-						<div class="mt-1 space-y-1">
+						<div class="mt-2 space-y-1">
 							{#each item.composites as composite}
-								<p class="text-xs text-muted-foreground">{composite.name}</p>
+								<p class="text-sm text-muted-foreground">{composite.name}</p>
 							{/each}
 						</div>
 					{/if}
@@ -164,7 +164,7 @@
 			</div>
 
 			<div class="mt-4 flex justify-between items-center">
-				<div class="flex items-center space-x-1">
+				<div class="flex items-center space-x-2 bg-muted/5 rounded-md p-1">
 					<Button
 						class="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
 						variant="ghost"
@@ -175,7 +175,7 @@
 						<Minus class="h-4 w-4" />
 					</Button>
 
-					<span class="w-8 text-center text-sm">{quantity}</span>
+					<span class="w-8 text-center text-sm font-medium">{quantity}</span>
 
 					<Button
 						class="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
@@ -189,7 +189,7 @@
 				</div>
 
 				<div class="text-right">
-					<span class="font-medium">{formatPrice(price * quantity)}</span>
+					<span class="font-medium text-lg">{formatPrice(price * quantity)}</span>
 				</div>
 			</div>
 		</div>
