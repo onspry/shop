@@ -8,24 +8,19 @@ import { cartRepository } from "$lib/server/repositories/cart";
 import { Providers } from "$lib/server/db";
 
 export async function GET(event: RequestEvent): Promise<Response> {
-    console.log('[GITHUB-OAUTH] ==================== START GITHUB OAUTH CALLBACK ====================');
-
     // Get the stored redirect URL from the cookie
     const redirectTo = event.cookies.get('oauth_redirect') || '/';
-    console.log(`[GITHUB-OAUTH] Stored redirect URL: ${redirectTo}`);
 
     // Check code and state
     const code = event.url.searchParams.get("code");
     const state = event.url.searchParams.get("state");
     const storedState = event.cookies.get("github_oauth_state") ?? null;
     if (code === null || state === null || storedState === null) {
-        console.log('[GITHUB-OAUTH] Missing code, state, or stored state');
         return new Response(null, {
             status: 400
         });
     }
     if (state !== storedState) {
-        console.log('[GITHUB-OAUTH] State mismatch');
         return new Response(null, {
             status: 400
         });
@@ -35,8 +30,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
     let tokens: OAuth2Tokens;
     try {
         tokens = await github.validateAuthorizationCode(code);
-    } catch (error) {
-        console.log('[GITHUB-OAUTH] Invalid authorization code:', error);
+    } catch {
         return new Response(null, {
             status: 400
         });
@@ -59,41 +53,27 @@ export async function GET(event: RequestEvent): Promise<Response> {
     // Use the preserved cart session if available and current is empty
     if (!cartSessionId && preservedCartSessionId) {
         cartSessionId = preservedCartSessionId;
-        console.log(`[GITHUB-OAUTH] Restored cart session from preserved cookie: "${cartSessionId}"`);
-    } else if (cartSessionId) {
-        console.log(`[GITHUB-OAUTH] Using existing cart session cookie: "${cartSessionId}"`);
-    } else {
-        console.log(`[GITHUB-OAUTH] No cart session found in cookies`);
     }
-
-    // Log all current cookies for debugging
-    const allCookies = event.request.headers.get('cookie') || '';
-    console.log(`[GITHUB-OAUTH] All cookies before auth: ${allCookies}`);
 
     // If no cart session exists yet, create one now
     if (!cartSessionId) {
         cartSessionId = `session_${randomUUID()}`;
-        console.log(`[GITHUB-OAUTH] Created new cart session: "${cartSessionId}"`);
     }
 
     // Clean up the temporary preserved cart session cookie
     if (preservedCartSessionId) {
         event.cookies.delete('preserved_cart_session', { path: '/' });
-        console.log(`[GITHUB-OAUTH] Cleaned up preserved cart session cookie`);
     }
 
     // First check for existing user by provider ID
     const existingUser = await userRepo.getByProviderId(Providers.GITHUB, githubUserId.toString());
     if (existingUser) {
-        console.log(`[GITHUB-OAUTH] Found existing user: ${existingUser.id}`);
-
         // Set auth session token
         const sessionToken = generateSessionToken();
         const session = await createSession(sessionToken, existingUser.id);
 
         // Now handle cart merge
-        const cartId = await cartRepository.handleUserLoginMerge(cartSessionId, existingUser.id);
-        console.log(`[GITHUB-OAUTH] Cart merge complete, resulting cart ID: ${cartId || 'none'}`);
+        await cartRepository.handleUserLoginMerge(cartSessionId, existingUser.id);
 
         // CRITICAL BUGFIX: Use redirect with SvelteKit's cookies API instead of manual Response
         event.cookies.set('auth-session', sessionToken, {
@@ -112,10 +92,6 @@ export async function GET(event: RequestEvent): Promise<Response> {
             secure: process.env.NODE_ENV === 'production',
             maxAge: 60 * 60 * 24 * 30 // 30 days
         });
-
-        console.log(`[GITHUB-OAUTH] Set cookies using SvelteKit cookies API - auth-session and cart-session: "${cartSessionId}"`);
-        console.log(`[GITHUB-OAUTH] Redirecting to: ${redirectTo}`);
-        console.log('[GITHUB-OAUTH] ==================== END GITHUB OAUTH CALLBACK ====================');
 
         // Clean up OAuth cookies
         event.cookies.delete('oauth_redirect', { path: '/' });
@@ -140,9 +116,6 @@ export async function GET(event: RequestEvent): Promise<Response> {
             attempted_provider: 'github'
         });
 
-        console.log(`[GITHUB-OAUTH] Email exists with different provider: ${primaryEmail}`);
-        console.log('[GITHUB-OAUTH] ==================== END GITHUB OAUTH CALLBACK ====================');
-
         return new Response(null, {
             status: 302,
             headers: {
@@ -152,7 +125,6 @@ export async function GET(event: RequestEvent): Promise<Response> {
     }
 
     // Create new user
-    console.log(`[GITHUB-OAUTH] Creating new user for GitHub user ID: ${githubUserId}`);
     const newUser = await userRepo.create({
         id: randomUUID(),
         provider: Providers.GITHUB,
@@ -176,8 +148,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
     const session = await createSession(sessionToken, newUser.id);
 
     // Handle cart merging
-    const cartId = await cartRepository.handleUserLoginMerge(cartSessionId, newUser.id);
-    console.log(`[GITHUB-OAUTH] Cart merge complete, resulting cart ID: ${cartId || 'none'}`);
+    await cartRepository.handleUserLoginMerge(cartSessionId, newUser.id);
 
     // CRITICAL BUGFIX: Use redirect with SvelteKit's cookies API instead of manual Response
     event.cookies.set('auth-session', sessionToken, {
@@ -196,10 +167,6 @@ export async function GET(event: RequestEvent): Promise<Response> {
         secure: process.env.NODE_ENV === 'production',
         maxAge: 60 * 60 * 24 * 30 // 30 days
     });
-
-    console.log(`[GITHUB-OAUTH] Set cookies using SvelteKit cookies API - auth-session and cart-session: "${cartSessionId}"`);
-    console.log(`[GITHUB-OAUTH] Redirecting to: ${redirectTo}`);
-    console.log('[GITHUB-OAUTH] ==================== END GITHUB OAUTH CALLBACK ====================');
 
     // Clean up OAuth cookies
     event.cookies.delete('oauth_redirect', { path: '/' });

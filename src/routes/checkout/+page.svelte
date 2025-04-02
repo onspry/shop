@@ -4,7 +4,6 @@
 		Card,
 		CardContent,
 		CardDescription,
-		CardFooter,
 		CardHeader,
 		CardTitle
 	} from '$lib/components/ui/card';
@@ -12,19 +11,19 @@
 	// Import directly from the index file
 	import * as TabsPrimitive from '$lib/components/ui/tabs/index';
 	import { superForm } from 'sveltekit-superforms/client';
+	import { enhance } from '$app/forms';
 	import { zod } from 'sveltekit-superforms/adapters';
 	import { loginSchema } from '$lib/schemas/auth';
 	import { shippingSchema } from '$lib/schemas/shipping';
 	import * as m from '$lib/paraglide/messages';
 	import { formatPrice } from '$lib/utils/price';
-	import LoadingSpinner from '$lib/components/loading-spinner.svelte';
 	import { ShoppingBag, User, Truck, ImageOff } from 'lucide-svelte';
-	import type { SuperValidated } from 'sveltekit-superforms';
 	import type { z } from 'zod';
 	import ShippingForm from '$lib/components/shipping-form.svelte';
 	import PaymentForm from '$lib/components/payment-form.svelte';
 	import type { PageData } from './$types';
 	import { userStore } from '$lib/stores/auth';
+	import { browser } from '$app/environment';
 
 	// Extract the components from TabsPrimitive
 	const { Tabs, TabsContent, TabsList, TabsTrigger } = TabsPrimitive;
@@ -34,21 +33,8 @@
 	const isAuthenticated = $derived(!!user);
 
 	// Initialize forms with proper types
-	const {
-		form: loginForm,
-		errors: loginErrors,
-		enhance: loginEnhance
-	} = superForm<z.infer<typeof loginSchema>>(data.form, {
+	const {} = superForm<z.infer<typeof loginSchema>>(data.form, {
 		validators: zod(loginSchema),
-		validationMethod: 'auto'
-	});
-
-	const {
-		form: shippingForm,
-		errors: shippingErrors,
-		enhance: shippingEnhance
-	} = superForm<z.infer<typeof shippingSchema>>(data.shippingForm, {
-		validators: zod(shippingSchema),
 		validationMethod: 'auto'
 	});
 
@@ -57,34 +43,30 @@
 	let shippingValidated = $state(false);
 	let emailValidated = $state(false);
 	let imageStates = $state(new Map<string, { error: boolean; loaded: boolean }>());
-
-	// Derived state for shipping form validation
-	let isShippingValid = $derived(
-		$shippingForm.firstName?.trim() &&
-			$shippingForm.lastName?.trim() &&
-			$shippingForm.addressLine1?.trim() &&
-			$shippingForm.city?.trim() &&
-			$shippingForm.state?.trim() &&
-			$shippingForm.postalCode?.trim() &&
-			$shippingForm.country?.trim() &&
-			Object.keys($shippingErrors).length === 0
-	);
-
-	// State for guest checkout
-	let guestSubmitting = $state(false);
 	let guestError = $state('');
 
 	// Shipping cost and estimated days from the shipping form component
 	let shippingCost = $state(0);
 	let estimatedDays = $state('');
+	let shippingAddress = $state<{
+		firstName: string;
+		lastName: string;
+		addressLine1: string;
+		addressLine2?: string;
+		city: string;
+		state?: string;
+		postalCode: string;
+		country: string;
+	} | null>(null);
 
 	function handleShippingCostUpdate(cost: number, days: string) {
 		shippingCost = cost;
 		estimatedDays = days;
 	}
 
-	function handleContinueToPayment() {
+	function handleContinueToPayment(address: typeof shippingAddress) {
 		shippingValidated = true;
+		shippingAddress = address;
 		activeTab = 'payment';
 	}
 
@@ -92,28 +74,8 @@
 	async function handleGuestEmailValidation(event: Event) {
 		const input = event.target as HTMLInputElement;
 		if (input.validity.valid && guestEmail) {
-			try {
-				const formData = new FormData();
-				formData.append('email', guestEmail);
-
-				const response = await fetch('?/guestCheckout', {
-					method: 'POST',
-					body: formData
-				});
-
-				const result = await response.json();
-
-				if (response.ok) {
-					emailValidated = true;
-					guestError = '';
-				} else {
-					guestError = result.message || m.checkout_error_guest();
-					emailValidated = false;
-				}
-			} catch (error) {
-				guestError = m.checkout_error_guest();
-				emailValidated = false;
-			}
+			emailValidated = true;
+			guestError = '';
 		} else {
 			emailValidated = false;
 		}
@@ -181,26 +143,47 @@
 								</CardDescription>
 							</CardHeader>
 							<CardContent>
-								<div class="space-y-2">
-									<label for="guest-email" class="text-sm font-medium">
-										{m.checkout_email_label()}
-									</label>
-									<Input
-										type="email"
-										id="guest-email"
-										name="email"
-										bind:value={guestEmail}
-										oninput={handleGuestEmailValidation}
-										placeholder="your-email@example.com"
-										required
-									/>
-									{#if guestError}
-										<p class="text-sm text-destructive">{guestError}</p>
-									{/if}
-									<p class="text-sm text-muted-foreground">
-										{m.checkout_email_usage_hint()}
-									</p>
-								</div>
+								<form
+									method="POST"
+									action="?/guestCheckout"
+									use:enhance={({ formData }) => {
+										return async ({ result }) => {
+											if (result.type === 'failure') {
+												guestError =
+													(result.data as { message?: string })?.message ||
+													m.checkout_error_guest();
+												emailValidated = false;
+											} else if (result.type === 'redirect') {
+												emailValidated = true;
+												guestError = '';
+											}
+										};
+									}}
+								>
+									<div class="space-y-2">
+										<label for="guest-email" class="text-sm font-medium">
+											{m.checkout_email_label()}
+										</label>
+										<Input
+											type="email"
+											id="guest-email"
+											name="email"
+											bind:value={guestEmail}
+											oninput={handleGuestEmailValidation}
+											placeholder="your-email@example.com"
+											required
+										/>
+										{#if guestError}
+											<p class="text-sm text-destructive">{guestError}</p>
+										{/if}
+										<p class="text-sm text-muted-foreground">
+											{m.checkout_email_usage_hint()}
+										</p>
+									</div>
+									<Button type="submit" class="mt-4 w-full">
+										{m.checkout_continue()}
+									</Button>
+								</form>
 							</CardContent>
 						</Card>
 					</div>
@@ -217,11 +200,6 @@
 					</TabsList>
 					<TabsContent value="shipping" class="mt-6">
 						<ShippingForm
-							form={data.shippingForm}
-							errors={$shippingErrors}
-							{isAuthenticated}
-							userEmail={user?.email || ''}
-							{guestEmail}
 							onContinue={handleContinueToPayment}
 							onShippingCostUpdate={handleShippingCostUpdate}
 						/>
@@ -354,7 +332,7 @@
 					</div>
 
 					<!-- Estimated delivery -->
-					{#if shippingValidated}
+					{#if shippingValidated && shippingAddress}
 						<div class="pt-4">
 							<div class="flex items-center gap-2 text-sm text-muted-foreground mb-2">
 								<Truck class="h-4 w-4" />
@@ -366,15 +344,15 @@
 							</p>
 							<div class="mt-2 text-xs text-muted-foreground space-y-0.5">
 								<p class="font-medium">{m.checkout_delivery_address()}</p>
-								<p>{$shippingForm.firstName} {$shippingForm.lastName}</p>
+								<p>{shippingAddress.firstName} {shippingAddress.lastName}</p>
 								<p>
-									{$shippingForm.addressLine1}{#if $shippingForm.addressLine2}, {$shippingForm.addressLine2}{/if}
+									{shippingAddress.addressLine1}{#if shippingAddress.addressLine2}, {shippingAddress.addressLine2}{/if}
 								</p>
-								<p>{$shippingForm.city}, {$shippingForm.state} {$shippingForm.postalCode}</p>
-								<p>{$shippingForm.country}</p>
-								{#if $shippingForm.phone}
-									<p class="mt-1">{$shippingForm.phone}</p>
-								{/if}
+								<p>
+									{shippingAddress.city}, {shippingAddress.state}
+									{shippingAddress.postalCode}
+								</p>
+								<p>{shippingAddress.country}</p>
 							</div>
 						</div>
 					{/if}

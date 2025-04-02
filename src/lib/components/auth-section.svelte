@@ -4,7 +4,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Avatar from '$lib/components/ui/avatar';
-	import { User as UserIcon, Settings, Package, LogOut } from 'lucide-svelte';
+	import { User as UserIcon, Settings, Package, LogOut } from 'lucide-svelte/icons';
 	import LoadingSpinner from '$lib/components/loading-spinner.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 

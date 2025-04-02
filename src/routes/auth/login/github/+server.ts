@@ -6,11 +6,9 @@ import type { RequestEvent } from "./$types";
 export function GET(event: RequestEvent): Response {
     // Get the redirect URL from query parameters
     const redirectTo = event.url.searchParams.get('redirect') || '/';
-    console.log(`[GITHUB-LOGIN] Redirect URL: ${redirectTo}`);
 
     // Capture the current cart session ID
     const cartSessionId = event.cookies.get('cart-session') || '';
-    console.log(`[GITHUB-LOGIN] Current cart session ID: "${cartSessionId}"`);
 
     // Generate state for OAuth flow
     const state = generateState();
@@ -37,7 +35,6 @@ export function GET(event: RequestEvent): Response {
     // IMPORTANT: Also save the current cart session ID in a temporary cookie
     // This will be read by the callback to preserve the cart session
     if (cartSessionId) {
-        console.log(`[GITHUB-LOGIN] Storing cart session ID for callback: "${cartSessionId}"`);
         event.cookies.set("preserved_cart_session", cartSessionId, {
             httpOnly: true,
             maxAge: 60 * 10, // 10 minutes - same as the state

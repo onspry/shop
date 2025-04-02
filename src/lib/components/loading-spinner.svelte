@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { LoaderCircle } from 'lucide-svelte';
+	import { LoaderCircle } from 'lucide-svelte/icons';
 	export let size = 24;
 	export let className: string = '';
 </script>

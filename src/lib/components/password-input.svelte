@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Eye, EyeOff } from 'lucide-svelte';
+	import { Eye, EyeOff } from 'lucide-svelte/icons';
 	import { Button } from './ui/button';
 
 	// Using $props() for Svelte 5 with oninput callback

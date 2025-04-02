@@ -6,10 +6,15 @@ export type ShippingFormType = z.infer<typeof shippingSchema>;
 
 export type AddressField = 'firstName' | 'lastName' | 'addressLine1' | 'addressLine2' | 'city' | 'state' | 'county' | 'prefecture' | 'province' | 'postalCode';
 
-export interface AddressValidation {
-    pattern: RegExp;
+export interface FieldValidator {
+    pattern?: RegExp;
     message: string;
+    required?: boolean;
+    minLength?: number;
+    maxLength?: number;
 }
+
+export type AddressValidation = Partial<Record<AddressField, FieldValidator>>;
 
 export interface AddressLabels {
     addressLine1: string;
@@ -37,9 +42,31 @@ export interface AddressStructure {
     fields: AddressField[];
     labels: AddressLabels;
     placeholders: AddressPlaceholders;
-    validation: {
-        postalCode: AddressValidation;
-    };
+    validation: AddressValidation;
+}
+
+// Base validators that can be reused
+export const baseValidation: AddressValidation = {
+    firstName: {
+        required: true,
+        minLength: 2,
+        message: m.checkout_first_name()
+    },
+    lastName: {
+        required: true,
+        minLength: 2,
+        message: m.checkout_last_name()
+    },
+    addressLine1: {
+        required: true,
+        minLength: 5,
+        message: m.checkout_address()
+    },
+    city: {
+        required: true,
+        minLength: 2,
+        message: m.checkout_city()
+    }
 }
 
 export interface Country {

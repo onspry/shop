@@ -156,10 +156,7 @@ export const productRepo = {
         products: ProductViewModel[];
         total: number;
     }> {
-        const startTime = performance.now();
         const offset = (page - 1) * pageSize;
-
-        console.log(`[ProductRepo] Starting getProducts query for category: ${category || 'all'}, page: ${page}`);
 
         const results = await queryProducts({
             where: category ? eq(product.category, category.toUpperCase()) : undefined,
@@ -168,16 +165,9 @@ export const productRepo = {
             offset
         });
 
-        const queryTime = performance.now();
-        console.log(`[ProductRepo] Database query completed in ${(queryTime - startTime).toFixed(2)}ms`);
-
         const total = results.length;
         const products = groupResults(results);
         const viewModels = products.map(product => toProductViewModel(product, product.variants, product.images));
-
-        const endTime = performance.now();
-        console.log(`[ProductRepo] getProducts completed in ${(endTime - startTime).toFixed(2)}ms`);
-        console.log(`[ProductRepo] Processed ${total} products`);
 
         return {
             products: viewModels,
@@ -192,7 +182,6 @@ export const productRepo = {
      * @returns Catalogue view model with products grouped by category
      */
     async getCatalogue(page: number = 1, pageSize: number = 50): Promise<ReturnType<typeof toCatalogueViewModel>> {
-        console.log(`[ProductRepo] Starting getCatalogue for page: ${page}`);
         const { products, total } = await this.getProducts(undefined, page, pageSize);
 
         // Group products by category

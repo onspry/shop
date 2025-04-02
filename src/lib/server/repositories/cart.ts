@@ -9,6 +9,63 @@ import { discount } from '$lib/server/db/schema/discount';
 import type { CartViewModel, CartSummaryViewModel } from '$lib/models/cart';
 import { toProductVariantViewModel } from '$lib/models/product';
 
+// Cache configuration
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const MAX_CACHE_SIZE = 1000;
+
+// Simple in-memory cache implementation
+class CartCache {
+    private cache: Map<string, { data: CartViewModel; timestamp: number }> = new Map();
+
+    set(key: string, data: CartViewModel): void {
+        if (this.cache.size >= MAX_CACHE_SIZE) {
+            this.evictOldest();
+        }
+        this.cache.set(key, {
+            data,
+            timestamp: Date.now()
+        });
+    }
+
+    get(key: string): CartViewModel | null {
+        const entry = this.cache.get(key);
+        if (!entry) return null;
+
+        if (Date.now() - entry.timestamp > CACHE_TTL) {
+            this.cache.delete(key);
+            return null;
+        }
+
+        return entry.data;
+    }
+
+    delete(key: string): void {
+        this.cache.delete(key);
+    }
+
+    clear(): void {
+        this.cache.clear();
+    }
+
+    private evictOldest(): void {
+        let oldestKey: string | null = null;
+        let oldestTimestamp = Infinity;
+
+        for (const [key, value] of this.cache.entries()) {
+            if (value.timestamp < oldestTimestamp) {
+                oldestTimestamp = value.timestamp;
+                oldestKey = key;
+            }
+        }
+
+        if (oldestKey) {
+            this.cache.delete(oldestKey);
+        }
+    }
+}
+
+const cartCache = new CartCache();
+
 // Define type for cart with items to avoid 'any'
 export type CartWithItems = Cart & {
     items: Array<CartItem & {
@@ -58,12 +115,24 @@ export class DiscountError extends CartError {
 // Define the repository object
 export const cartRepository = {
     /**
-     * Gets or creates a cart.
-     * Checks by user ID first (if provided), then by session ID.
-     * Creates a new cart if none found.
+     * Cart repository for managing shopping cart operations.
+     * Handles cart creation, item management, discounts, and user session management.
+     */
+    /**
+     * Gets or creates a cart based on session ID and optional user ID.
+     * @param sessionId - The session ID to identify the cart
+     * @param userId - Optional user ID to associate with the cart
+     * @returns Promise<CartViewModel> - The cart view model
+     * @throws {CartError} If cart operations fail
      */
     async getOrCreateCart(sessionId: string, userId?: string | null): Promise<CartViewModel> {
-        console.log(`[CART] getOrCreateCart called with sessionId: ${sessionId}, userId: ${userId || 'null'}`);
+        // Input validation
+        if (!sessionId || typeof sessionId !== 'string') {
+            throw new CartError('Invalid session ID');
+        }
+        if (userId && typeof userId !== 'string') {
+            throw new CartError('Invalid user ID');
+        }
 
         // Check for existing cart by user ID
         let existingCart = null;
@@ -72,10 +141,6 @@ export const cartRepository = {
             existingCart = await db.query.cart.findFirst({
                 where: eq(cart.userId, userId)
             });
-
-            if (existingCart) {
-                console.log(`[CART] Found existing cart by userId: ${existingCart.id}`);
-            }
         }
 
         // If no user cart, check for session cart
@@ -83,10 +148,6 @@ export const cartRepository = {
             existingCart = await db.query.cart.findFirst({
                 where: eq(cart.sessionId, sessionId)
             });
-
-            if (existingCart) {
-                console.log(`[CART] Found existing cart by sessionId: ${existingCart.id}`);
-            }
         }
 
         // If we found a cart, return it
@@ -101,7 +162,6 @@ export const cartRepository = {
             userId: userId || null
         };
         await db.insert(cart).values(newCartData);
-        console.log(`[CART] Created new cart ${newCartData.id} for ${userId ? 'user ' + userId : 'session ' + sessionId}`);
 
         return {
             id: newCartData.id,
@@ -115,14 +175,34 @@ export const cartRepository = {
     },
 
     /**
-     * Primary method to get the cart view model.
-     * Calls getOrCreateCart if no cart is found.
+     * Gets the cart view model for a given session with caching.
+     * @param sessionId - The session ID to identify the cart
+     * @param userId - Optional user ID to associate with the cart
+     * @param forceRefresh - Whether to bypass cache and force a fresh fetch
+     * @returns Promise<CartViewModel> - The cart view model
+     * @throws {CartError} If cart operations fail
      */
-    async getCartViewModel(sessionId: string, userId?: string | null): Promise<CartViewModel> {
-        console.log(`[CART] getCartViewModel called with sessionId: ${sessionId}, userId: ${userId || 'null'}`);
+    async getCartViewModel(sessionId: string, userId?: string | null, forceRefresh: boolean = false): Promise<CartViewModel> {
+        // Input validation
+        if (typeof sessionId !== 'string') {
+            throw new CartError('Invalid session ID type');
+        }
+        if (userId && typeof userId !== 'string') {
+            throw new CartError('Invalid user ID');
+        }
 
-        if (!sessionId) {
-            console.log(`[CART] Warning: getCartViewModel called with empty sessionId`);
+        // Try to get from cache first
+        const cacheKey = `${sessionId}:${userId || 'guest'}`;
+        if (!forceRefresh) {
+            const cachedCart = cartCache.get(cacheKey);
+            if (cachedCart) {
+                return cachedCart;
+            }
+        }
+
+        // If no session ID and no user ID, create a new cart
+        if (!sessionId && !userId) {
+            return await this.getOrCreateCart(randomUUID(), userId);
         }
 
         let existingCart = null;
@@ -135,8 +215,6 @@ export const cartRepository = {
             });
 
             if (duplicateCarts.length > 1) {
-                console.log(`[CART] FOUND DUPLICATE CARTS for session ${sessionId}. Found ${duplicateCarts.length} carts. Cleaning up...`);
-
                 // Find the cart with items or keep the first one
                 let cartToKeep = duplicateCarts[0];
                 for (const dupCart of duplicateCarts) {
@@ -150,13 +228,10 @@ export const cartRepository = {
                     }
                 }
 
-                console.log(`[CART] Keeping cart: ${cartToKeep.id}`);
-
                 // Delete all other carts
                 for (const dupCart of duplicateCarts) {
                     if (dupCart.id !== cartToKeep.id) {
                         await db.delete(cart).where(eq(cart.id, dupCart.id));
-                        console.log(`[CART] Deleted duplicate cart: ${dupCart.id}`);
                     }
                 }
 
@@ -170,7 +245,6 @@ export const cartRepository = {
                             updatedAt: sql`(unixepoch())`
                         })
                         .where(eq(cart.id, existingCart.id));
-                    console.log(`[CART] Updated kept cart with user ID: ${userId}`);
                 }
 
                 return await this._getCartViewModelById(existingCart.id);
@@ -178,7 +252,6 @@ export const cartRepository = {
         }
 
         // SECOND: Try finding by BOTH user ID AND session ID
-        // This ensures we find the cart we just associated in handleUserLoginMerge
         if (userId && sessionId) {
             existingCart = await db.query.cart.findFirst({
                 where: and(
@@ -188,7 +261,6 @@ export const cartRepository = {
             });
 
             if (existingCart) {
-                console.log(`[CART] Found cart by userId AND sessionId match: ${existingCart.id}`);
                 return await this._getCartViewModelById(existingCart.id);
             }
         }
@@ -200,11 +272,8 @@ export const cartRepository = {
             });
 
             if (existingCart) {
-                console.log(`[CART] Found cart by userId: ${existingCart.id}`);
-
-                // Update the sessionId if it doesn't match (important!)
+                // Update the sessionId if it doesn't match
                 if (sessionId && existingCart.sessionId !== sessionId) {
-                    console.log(`[CART] Updating cart ${existingCart.id} with new sessionId: ${sessionId}`);
                     await db.update(cart)
                         .set({
                             sessionId: sessionId,
@@ -224,11 +293,8 @@ export const cartRepository = {
             });
 
             if (existingCart) {
-                console.log(`[CART] Found cart by sessionId: ${existingCart.id}`);
-
                 // If user is logged in but cart isn't associated, associate it now
                 if (userId && existingCart.userId !== userId) {
-                    console.log(`[CART] Associating cart ${existingCart.id} with user ${userId}`);
                     await db.update(cart)
                         .set({
                             userId: userId,
@@ -242,8 +308,11 @@ export const cartRepository = {
         }
 
         // No cart found, create a new one
-        console.log(`[CART] No cart found for ${userId ? 'user ' + userId + ' or ' : ''}session ${sessionId}, creating new cart`);
-        return await this.getOrCreateCart(sessionId, userId);
+        const result = await this.getOrCreateCart(sessionId, userId);
+
+        // Cache the result before returning
+        cartCache.set(cacheKey, result);
+        return result;
     },
 
     /**
@@ -289,7 +358,6 @@ export const cartRepository = {
 
         if (!cartData) {
             // This case should ideally be handled by getOrCreateCart, but return empty as fallback
-            console.warn(`Cart not found when fetching ViewModel for ID: ${cartId}. Returning empty cart.`);
             return {
                 id: cartId, // Return requested ID even if not found
                 items: [],
@@ -350,7 +418,13 @@ export const cartRepository = {
     },
 
     /**
-     * Add item to cart with proper error handling
+     * Adds an item to the cart with optional composite items.
+     * @param cartId - The ID of the cart to add the item to
+     * @param productVariantId - The ID of the product variant to add
+     * @param quantity - The quantity to add (default: 1)
+     * @param composites - Optional array of composite items to add with the main item
+     * @throws {CartError} If cart operations fail
+     * @throws {StockError} If insufficient stock is available
      */
     async addItemToCart(
         cartId: string,
@@ -362,15 +436,46 @@ export const cartRepository = {
             quantity: number;
         }> = []
     ): Promise<void> {
-        try {
-            console.log(`[CART] Adding item to cart ${cartId}:`, {
-                productVariantId,
-                quantity,
-                composites
-            });
+        // Input validation
+        if (!cartId || typeof cartId !== 'string') {
+            throw new CartError('Invalid cart ID');
+        }
+        if (!productVariantId || typeof productVariantId !== 'string') {
+            throw new CartError('Invalid product variant ID');
+        }
+        if (quantity < 1 || !Number.isInteger(quantity)) {
+            throw new CartError('Invalid quantity');
+        }
+        if (!Array.isArray(composites)) {
+            throw new CartError('Invalid composites array');
+        }
 
+        // Validate composite items
+        for (const composite of composites) {
+            if (!composite.variantId || !composite.name || !composite.quantity) {
+                throw new CartError('Invalid composite item structure');
+            }
+            if (composite.quantity < 1 || !Number.isInteger(composite.quantity)) {
+                throw new CartError('Invalid composite quantity');
+            }
+        }
+
+        try {
             // Start a transaction
             await db.transaction(async (tx) => {
+                // Get cart data first
+                const cartData = await tx.query.cart.findFirst({
+                    where: eq(cart.id, cartId),
+                    columns: {
+                        sessionId: true,
+                        userId: true
+                    }
+                });
+
+                if (!cartData) {
+                    throw new CartError('Cart not found');
+                }
+
                 // Check main variant stock
                 const variant = await tx.query.productVariant.findFirst({
                     where: eq(productVariant.id, productVariantId),
@@ -380,8 +485,6 @@ export const cartRepository = {
                         stockQuantity: true
                     }
                 });
-
-                console.log(`[CART] Found variant:`, variant);
 
                 if (!variant) {
                     throw new CartError('Product variant not found');
@@ -399,15 +502,9 @@ export const cartRepository = {
                     )
                 });
 
-                console.log(`[CART] Found existing items:`, existingItems);
-
                 // Find an item with matching composites
                 const matchingItem = existingItems.find(item => {
                     const itemComposites = item.composites || [];
-                    console.log(`[CART] Comparing composites:`, {
-                        existing: itemComposites,
-                        new: composites
-                    });
 
                     // If lengths don't match, it's not the same configuration
                     if (itemComposites.length !== composites.length) {
@@ -424,16 +521,12 @@ export const cartRepository = {
                     });
                 });
 
-                console.log(`[CART] Found matching item:`, matchingItem);
-
                 if (matchingItem) {
                     // Update existing item with same configuration
                     const newQuantity = matchingItem.quantity + quantity;
                     if (newQuantity > variant.stockQuantity) {
                         throw new StockError(`Not enough stock available for total quantity. Requested: ${newQuantity}, Available: ${variant.stockQuantity}`);
                     }
-
-                    console.log(`[CART] Updating existing item quantity to:`, newQuantity);
 
                     await tx.update(cartItem)
                         .set({
@@ -452,8 +545,6 @@ export const cartRepository = {
                         composites: composites
                     };
 
-                    console.log(`[CART] Creating new item:`, newItem);
-
                     await tx.insert(cartItem).values(newItem);
                 }
 
@@ -465,11 +556,6 @@ export const cartRepository = {
                             id: true,
                             stockQuantity: true
                         }
-                    });
-
-                    console.log(`[CART] Checking composite variant:`, {
-                        composite,
-                        variant: compositeVariant
                     });
 
                     if (!compositeVariant) {
@@ -484,11 +570,12 @@ export const cartRepository = {
                 await tx.update(cart)
                     .set({ updatedAt: sql`(unixepoch())` })
                     .where(eq(cart.id, cartId));
-            });
 
-            console.log(`[CART] Successfully added item to cart ${cartId}`);
+                // Invalidate cache after successful update
+                const cacheKey = `${cartData.sessionId}:${cartData.userId || 'guest'}`;
+                cartCache.delete(cacheKey);
+            });
         } catch (error) {
-            console.error('[CART] Error details:', error);
             if (error instanceof CartError || error instanceof StockError) {
                 throw error;
             }
@@ -498,15 +585,32 @@ export const cartRepository = {
     },
 
     /**
-     * Update cart item quantity
+     * Updates the quantity of a cart item.
+     * Removes the item if quantity is 0 or less.
+     * @param cartItemId - The ID of the cart item to update
+     * @param quantity - The new quantity for the item
+     * @throws {CartError} If cart operations fail
+     * @throws {StockError} If insufficient stock is available
      */
     async updateCartItemQuantity(
         cartItemId: string,
         quantity: number
     ): Promise<void> {
+        // Input validation
+        if (!cartItemId || typeof cartItemId !== 'string') {
+            throw new CartError('Invalid cart item ID');
+        }
+        if (typeof quantity !== 'number') {
+            throw new CartError('Invalid quantity');
+        }
+
         try {
             const item = await db.query.cartItem.findFirst({
-                where: eq(cartItem.id, cartItemId)
+                where: eq(cartItem.id, cartItemId),
+                columns: {
+                    cartId: true,
+                    productVariantId: true
+                }
             });
 
             if (!item) {
@@ -515,6 +619,19 @@ export const cartRepository = {
 
             const cartId = item.cartId;
             const variantId = item.productVariantId;
+
+            // Get cart data first
+            const cartData = await db.query.cart.findFirst({
+                where: eq(cart.id, cartId),
+                columns: {
+                    sessionId: true,
+                    userId: true
+                }
+            });
+
+            if (!cartData) {
+                throw new CartError('Cart not found');
+            }
 
             if (quantity <= 0) {
                 await db.transaction(async (tx) => {
@@ -548,6 +665,10 @@ export const cartRepository = {
                         .where(eq(cart.id, cartId));
                 });
             }
+
+            // Invalidate cache after successful update
+            const cacheKey = `${cartData.sessionId}:${cartData.userId || 'guest'}`;
+            cartCache.delete(cacheKey);
         } catch (error) {
             if (error instanceof CartError || error instanceof StockError) {
                 throw error;
@@ -558,9 +679,16 @@ export const cartRepository = {
     },
 
     /**
-     * Remove item from cart
+     * Removes an item from the cart.
+     * @param cartItemId - The ID of the cart item to remove
+     * @throws {CartError} If cart operations fail
      */
     async removeCartItem(cartItemId: string): Promise<void> {
+        // Input validation
+        if (!cartItemId || typeof cartItemId !== 'string') {
+            throw new CartError('Invalid cart item ID');
+        }
+
         try {
             const item = await db.query.cartItem.findFirst({
                 where: eq(cartItem.id, cartItemId),
@@ -576,10 +704,27 @@ export const cartRepository = {
             const cartId = item.cartId;
 
             await db.transaction(async (tx) => {
+                // Get cart data first
+                const cartData = await tx.query.cart.findFirst({
+                    where: eq(cart.id, cartId),
+                    columns: {
+                        sessionId: true,
+                        userId: true
+                    }
+                });
+
+                if (!cartData) {
+                    throw new CartError('Cart not found');
+                }
+
                 await tx.delete(cartItem).where(eq(cartItem.id, cartItemId));
                 await tx.update(cart)
                     .set({ updatedAt: sql`(unixepoch())` })
                     .where(eq(cart.id, cartId));
+
+                // Invalidate cache after successful removal
+                const cacheKey = `${cartData.sessionId}:${cartData.userId || 'guest'}`;
+                cartCache.delete(cacheKey);
             });
         } catch (error) {
             if (error instanceof CartError) {
@@ -591,18 +736,43 @@ export const cartRepository = {
     },
 
     /**
-     * Clear all items from cart
+     * Clears all items from the cart and resets discounts.
+     * @param cartId - The ID of the cart to clear
+     * @throws {CartError} If cart operations fail
      */
     async clearCart(cartId: string): Promise<void> {
+        // Input validation
+        if (!cartId || typeof cartId !== 'string') {
+            throw new CartError('Invalid cart ID');
+        }
+
         try {
-            await db.delete(cartItem).where(eq(cartItem.cartId, cartId));
-            await db.update(cart)
-                .set({
-                    discountCode: null,
-                    discountAmount: 0,
-                    updatedAt: sql`(unixepoch())`
-                })
-                .where(eq(cart.id, cartId));
+            const cartData = await db.query.cart.findFirst({
+                where: eq(cart.id, cartId),
+                columns: {
+                    sessionId: true,
+                    userId: true
+                }
+            });
+
+            if (!cartData) {
+                throw new CartError('Cart not found');
+            }
+
+            await db.transaction(async (tx) => {
+                await tx.delete(cartItem).where(eq(cartItem.cartId, cartId));
+                await tx.update(cart)
+                    .set({
+                        discountCode: null,
+                        discountAmount: 0,
+                        updatedAt: sql`(unixepoch())`
+                    })
+                    .where(eq(cart.id, cartId));
+
+                // Invalidate cache after successful clear
+                const cacheKey = `${cartData.sessionId}:${cartData.userId || 'guest'}`;
+                cartCache.delete(cacheKey);
+            });
         } catch (error) {
             console.error('Error clearing cart:', error);
             throw new CartError('Failed to clear cart');
@@ -610,12 +780,24 @@ export const cartRepository = {
     },
 
     /**
-     * Apply discount code to cart
+     * Applies a discount code to the cart.
+     * @param cartId - The ID of the cart to apply the discount to
+     * @param code - The discount code to apply
+     * @throws {CartError} If cart operations fail
+     * @throws {DiscountError} If discount code is invalid or expired
      */
     async applyDiscountToCart(
         cartId: string,
         code: string
     ): Promise<void> {
+        // Input validation
+        if (!cartId || typeof cartId !== 'string') {
+            throw new CartError('Invalid cart ID');
+        }
+        if (!code || typeof code !== 'string') {
+            throw new DiscountError('Invalid discount code');
+        }
+
         try {
             const discountCode = await db.query.discount.findFirst({
                 where: and(
@@ -693,9 +875,16 @@ export const cartRepository = {
     },
 
     /**
-     * Remove discount from cart
+     * Removes the current discount from the cart.
+     * @param cartId - The ID of the cart to remove the discount from
+     * @throws {CartError} If cart operations fail
      */
     async removeDiscountFromCart(cartId: string): Promise<void> {
+        // Input validation
+        if (!cartId || typeof cartId !== 'string') {
+            throw new CartError('Invalid cart ID');
+        }
+
         try {
             await db.update(cart)
                 .set({
@@ -711,9 +900,20 @@ export const cartRepository = {
     },
 
     /**
-     * Calculate cart summary (does not fetch data)
+     * Calculates a summary of the cart contents.
+     * @param items - Array of cart items to calculate summary for
+     * @param discountAmount - Optional discount amount to apply
+     * @returns CartSummaryViewModel - The calculated cart summary
      */
     calculateCartSummary(items: CartItemBase[], discountAmount: number = 0): CartSummaryViewModel {
+        // Input validation
+        if (!Array.isArray(items)) {
+            throw new CartError('Invalid items array');
+        }
+        if (typeof discountAmount !== 'number' || discountAmount < 0) {
+            throw new CartError('Invalid discount amount');
+        }
+
         if (!items || items.length === 0) {
             return {
                 subtotal: 0,
@@ -731,9 +931,16 @@ export const cartRepository = {
     },
 
     /**
-     * Get cart summary data as view model for the client
+     * Gets a summary of the cart for the current session.
+     * @param sessionId - The session ID to get the cart summary for
+     * @returns Promise<CartSummaryViewModel> - The cart summary
      */
     async getCartSummaryViewModel(sessionId: string): Promise<CartSummaryViewModel> {
+        // Input validation
+        if (!sessionId || typeof sessionId !== 'string') {
+            throw new CartError('Invalid session ID');
+        }
+
         try {
             const cartView = await this.getCartViewModel(sessionId);
             return this.calculateCartSummary(cartView.items, cartView.discountAmount);
@@ -744,9 +951,24 @@ export const cartRepository = {
     },
 
     /**
-     * Set guest email for checkout
+     * Sets the guest email for checkout.
+     * @param sessionId - The session ID to set the email for
+     * @param email - The email address to set
+     * @param userId - Optional user ID if user is logged in
+     * @throws {CartError} If cart operations fail
      */
     async setGuestEmail(sessionId: string, email: string, userId?: string | null): Promise<void> {
+        // Input validation
+        if (!sessionId || typeof sessionId !== 'string') {
+            throw new CartError('Invalid session ID');
+        }
+        if (!email || typeof email !== 'string' || !email.includes('@')) {
+            throw new CartError('Invalid email address');
+        }
+        if (userId && typeof userId !== 'string') {
+            throw new CartError('Invalid user ID');
+        }
+
         try {
             // Ensure cart exists for session
             const guestCart = await this.getOrCreateCart(sessionId, userId);
@@ -766,21 +988,26 @@ export const cartRepository = {
 
     /**
      * Handles merging user's old carts into the current session cart upon login.
-     * Associates the session cart with the user and deletes old carts.
-     * Returns the ID of the final user cart.
+     * @param sessionId - The current session ID
+     * @param userId - The user ID to merge carts for
+     * @returns Promise<string | null> - The ID of the final user cart, or null if operation fails
      */
     async handleUserLoginMerge(sessionId: string, userId: string): Promise<string | null> {
-        console.log(`[CART] Login Merge: Starting for session "${sessionId}", user ${userId}`);
+        // Input validation
+        if (!sessionId || typeof sessionId !== 'string') {
+            throw new CartError('Invalid session ID');
+        }
+        if (!userId || typeof userId !== 'string') {
+            throw new CartError('Invalid user ID');
+        }
 
         try {
             // Validation
             if (!sessionId || sessionId.trim() === '') {
-                console.log(`[CART] Login Merge: No valid session ID provided, nothing to merge`);
                 return null;
             }
 
             if (!userId) {
-                console.log(`[CART] Login Merge: No user ID provided, nothing to merge`);
                 return null;
             }
 
@@ -794,7 +1021,6 @@ export const cartRepository = {
             });
 
             if (existingLinkedCart) {
-                console.log(`[CART] Login Merge: Found cart already linked to both user ${userId} AND session "${sessionId}". Cart ID: ${existingLinkedCart.id}. No merge needed.`);
                 return existingLinkedCart.id;
             }
 
@@ -808,15 +1034,9 @@ export const cartRepository = {
                 where: eq(cart.userId, userId)
             });
 
-            // Log the carts we found
-            console.log(`[CART] Login Merge: Found session cart? ${!!sessionCart} (ID: ${sessionCart?.id || 'none'})`);
-            console.log(`[CART] Login Merge: Found user cart? ${!!userCart} (ID: ${userCart?.id || 'none'})`);
-
-            // Step 4: Determine which cart to keep
+            // Step 4: Determine which cart to keep and merge items
             if (sessionCart && userCart) {
-                // Both carts exist - decide which to keep based on item count
-                console.log(`[CART] Login Merge: Found both session cart ${sessionCart.id} and user cart ${userCart.id}`);
-
+                // Get items from both carts
                 const sessionCartItems = await db.query.cartItem.findMany({
                     where: eq(cartItem.cartId, sessionCart.id)
                 });
@@ -825,16 +1045,53 @@ export const cartRepository = {
                     where: eq(cartItem.cartId, userCart.id)
                 });
 
-                console.log(`[CART] Login Merge: Session cart has ${sessionCartItems.length} items, user cart has ${userCartItems.length} items`);
+                // Keep the session cart as the primary cart
+                // Update it with the user ID
+                await db.update(cart)
+                    .set({
+                        userId,
+                        updatedAt: sql`(unixepoch())`
+                    })
+                    .where(eq(cart.id, sessionCart.id));
 
-                // ⚠️ IMPORTANT: Always keep the session cart in this scenario
-                // This ensures we preserve the cart that's associated with the current session cookie
-                console.log(`[CART] Login Merge: Keeping session cart ${sessionCart.id} and deleting user cart ${userCart.id}`);
+                // Move all items from user cart to session cart
+                for (const item of userCartItems) {
+                    // Check if an identical item exists in the session cart
+                    const existingItem = sessionCartItems.find(
+                        sessionItem =>
+                            sessionItem.productVariantId === item.productVariantId &&
+                            JSON.stringify(sessionItem.composites) === JSON.stringify(item.composites)
+                    );
 
-                // Delete the user cart
-                await db.delete(cart).where(eq(cart.id, userCart.id));
+                    if (existingItem) {
+                        // Update quantity of existing item
+                        await db.update(cartItem)
+                            .set({
+                                quantity: existingItem.quantity + item.quantity,
+                                updatedAt: sql`(unixepoch())`
+                            })
+                            .where(eq(cartItem.id, existingItem.id));
+                    } else {
+                        // Create new item in session cart
+                        await db.insert(cartItem).values({
+                            ...item,
+                            id: randomUUID(),
+                            cartId: sessionCart.id,
+                            createdAt: sql`(unixepoch())`,
+                            updatedAt: sql`(unixepoch())`
+                        });
+                    }
+                }
 
-                // Update the session cart with the user ID
+                // Delete the user cart after items are merged
+                await db.delete(cart)
+                    .where(eq(cart.id, userCart.id));
+
+                return sessionCart.id;
+            }
+
+            // If we only have a session cart, update it with the user ID
+            if (sessionCart) {
                 await db.update(cart)
                     .set({
                         userId,
@@ -843,38 +1100,22 @@ export const cartRepository = {
                     .where(eq(cart.id, sessionCart.id));
 
                 return sessionCart.id;
-            } else if (sessionCart) {
-                // Only session cart exists - update it with user ID
-                console.log(`[CART] Login Merge: Only session cart ${sessionCart.id} exists, updating with user ID`);
-                await db.update(cart)
-                    .set({
-                        userId,
-                        updatedAt: sql`(unixepoch())`
-                    })
-                    .where(eq(cart.id, sessionCart.id));
-                return sessionCart.id;
-            } else if (userCart) {
-                // Only user cart exists - update it with session ID
-                console.log(`[CART] Login Merge: Only user cart ${userCart.id} exists, updating with session ID`);
+            }
+
+            // If we only have a user cart, update it with the session ID
+            if (userCart) {
                 await db.update(cart)
                     .set({
                         sessionId,
                         updatedAt: sql`(unixepoch())`
                     })
                     .where(eq(cart.id, userCart.id));
+
                 return userCart.id;
             }
 
-            // No carts exist - create a new one
-            console.log(`[CART] Login Merge: No carts found, creating new cart for user ${userId}`);
-            const newCart: NewCart = {
-                id: randomUUID(),
-                userId,
-                sessionId,
-                createdAt: new Date(),
-                updatedAt: new Date()
-            };
-            await db.insert(cart).values(newCart);
+            // If no carts exist, create a new one
+            const newCart = await this.getOrCreateCart(sessionId, userId);
             return newCart.id;
         } catch (error) {
             console.error('[CART] Login Merge: Error during merge:', error);

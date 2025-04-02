@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ShoppingCart } from 'lucide-svelte';
+	import { ShoppingCart } from 'lucide-svelte/icons';
 	import { cart } from '$lib/stores/cart';
 	import * as m from '$lib/paraglide/messages';
 

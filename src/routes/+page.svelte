@@ -13,7 +13,7 @@
 		CardHeader,
 		CardTitle
 	} from '$lib/components/ui/card';
-	import { Zap, Wrench, Sparkles, ChevronsDown } from 'lucide-svelte';
+	import { Zap, Wrench, Sparkles, ChevronsDown } from 'lucide-svelte/icons';
 	import Hero from '$lib/components/hero.svelte';
 	import { onMount } from 'svelte';
 
