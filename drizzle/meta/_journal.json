@@ -43,6 +43,13 @@
       "when": 1743417082502,
       "tag": "0005_gifted_stature",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1743750875443,
+      "tag": "0006_worthless_leo",
+      "breakpoints": true
     }
   ]
 }

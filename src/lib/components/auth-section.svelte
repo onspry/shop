@@ -7,9 +7,17 @@
 	import { User as UserIcon, Settings, Package, LogOut } from 'lucide-svelte/icons';
 	import LoadingSpinner from '$lib/components/loading-spinner.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { afterNavigate } from '$app/navigation';
 
+	// State variables using Svelte 5 runes
 	let imageLoaded = $state(false);
 	let imageError = $state(false);
+	let currentPath = $state('/');
+
+	// Update path after navigation
+	afterNavigate(({ to }) => {
+		currentPath = to?.url.pathname || '/';
+	});
 
 	// Reset loading state when image source changes
 	$effect(() => {
@@ -19,6 +27,7 @@
 		}
 	});
 
+	// Event handlers
 	function handleImageLoad() {
 		imageLoaded = true;
 	}
@@ -27,6 +36,11 @@
 		imageError = true;
 		imageLoaded = true; // Consider it "loaded" even if it failed
 	}
+
+	// Get the current path for redirection
+	const loginUrl = $derived(() => {
+		return currentPath === '/' ? '/auth/login' : `/auth/login?redirect=${currentPath.slice(1)}`;
+	});
 </script>
 
 <div class="relative inline-block">
@@ -79,7 +93,7 @@
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
 	{:else}
-		<Button href="/auth/login" variant="outline">
+		<Button href={loginUrl()} variant="outline">
 			{m.sign_in()}
 		</Button>
 	{/if}

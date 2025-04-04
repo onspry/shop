@@ -2,7 +2,7 @@ export const Providers = {
     CREDENTIALS: 'credentials',
     GOOGLE: 'google',
     GITHUB: 'github',
-    GUEST: 'guest'
+    EMAIL: 'email'
 } as const;
 
 export type Provider = typeof Providers[keyof typeof Providers];

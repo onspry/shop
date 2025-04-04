@@ -957,7 +957,7 @@ export const cartRepository = {
      * @param userId - Optional user ID if user is logged in
      * @throws {CartError} If cart operations fail
      */
-    async setGuestEmail(sessionId: string, email: string, userId?: string | null): Promise<void> {
+    async setemail(sessionId: string, email: string, userId?: string | null): Promise<void> {
         // Input validation
         if (!sessionId || typeof sessionId !== 'string') {
             throw new CartError('Invalid session ID');
@@ -975,7 +975,7 @@ export const cartRepository = {
 
             await db.update(cart)
                 .set({
-                    guestEmail: email,
+                    email: email,
                     updatedAt: sql`(unixepoch())`
                 })
                 .where(eq(cart.id, guestCart.id));

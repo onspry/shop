@@ -11,7 +11,14 @@ export const shippingSchema = z.object({
     postalCode: z.string().min(1, 'Postal code is required'),
     country: z.string().min(1, 'Country is required'),
     phone: z.string().optional(),
+    shippingMethod: z.string().min(1, 'Shipping method is required'),
     saveAddress: z.boolean().default(false)
 });
 
-export type ShippingSchema = typeof shippingSchema; 
+export type ShippingSchema = typeof shippingSchema;
+
+export const emailSchema = z.object({
+    email: z.string().email('Please enter a valid email address')
+});
+
+export type EmailSchema = typeof emailSchema; 

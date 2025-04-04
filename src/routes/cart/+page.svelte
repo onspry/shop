@@ -124,7 +124,7 @@
 		class:opacity-100={contentVisible}
 	>
 		<div class="space-y-4">
-			<h1 class="text-4xl font-bold">{m.cart_title()}</h1>
+			<h1 class="text-4xl font-medium">{m.cart_title()}</h1>
 
 			{#if !cartData || !cartData.items || cartData.items.length === 0}
 				<div class="flex flex-col items-center justify-center py-16 bg-muted/5 rounded-lg">

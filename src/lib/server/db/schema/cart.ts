@@ -12,9 +12,9 @@ export const cart = t.sqliteTable('cart', {
         .references(() => user.id),
     sessionId: t.text('session_id').notNull(),
     status: t.text('status', { enum: cartStatus }).notNull().default('active'),
-    guestEmail: t.text('guest_email'),
-    guestFirstName: t.text('guest_first_name'),
-    guestLastName: t.text('guest_last_name'),
+    email: t.text('email'),
+    firstName: t.text('first_name'),
+    lastName: t.text('last_name'),
     discountCode: t.text('discount_code'),
     discountAmount: t.integer('discount_amount').default(0), // Store amount in cents
     lastActivityAt: t.integer('last_activity_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
@@ -23,7 +23,7 @@ export const cart = t.sqliteTable('cart', {
 }, (table) => [
     t.index('cart_user_id_idx').on(table.userId),
     t.index('cart_session_id_idx').on(table.sessionId),
-    t.index('cart_guest_email_idx').on(table.guestEmail),
+    t.index('cart_email_idx').on(table.email),
     t.index('cart_status_idx').on(table.status),
     t.index('cart_last_activity_at_idx').on(table.lastActivityAt)
 ]);

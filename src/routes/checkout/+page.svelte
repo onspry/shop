@@ -1,86 +1,205 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
-	import {
-		Card,
-		CardContent,
-		CardDescription,
-		CardHeader,
-		CardTitle
-	} from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
-	// Import directly from the index file
-	import * as TabsPrimitive from '$lib/components/ui/tabs/index';
+	import { Label } from '$lib/components/ui/label';
+	import {
+		Root as Select,
+		Trigger as SelectTrigger,
+		Content as SelectContent,
+		Group as SelectGroup,
+		Item as SelectItem
+	} from '$lib/components/ui/select';
+	import * as Accordion from '$lib/components/ui/accordion';
 	import { superForm } from 'sveltekit-superforms/client';
 	import { enhance } from '$app/forms';
 	import { zod } from 'sveltekit-superforms/adapters';
-	import { loginSchema } from '$lib/schemas/auth';
-	import { shippingSchema } from '$lib/schemas/shipping';
+	import { emailSchema, shippingSchema } from '$lib/schemas/checkout';
 	import * as m from '$lib/paraglide/messages';
 	import { formatPrice } from '$lib/utils/price';
-	import { ShoppingBag, User, Truck, ImageOff } from 'lucide-svelte';
+	import { ShoppingBag, User, Truck, ImageOff, Mail, MapPin, CreditCard } from 'lucide-svelte';
 	import type { z } from 'zod';
-	import ShippingForm from '$lib/components/shipping-form.svelte';
-	import PaymentForm from '$lib/components/payment-form.svelte';
 	import type { PageData } from './$types';
-	import { userStore } from '$lib/stores/auth';
 	import { browser } from '$app/environment';
+	import { countries, addressStructures } from '$lib/config/address-structures';
+	import { checkoutStore } from '$lib/stores/checkout';
+	import { onMount } from 'svelte';
 
-	// Extract the components from TabsPrimitive
-	const { Tabs, TabsContent, TabsList, TabsTrigger } = TabsPrimitive;
-
+	// Page data props
 	const { data } = $props<{ data: PageData }>();
-	const user = $derived($userStore);
-	const isAuthenticated = $derived(!!user);
+
+	// Image handling state
+	let imageStates = $state(new Map<string, { error: boolean; loaded: boolean }>());
+
+	// Only maintain accordion state locally - the single state we need
+	let currentSection = $state($checkoutStore.currentSection);
+
+	// Synchronize section change with store
+	$effect(() => {
+		checkoutStore.setCurrentSection(currentSection);
+	});
 
 	// Initialize forms with proper types
-	const {} = superForm<z.infer<typeof loginSchema>>(data.form, {
-		validators: zod(loginSchema),
+	const {
+		form: emailForm,
+		errors: emailErrors,
+		enhance: emailEnhance
+	} = superForm<z.infer<typeof emailSchema>>(data.emailForm, {
+		validators: zod(emailSchema),
 		validationMethod: 'auto'
 	});
 
-	let activeTab = $state('shipping');
-	let guestEmail = $state('');
-	let shippingValidated = $state(false);
-	let emailValidated = $state(false);
-	let imageStates = $state(new Map<string, { error: boolean; loaded: boolean }>());
-	let guestError = $state('');
+	const {
+		form: shippingForm,
+		errors: shippingErrors,
+		enhance: shippingEnhance
+	} = superForm<z.infer<typeof shippingSchema>>(data.shippingForm, {
+		validators: zod(shippingSchema),
+		validationMethod: 'auto'
+	});
 
-	// Shipping cost and estimated days from the shipping form component
-	let shippingCost = $state(0);
-	let estimatedDays = $state('');
-	let shippingAddress = $state<{
-		firstName: string;
-		lastName: string;
-		addressLine1: string;
-		addressLine2?: string;
-		city: string;
-		state?: string;
-		postalCode: string;
-		country: string;
-	} | null>(null);
+	// Read-only derived checkout state for UI rendering
+	const checkout = $derived({
+		// Validation states
+		emailValidated: $checkoutStore.emailValidated,
+		shippingValidated: $checkoutStore.shippingValidated,
+		// User data
+		email: $checkoutStore.email,
+		// Shipping config
+		country: $checkoutStore.shippingConfig.country,
+		shippingMethod: $checkoutStore.shippingConfig.shippingMethod,
+		// Shipping details for display
+		shippingCost: $checkoutStore.shippingCost,
+		estimatedDays: $checkoutStore.estimatedDays,
+		// Computed values
+		shippingAddress: $checkoutStore.shippingValidated ? { ...$checkoutStore.shippingConfig } : null,
+		addressStructure:
+			addressStructures[$checkoutStore.shippingConfig.country] || addressStructures.DEFAULT,
+		// Order summary
+		subtotalWithDiscount: data.cart.subtotal - (data.cart.discountAmount || 0),
+		total: $checkoutStore.shippingValidated
+			? data.cart.total + $checkoutStore.shippingCost
+			: data.cart.subtotal - (data.cart.discountAmount || 0),
+		// User info
+		isLoggedIn: !!data.user
+	});
 
-	function handleShippingCostUpdate(cost: number, days: string) {
-		shippingCost = cost;
-		estimatedDays = days;
-	}
+	// Initialize forms from store data on mount
+	onMount(() => {
+		// Handle user data if logged in
+		if (data.user) {
+			// Set email from logged in user (automatically validates)
+			checkoutStore.setEmail(data.user.email, true);
+			currentSection = 'shipping';
 
-	function handleContinueToPayment(address: typeof shippingAddress) {
-		shippingValidated = true;
-		shippingAddress = address;
-		activeTab = 'payment';
-	}
+			// Pre-populate shipping form with user profile data
+			if (data.user.profile) {
+				$shippingForm.firstName =
+					data.user.profile.firstName || $checkoutStore.shippingConfig.firstName;
+				$shippingForm.lastName =
+					data.user.profile.lastName || $checkoutStore.shippingConfig.lastName;
+			}
+		} else if ($checkoutStore.email) {
+			// For guest users, use the email if already in store
+			$emailForm.email = $checkoutStore.email;
+		}
 
-	// Handle guest email validation
-	async function handleGuestEmailValidation(event: Event) {
-		const input = event.target as HTMLInputElement;
-		if (input.validity.valid && guestEmail) {
-			emailValidated = true;
-			guestError = '';
-		} else {
-			emailValidated = false;
+		// Populate shipping form with stored data
+		$shippingForm.firstName = $shippingForm.firstName || $checkoutStore.shippingConfig.firstName;
+		$shippingForm.lastName = $shippingForm.lastName || $checkoutStore.shippingConfig.lastName;
+		$shippingForm.addressLine1 = $checkoutStore.shippingConfig.addressLine1;
+		$shippingForm.addressLine2 = $checkoutStore.shippingConfig.addressLine2;
+		$shippingForm.city = $checkoutStore.shippingConfig.city;
+		$shippingForm.state = $checkoutStore.shippingConfig.state;
+		$shippingForm.postalCode = $checkoutStore.shippingConfig.postalCode;
+		$shippingForm.country = $checkoutStore.shippingConfig.country;
+		$shippingForm.shippingMethod = $checkoutStore.shippingConfig.shippingMethod;
+	});
+
+	// Shipping methods data
+	const shippingMethods = [
+		{
+			id: 'standard',
+			name: m.shipping_standard(),
+			price: 5.99,
+			description: m.shipping_standard_desc(),
+			estimatedDays: '5-7'
+		},
+		{
+			id: 'express',
+			name: m.shipping_express(),
+			price: 14.99,
+			description: m.shipping_express_desc(),
+			estimatedDays: '2-3'
+		},
+		{
+			id: 'overnight',
+			name: m.shipping_overnight(),
+			price: 29.99,
+			description: m.shipping_overnight_desc(),
+			estimatedDays: '1'
+		}
+	];
+
+	// Handle form action results
+	$effect(() => {
+		// Email form handling
+		if (data.emailForm?.error) {
+			// Email validation failed
+			checkoutStore.setEmail($emailForm.email, false);
+		} else if (data.emailForm?.success) {
+			// Email validation successful
+			checkoutStore.setEmail($emailForm.email, true);
+			currentSection = 'shipping';
+		}
+
+		// Shipping form handling
+		if (data.shippingForm?.error) {
+			// Shipping validation failed
+			checkoutStore.setShippingValidated(false);
+		} else if (data.shippingForm?.success) {
+			// Shipping validation successful
+
+			// Update shipping config in store
+			checkoutStore.updateShippingConfig({
+				firstName: $shippingForm.firstName,
+				lastName: $shippingForm.lastName,
+				addressLine1: $shippingForm.addressLine1,
+				addressLine2: $shippingForm.addressLine2,
+				city: $shippingForm.city,
+				state: $shippingForm.state,
+				postalCode: $shippingForm.postalCode,
+				country: $shippingForm.country,
+				shippingMethod: $shippingForm.shippingMethod
+			});
+
+			// Find shipping cost based on selected method
+			const method = shippingMethods.find((m) => m.id === $shippingForm.shippingMethod);
+			if (method) {
+				checkoutStore.setShippingCost(method.price);
+				checkoutStore.setEstimatedDays(method.estimatedDays);
+			}
+
+			// Mark shipping as validated and proceed to payment
+			checkoutStore.setShippingValidated(true);
+			currentSection = 'payment';
+		}
+	});
+
+	// Update shipping method in form and store
+	function handleShippingMethodChange(method: string) {
+		// Update the form value
+		$shippingForm.shippingMethod = method;
+
+		// Update shipping method details
+		const selectedMethod = shippingMethods.find((sm) => sm.id === method);
+		if (selectedMethod) {
+			// Update shipping cost and estimated days in store
+			checkoutStore.setShippingCost(selectedMethod.price);
+			checkoutStore.setEstimatedDays(selectedMethod.estimatedDays);
 		}
 	}
 
+	// Image handling functions
 	function handleImageError(itemId: string) {
 		imageStates.set(itemId, { error: true, loaded: false });
 		imageStates = imageStates;
@@ -91,160 +210,344 @@
 		imageStates = imageStates;
 	}
 
-	// Derived values for order summary
-	let subtotalWithDiscount = $derived(data.cart.subtotal - (data.cart.discountAmount || 0));
-	let orderTotal = $derived(
-		shippingValidated ? data.cart.total + shippingCost : subtotalWithDiscount
-	);
+	// Handle section change requests
+	function handleSectionChange(section: string) {
+		// Prevent unauthorized section changes
+		if (section === 'shipping' && !checkout.emailValidated) {
+			return;
+		}
+
+		if (section === 'payment' && !checkout.shippingValidated) {
+			return;
+		}
+
+		// Allow section change if validation passed
+		currentSection = section as 'email' | 'shipping' | 'payment';
+	}
 </script>
 
-<div class="space-y-12">
-	<div class="space-y-4">
-		<h1 class="text-4xl font-bold">{m.checkout_title()}</h1>
-
-		<div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
-			<!-- Main checkout flow -->
-			<div class="lg:col-span-2">
-				{#if !isAuthenticated}
-					<div class="flex flex-col gap-6 mb-8">
-						<!-- Sign In Option -->
-						<div
-							class="bg-muted/40 p-6 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-4"
-						>
-							<div class="flex items-center gap-2">
-								<User size={20} />
-								<span class="font-medium">{m.checkout_have_account()}</span>
-							</div>
-							<Button
-								variant="outline"
-								href="/auth/login?redirect=/checkout"
-								class="w-full sm:w-auto"
-							>
-								{m.sign_in()}
-							</Button>
+<div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+	<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+		<!-- Main checkout flow -->
+		<div class="lg:col-span-8">
+			<Accordion.Root type="single" value={currentSection} onValueChange={handleSectionChange}>
+				<!-- Email Section -->
+				<Accordion.Item value="email">
+					<Accordion.Trigger class="w-full py-4">
+						<div class="flex items-center justify-between w-full">
+							<h2 class="text-2xl font-semibold flex items-center gap-2">
+								<Mail class="h-5 w-5" />
+								{m.checkout_tab_email()}
+							</h2>
+							{#if checkout.emailValidated && currentSection !== 'email'}
+								<div class="text-sm text-muted-foreground flex items-center gap-2">
+									<User class="h-4 w-4" />
+									<span>{checkout.email}</span>
+								</div>
+							{/if}
 						</div>
+					</Accordion.Trigger>
+					<Accordion.Content class="pt-4">
+						<div class="space-y-6">
+							{#if checkout.isLoggedIn}
+								<!-- Logged in user view -->
+								<div class="flex items-start gap-4">
+									<div class="bg-muted p-4 rounded-lg flex-1">
+										<div class="flex items-center gap-2 mb-2">
+											<User class="h-5 w-5 text-primary" />
+											<p class="font-medium">Signed in as</p>
+										</div>
+										<p class="text-muted-foreground">{data.user.email}</p>
+									</div>
+								</div>
+							{:else}
+								<div class="flex items-center justify-between">
+									<h3 class="text-lg font-medium">Contact information</h3>
+									<div class="text-sm">
+										Already have an account?
+										<a href="/auth/login?redirect=/checkout" class="text-primary hover:underline"
+											>Log in</a
+										>
+									</div>
+								</div>
 
-						<!-- Guest Checkout -->
-						<div class="relative">
-							<div class="absolute inset-0 flex items-center">
-								<div class="w-full border-t border-muted-foreground/20"></div>
-							</div>
-							<div class="relative flex justify-center text-xs uppercase">
-								<span class="bg-background px-2 text-muted-foreground">{m.checkout_or()}</span>
-							</div>
-						</div>
-
-						<Card class="border-0 bg-muted/5">
-							<CardHeader>
-								<CardTitle>{m.checkout_guest_title()}</CardTitle>
-								<CardDescription>
-									{m.checkout_guest_description()}
-									{m.checkout_email_description()}
-								</CardDescription>
-							</CardHeader>
-							<CardContent>
-								<form
-									method="POST"
-									action="?/guestCheckout"
-									use:enhance={({ formData }) => {
-										return async ({ result }) => {
-											if (result.type === 'failure') {
-												guestError =
-													(result.data as { message?: string })?.message ||
-													m.checkout_error_guest();
-												emailValidated = false;
-											} else if (result.type === 'redirect') {
-												emailValidated = true;
-												guestError = '';
-											}
-										};
-									}}
-								>
+								<div class="space-y-4">
 									<div class="space-y-2">
-										<label for="guest-email" class="text-sm font-medium">
-											{m.checkout_email_label()}
-										</label>
 										<Input
 											type="email"
-											id="guest-email"
 											name="email"
-											bind:value={guestEmail}
-											oninput={handleGuestEmailValidation}
-											placeholder="your-email@example.com"
+											bind:value={$emailForm.email}
+											placeholder="Email"
+											required
+											onblur={() => {
+												if (!$emailForm.email || $emailForm.email.trim() === '') {
+													// Don't validate empty emails, just update store with empty value
+													checkoutStore.setEmail('', false);
+													return;
+												}
+
+												const result = emailSchema.safeParse({ email: $emailForm.email });
+												if (result.success) {
+													checkoutStore.setEmail($emailForm.email, true);
+													currentSection = 'shipping';
+												} else {
+													// Set email to empty in the store
+													checkoutStore.setEmail($emailForm.email, false);
+												}
+											}}
+										/>
+										{#if $emailErrors.email}
+											<p class="text-sm text-destructive">{$emailErrors.email}</p>
+										{:else if !checkout.emailValidated && $emailForm.email && $emailForm.email.length > 0}
+											<p class="text-sm text-destructive">Please enter a valid email address</p>
+										{/if}
+									</div>
+								</div>
+							{/if}
+						</div>
+					</Accordion.Content>
+				</Accordion.Item>
+
+				<!-- Shipping Section -->
+				<Accordion.Item value="shipping" disabled={!checkout.emailValidated}>
+					<Accordion.Trigger class="w-full py-4">
+						<div class="flex items-center justify-between w-full">
+							<h2 class="text-2xl font-semibold flex items-center gap-2">
+								<MapPin class="h-5 w-5" />
+								{m.checkout_tab_shipping()}
+							</h2>
+							{#if checkout.shippingValidated && currentSection !== 'shipping'}
+								<div class="text-sm text-muted-foreground flex items-center gap-4">
+									<div class="flex items-center gap-2">
+										<MapPin class="h-4 w-4" />
+										<span
+											>{checkout.shippingAddress?.city}, {checkout.shippingAddress?.country}</span
+										>
+									</div>
+									{#if checkout.shippingMethod}
+										<div class="flex items-center gap-2">
+											<Truck class="h-4 w-4" />
+											<span>
+												{shippingMethods.find((m) => m.id === checkout.shippingMethod)?.name}
+												({formatPrice(checkout.shippingCost)})
+											</span>
+										</div>
+									{/if}
+								</div>
+							{/if}
+						</div>
+					</Accordion.Trigger>
+					<Accordion.Content class="pt-4">
+						<div class="py-6">
+							<form method="POST" action="?/shipping" use:shippingEnhance class="space-y-6">
+								<!-- Country Selection -->
+								<div class="grid gap-2">
+									<Label for="country">{m.country()}</Label>
+									{#if browser}
+										<Select
+											type="single"
+											value={$shippingForm.country}
+											onValueChange={(value) => ($shippingForm.country = value)}
+										>
+											<SelectTrigger class="w-full">
+												{countries.find((c) => c.value === $shippingForm.country)?.label ||
+													m.country_us()}
+											</SelectTrigger>
+											<SelectContent>
+												<SelectGroup>
+													{#each countries as country}
+														<SelectItem value={country.value}>
+															{country.label}
+														</SelectItem>
+													{/each}
+												</SelectGroup>
+											</SelectContent>
+										</Select>
+									{:else}
+										<Input type="text" name="country" value={$shippingForm.country} readonly />
+									{/if}
+								</div>
+
+								<!-- Form Fields -->
+								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+									<div class="grid gap-2">
+										<Label for="firstName">{m.checkout_first_name()}</Label>
+										<Input
+											type="text"
+											name="firstName"
+											bind:value={$shippingForm.firstName}
 											required
 										/>
-										{#if guestError}
-											<p class="text-sm text-destructive">{guestError}</p>
-										{/if}
-										<p class="text-sm text-muted-foreground">
-											{m.checkout_email_usage_hint()}
-										</p>
 									</div>
-									<Button type="submit" class="mt-4 w-full">
-										{m.checkout_continue()}
-									</Button>
-								</form>
-							</CardContent>
-						</Card>
-					</div>
-				{/if}
 
-				<Tabs value={activeTab} onValueChange={(value) => (activeTab = value)} class="w-full">
-					<TabsList class="grid w-full grid-cols-2">
-						<TabsTrigger value="shipping" disabled={!isAuthenticated && !emailValidated}>
-							{m.checkout_tab_shipping()}
-						</TabsTrigger>
-						<TabsTrigger value="payment" disabled={!shippingValidated}>
-							{m.checkout_tab_payment()}
-						</TabsTrigger>
-					</TabsList>
-					<TabsContent value="shipping" class="mt-6">
-						<ShippingForm
-							onContinue={handleContinueToPayment}
-							onShippingCostUpdate={handleShippingCostUpdate}
-						/>
-					</TabsContent>
-					<TabsContent value="payment" class="mt-6">
-						<Card class="border-0 bg-muted/5">
-							<CardHeader>
-								<h2 class="text-2xl font-semibold">{m.checkout_tab_payment()}</h2>
-							</CardHeader>
-							<CardContent>
-								<PaymentForm
-									onPayment={(event) => {
-										if (event.success) {
-											// TODO: Handle successful payment
-										} else {
-											// TODO: Handle payment error
-										}
-									}}
-								/>
-							</CardContent>
-						</Card>
-					</TabsContent>
-				</Tabs>
-			</div>
+									<div class="grid gap-2">
+										<Label for="lastName">{m.checkout_last_name()}</Label>
+										<Input
+											type="text"
+											name="lastName"
+											bind:value={$shippingForm.lastName}
+											required
+										/>
+									</div>
 
-			<!-- Order summary -->
-			<div class="lg:col-span-1">
-				<div class="bg-background rounded-lg p-6 space-y-6">
-					<div class="flex items-center gap-2">
-						<ShoppingBag class="h-6 w-6" />
-						<h2 class="text-2xl font-semibold">{m.checkout_order_summary()}</h2>
-					</div>
+									<div class="grid gap-2 md:col-span-2">
+										<Label for="addressLine1">{checkout.addressStructure.labels.addressLine1}</Label
+										>
+										<Input
+											type="text"
+											name="addressLine1"
+											bind:value={$shippingForm.addressLine1}
+											placeholder={checkout.addressStructure.placeholders.addressLine1}
+											required
+										/>
+									</div>
 
-					<div class="text-sm text-muted-foreground">
-						<div class="flex justify-between mb-1">
-							<span
-								>{data.cart.items.length}
-								{data.cart.items.length === 1 ? 'item' : 'items'} in cart</span
-							>
-							<span
-								>{data.cart.items.reduce((sum: number, item: any) => sum + item.quantity, 0)} units total</span
-							>
+									<div class="grid gap-2 md:col-span-2">
+										<Label for="addressLine2">{checkout.addressStructure.labels.addressLine2}</Label
+										>
+										<Input
+											type="text"
+											name="addressLine2"
+											bind:value={$shippingForm.addressLine2}
+											placeholder={checkout.addressStructure.placeholders.addressLine2}
+										/>
+									</div>
+
+									<div class="grid gap-2">
+										<Label for="city">{checkout.addressStructure.labels.city}</Label>
+										<Input
+											type="text"
+											name="city"
+											bind:value={$shippingForm.city}
+											placeholder={checkout.addressStructure.placeholders.city}
+											required
+										/>
+									</div>
+
+									{#if checkout.addressStructure.fields.includes('state')}
+										<div class="grid gap-2">
+											<Label for="state">{checkout.addressStructure.labels.state}</Label>
+											<Input
+												type="text"
+												name="state"
+												bind:value={$shippingForm.state}
+												placeholder={checkout.addressStructure.placeholders.state}
+												required
+											/>
+										</div>
+									{/if}
+
+									<div class="grid gap-2">
+										<Label for="postalCode">{checkout.addressStructure.labels.postalCode}</Label>
+										<Input
+											type="text"
+											name="postalCode"
+											bind:value={$shippingForm.postalCode}
+											placeholder={checkout.addressStructure.placeholders.postalCode}
+											required
+										/>
+									</div>
+								</div>
+
+								<!-- Shipping Method -->
+								<div class="space-y-6">
+									<h3 class="text-lg font-medium">{m.checkout_shipping_method()}</h3>
+									<input
+										type="hidden"
+										name="shippingMethod"
+										bind:value={$shippingForm.shippingMethod}
+									/>
+									<div
+										class="space-y-4"
+										role="radiogroup"
+										aria-label={m.checkout_shipping_method()}
+									>
+										{#each shippingMethods as method}
+											<button
+												type="button"
+												role="radio"
+												aria-checked={$shippingForm.shippingMethod === method.id}
+												class={`w-full text-left flex items-start gap-4 p-4 rounded-lg bg-muted/5 cursor-pointer hover:bg-muted/10 transition-colors ${$shippingForm.shippingMethod === method.id ? 'ring-1 ring-primary' : ''}`}
+												onclick={() => handleShippingMethodChange(method.id)}
+											>
+												<div class="flex-1">
+													<div class="flex items-center gap-2">
+														<div
+															class="w-4 h-4 rounded-full border-2 border-primary flex items-center justify-center"
+														>
+															{#if $shippingForm.shippingMethod === method.id}
+																<div class="w-2 h-2 rounded-full bg-primary"></div>
+															{/if}
+														</div>
+														<span class="font-medium">{method.name}</span>
+														<span class="text-sm text-muted-foreground">
+															({method.estimatedDays}
+															{m.shipping_business_days()})
+														</span>
+													</div>
+													<p class="text-sm text-muted-foreground ml-6 mt-1">
+														{method.description}
+													</p>
+												</div>
+												<div class="font-medium">{formatPrice(method.price)}</div>
+											</button>
+										{/each}
+									</div>
+								</div>
+
+								<Button type="submit" class="w-full">
+									{m.checkout_continue()}
+								</Button>
+							</form>
 						</div>
-					</div>
+					</Accordion.Content>
+				</Accordion.Item>
 
+				<!-- Payment Section -->
+				<Accordion.Item value="payment" disabled={!checkout.shippingValidated}>
+					<Accordion.Trigger class="w-full py-4">
+						<div class="flex items-center justify-between w-full">
+							<h2 class="text-2xl font-semibold flex items-center gap-2">
+								<CreditCard class="h-5 w-5" />
+								{m.checkout_tab_payment()}
+							</h2>
+							{#if currentSection !== 'payment'}
+								<div class="text-sm text-muted-foreground flex items-center gap-2">
+									<CreditCard class="h-4 w-4" />
+									<span>Not provided</span>
+								</div>
+							{/if}
+						</div>
+					</Accordion.Trigger>
+					<Accordion.Content class="pt-4">
+						<div class="py-6">
+							<div class="flex gap-4">
+								<button
+									class="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md"
+								>
+									{m.simulate_successful_payment()}
+								</button>
+								<button
+									class="bg-destructive text-destructive-foreground hover:bg-destructive/90 px-4 py-2 rounded-md"
+								>
+									{m.simulate_failed_payment()}
+								</button>
+							</div>
+						</div>
+					</Accordion.Content>
+				</Accordion.Item>
+			</Accordion.Root>
+		</div>
+
+		<!-- Order summary -->
+		<div class="lg:col-span-4 lg:sticky lg:top-[calc(var(--header-height)+1rem)] lg:h-fit">
+			<div class="bg-background rounded-lg p-6">
+				<h2 class="text-2xl font-semibold flex items-center gap-2 pb-6">
+					<ShoppingBag class="h-5 w-5" />
+					{m.checkout_order_summary()}
+				</h2>
+
+				<div class="space-y-6">
 					<!-- Cart items summary -->
 					<div class="space-y-6">
 						{#each data.cart.items as item}
@@ -288,7 +591,7 @@
 											{#if item.composites && item.composites.length > 0}
 												<div class="mt-1">
 													{#each item.composites as composite}
-														<p class="text-xs text-muted-foreground">
+														<p class="text-sm text-muted-foreground">
 															{composite.name}
 														</p>
 													{/each}
@@ -302,23 +605,23 @@
 					</div>
 
 					<!-- Price breakdown -->
-					<div class="space-y-4 pt-4">
-						<div class="flex justify-between text-muted-foreground">
-							<span>{m.cart_shipping()}</span>
-							{#if !shippingValidated}
-								<span>{m.cart_calculated_at_next_step()}</span>
+					<div class="space-y-4 border-t pt-6">
+						<div class="flex justify-between text-base">
+							<span class="text-muted-foreground">{m.cart_shipping()}</span>
+							{#if !checkout.shippingValidated}
+								<span class="text-muted-foreground">{m.cart_calculated_at_next_step()}</span>
 							{:else}
-								<span>{formatPrice(shippingCost)}</span>
+								<span>{formatPrice(checkout.shippingCost)}</span>
 							{/if}
 						</div>
 
-						<div class="flex justify-between text-muted-foreground">
-							<span>{m.cart_tax()}</span>
-							<span>{m.cart_calculated_at_next_step()}</span>
+						<div class="flex justify-between text-base">
+							<span class="text-muted-foreground">{m.cart_tax()}</span>
+							<span class="text-muted-foreground">{m.cart_calculated_at_next_step()}</span>
 						</div>
 
 						{#if data.cart.discountAmount > 0}
-							<div class="flex justify-between text-green-600 dark:text-green-400">
+							<div class="flex justify-between text-base text-green-600 dark:text-green-400">
 								<span>{m.cart_discount()}</span>
 								<span>-{formatPrice(data.cart.discountAmount)}</span>
 							</div>
@@ -327,37 +630,39 @@
 						<!-- Total -->
 						<div class="flex justify-between text-xl font-semibold pt-4 mt-4 border-t">
 							<span>{m.cart_total()}</span>
-							<span>{formatPrice(orderTotal)}</span>
+							<span>{formatPrice(checkout.total)}</span>
 						</div>
 					</div>
 
 					<!-- Estimated delivery -->
-					{#if shippingValidated && shippingAddress}
-						<div class="pt-4">
-							<div class="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-								<Truck class="h-4 w-4" />
+					{#if checkout.shippingValidated && checkout.shippingAddress}
+						<div class="border-t pt-6">
+							<div class="flex items-center gap-2 text-base mb-2">
+								<Truck class="h-5 w-5" />
 								<span>{m.checkout_estimated_delivery()}</span>
 							</div>
-							<p class="text-sm font-medium">
-								{estimatedDays}
+							<p class="text-base font-medium">
+								{checkout.estimatedDays}
 								{m.shipping_business_days()}
 							</p>
-							<div class="mt-2 text-xs text-muted-foreground space-y-0.5">
+							<div class="mt-4 text-sm text-muted-foreground space-y-1">
 								<p class="font-medium">{m.checkout_delivery_address()}</p>
-								<p>{shippingAddress.firstName} {shippingAddress.lastName}</p>
+								<p>{checkout.shippingAddress.firstName} {checkout.shippingAddress.lastName}</p>
 								<p>
-									{shippingAddress.addressLine1}{#if shippingAddress.addressLine2}, {shippingAddress.addressLine2}{/if}
+									{checkout.shippingAddress
+										.addressLine1}{#if checkout.shippingAddress.addressLine2}, {checkout
+											.shippingAddress.addressLine2}{/if}
 								</p>
 								<p>
-									{shippingAddress.city}, {shippingAddress.state}
-									{shippingAddress.postalCode}
+									{checkout.shippingAddress.city}, {checkout.shippingAddress.state}
+									{checkout.shippingAddress.postalCode}
 								</p>
-								<p>{shippingAddress.country}</p>
+								<p>{checkout.shippingAddress.country}</p>
 							</div>
 						</div>
 					{/if}
 
-					<div class="text-xs text-muted-foreground/60 text-center space-y-1.5">
+					<div class="text-xs text-muted-foreground/60 text-center space-y-1.5 border-t pt-6">
 						<p>{m.cart_terms_agreement()}</p>
 						<p>{m.checkout_secure_transaction()}</p>
 					</div>
@@ -366,3 +671,14 @@
 		</div>
 	</div>
 </div>
+
+{#if browser && import.meta.env.DEV}
+	<div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-8 border-t">
+		<details>
+			<summary class="cursor-pointer font-medium mb-4">Debug Store State</summary>
+			<div class="bg-muted p-4 rounded overflow-auto max-h-[500px]">
+				<pre class="text-xs">{JSON.stringify($checkoutStore, null, 2)}</pre>
+			</div>
+		</details>
+	</div>
+{/if}
