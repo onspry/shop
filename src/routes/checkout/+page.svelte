@@ -165,10 +165,10 @@
 
 		// If no section is selected or same section clicked again,
 		// we want to close the current section and show its summary
-		if (!section || section === currentSection) {
-			// When closing a section, we don't change the currentSection state
-			// This allows us to keep track of the last selected section for
-			// display purposes while still allowing the accordion to close
+		if (!section) {
+			// When clicking on an already open section, the value becomes undefined
+			// Let's set it to an empty string to indicate all sections are closed
+			currentSection = '';
 			return;
 		}
 
@@ -362,7 +362,7 @@
 								<Mail class="h-5 w-5" />
 								{m.checkout_tab_email()}
 							</h2>
-							{#if checkout.emailValidated}
+							{#if checkout.emailValidated && currentSection !== 'email'}
 								<div class="text-sm text-muted-foreground flex items-center gap-2">
 									<User class="h-4 w-4" />
 									<span>{$emailForm.email}</span>
@@ -714,7 +714,7 @@
 								<CreditCard class="h-5 w-5" />
 								{m.checkout_tab_payment()}
 							</h2>
-							{#if checkout.paymentValidated && currentSection !== 'payment' && checkout.paymentMethod}
+							{#if checkout.paymentValidated && checkout.paymentMethod && currentSection !== 'payment'}
 								<div class="text-sm text-muted-foreground flex items-center gap-2">
 									<CreditCard class="h-4 w-4" />
 									<span>{checkout.paymentMethod}</span>
