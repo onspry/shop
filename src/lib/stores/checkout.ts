@@ -14,14 +14,20 @@ export type ShippingConfig = {
     shippingMethod: string;
 };
 
+export type PaymentConfig = {
+    cardNumber?: string;
+    cardHolder?: string;
+    expiryDate?: string;
+    cvv?: string;
+    savePaymentMethod?: boolean;
+};
+
 export type CheckoutState = {
-    currentSection: 'email' | 'shipping' | 'payment';
-    emailValidated: boolean;
-    shippingValidated: boolean;
     email: string;
     shippingConfig: ShippingConfig;
     shippingCost: number;
     estimatedDays: string;
+    paymentConfig?: PaymentConfig;
 };
 
 // Initial checkout state
@@ -29,9 +35,6 @@ const DEFAULT_COUNTRY = 'US';
 const DEFAULT_SHIPPING_METHOD = 'standard';
 
 const initialCheckoutState: CheckoutState = {
-    currentSection: 'email',
-    emailValidated: false,
-    shippingValidated: false,
     email: '',
     shippingConfig: {
         firstName: '',
@@ -110,9 +113,6 @@ const createCheckoutStore = () => {
                 const newState = {
                     ...state,
                     email: validated ? email : '', // Only save email if validated
-                    emailValidated: validated,
-                    // If email is validated, move to shipping section
-                    currentSection: validated ? 'shipping' : state.currentSection
                 };
                 saveToStorage(newState);
                 return newState;
@@ -134,14 +134,27 @@ const createCheckoutStore = () => {
             });
         },
 
+        // Update payment configuration
+        updatePaymentConfig: (config: Partial<PaymentConfig>) => {
+            update(state => {
+                const newState = {
+                    ...state,
+                    paymentConfig: {
+                        ...state.paymentConfig,
+                        ...config
+                    }
+                };
+                saveToStorage(newState);
+                return newState;
+            });
+        },
+
         // Set shipping validation state
         setShippingValidated: (validated: boolean) => {
             update(state => {
                 const newState = {
                     ...state,
-                    shippingValidated: validated,
-                    // If shipping is validated, move to payment section
-                    currentSection: validated ? 'payment' : state.currentSection
+                    shippingValidated: validated
                 };
                 saveToStorage(newState);
                 return newState;

@@ -18,7 +18,8 @@ export function createShippingSchema(country: string) {
         prefecture: z.string().optional(),
         province: z.string().optional(),
         postalCode: z.string(),
-        country: z.string()
+        country: z.string(),
+        shippingMethod: z.string().min(1, 'Shipping method is required')
     };
 
     // Add country-specific postal code validation

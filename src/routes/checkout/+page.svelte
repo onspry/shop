@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import {
@@ -10,14 +9,14 @@
 		Item as SelectItem
 	} from '$lib/components/ui/select';
 	import * as Accordion from '$lib/components/ui/accordion';
-	import { superForm } from 'sveltekit-superforms/client';
-	import { enhance } from '$app/forms';
-	import { zod } from 'sveltekit-superforms/adapters';
-	import { emailSchema, shippingSchema } from '$lib/schemas/checkout';
+	import { superForm, type SuperForm } from 'sveltekit-superforms/client';
+	import { zodClient } from 'sveltekit-superforms/adapters';
+	import { emailSchema } from '$lib/schemas/auth';
+	import { shippingSchema, type ShippingSchema as ShippingZodSchema } from '$lib/schemas/shipping';
+	import { paymentSchema, type PaymentSchema } from '$lib/schemas/payment';
 	import * as m from '$lib/paraglide/messages';
 	import { formatPrice } from '$lib/utils/price';
 	import { ShoppingBag, User, Truck, ImageOff, Mail, MapPin, CreditCard } from 'lucide-svelte';
-	import type { z } from 'zod';
 	import type { PageData } from './$types';
 	import { browser } from '$app/environment';
 	import { countries, addressStructures } from '$lib/config/address-structures';
@@ -30,90 +29,207 @@
 	// Image handling state
 	let imageStates = $state(new Map<string, { error: boolean; loaded: boolean }>());
 
-	// Only maintain accordion state locally - the single state we need
-	let currentSection = $state($checkoutStore.currentSection);
-
-	// Synchronize section change with store
-	$effect(() => {
-		checkoutStore.setCurrentSection(currentSection);
-	});
+	// Add local state for current section
+	let currentSection = $state('email');
 
 	// Initialize forms with proper types
 	const {
 		form: emailForm,
 		errors: emailErrors,
-		enhance: emailEnhance
-	} = superForm<z.infer<typeof emailSchema>>(data.emailForm, {
-		validators: zod(emailSchema),
-		validationMethod: 'auto'
+		validate: validateEmail,
+		constraints: emailConstraints,
+		validateForm: validateEmailForm
+	} = superForm(data.emailForm, {
+		validators: zodClient(emailSchema),
+		validationMethod: 'oninput'
 	});
 
 	const {
 		form: shippingForm,
 		errors: shippingErrors,
-		enhance: shippingEnhance
-	} = superForm<z.infer<typeof shippingSchema>>(data.shippingForm, {
-		validators: zod(shippingSchema),
-		validationMethod: 'auto'
+		validate: validateShipping,
+		constraints: shippingConstraints,
+		validateForm: validateShippingForm
+	} = superForm(data.shippingForm, {
+		validators: zodClient(shippingSchema),
+		validationMethod: 'oninput'
+	});
+
+	const {
+		form: paymentForm,
+		errors: paymentErrors,
+		validate: validatePayment,
+		constraints: paymentConstraints,
+		validateForm: validatePaymentForm
+	} = superForm(data.paymentForm, {
+		validators: zodClient(paymentSchema),
+		validationMethod: 'oninput'
+	});
+
+	// Sync store state to forms immediately
+	$effect(() => {
+		// Sync email form with store
+		if ($checkoutStore.email) {
+			$emailForm.email = $checkoutStore.email;
+		}
+
+		// Sync shipping form with store
+		if (Object.values($checkoutStore.shippingConfig).some((value) => value)) {
+			$shippingForm.firstName = $checkoutStore.shippingConfig.firstName;
+			$shippingForm.lastName = $checkoutStore.shippingConfig.lastName;
+			$shippingForm.addressLine1 = $checkoutStore.shippingConfig.addressLine1;
+			$shippingForm.addressLine2 = $checkoutStore.shippingConfig.addressLine2;
+			$shippingForm.city = $checkoutStore.shippingConfig.city;
+			$shippingForm.state = $checkoutStore.shippingConfig.state;
+			$shippingForm.postalCode = $checkoutStore.shippingConfig.postalCode;
+			$shippingForm.country = $checkoutStore.shippingConfig.country;
+		}
 	});
 
 	// Read-only derived checkout state for UI rendering
 	const checkout = $derived({
-		// Validation states
-		emailValidated: $checkoutStore.emailValidated,
-		shippingValidated: $checkoutStore.shippingValidated,
+		// Validation states correctly checking for undefined error values
+		emailValidated: $emailErrors.email === undefined,
+		shippingValidated: Object.values($shippingErrors).every((error) => error === undefined),
+		paymentValidated: Object.values($paymentErrors).every((error) => error === undefined),
 		// User data
-		email: $checkoutStore.email,
+		email: $emailForm.email,
 		// Shipping config
-		country: $checkoutStore.shippingConfig.country,
-		shippingMethod: $checkoutStore.shippingConfig.shippingMethod,
+		country: $shippingForm.country,
+		shippingMethod: $shippingForm.shippingMethod,
 		// Shipping details for display
 		shippingCost: $checkoutStore.shippingCost,
 		estimatedDays: $checkoutStore.estimatedDays,
+		// Payment details for display - don't use actual card number
+		paymentMethod:
+			$paymentForm.cardHolder && $paymentForm.cardNumber
+				? `${$paymentForm.cardHolder} (••••${$paymentForm.cardNumber.slice(-4)})`
+				: undefined,
 		// Computed values
-		shippingAddress: $checkoutStore.shippingValidated ? { ...$checkoutStore.shippingConfig } : null,
-		addressStructure:
-			addressStructures[$checkoutStore.shippingConfig.country] || addressStructures.DEFAULT,
+		shippingAddress: Object.values($shippingErrors).every((error) => error === undefined)
+			? {
+					firstName: $shippingForm.firstName,
+					lastName: $shippingForm.lastName,
+					addressLine1: $shippingForm.addressLine1,
+					addressLine2: $shippingForm.addressLine2,
+					city: $shippingForm.city,
+					state: $shippingForm.state,
+					postalCode: $shippingForm.postalCode,
+					country: $shippingForm.country
+				}
+			: null,
+		addressStructure: addressStructures[$shippingForm.country] || addressStructures.DEFAULT,
 		// Order summary
 		subtotalWithDiscount: data.cart.subtotal - (data.cart.discountAmount || 0),
-		total: $checkoutStore.shippingValidated
+		total: Object.values($shippingErrors).every((error) => error === undefined)
 			? data.cart.total + $checkoutStore.shippingCost
 			: data.cart.subtotal - (data.cart.discountAmount || 0),
 		// User info
 		isLoggedIn: !!data.user
 	});
 
-	// Initialize forms from store data on mount
-	onMount(() => {
-		// Handle user data if logged in
-		if (data.user) {
-			// Set email from logged in user (automatically validates)
-			checkoutStore.setEmail(data.user.email, true);
-			currentSection = 'shipping';
+	// Initialize forms from store
+	onMount(async () => {
+		// Set email form from store or user data
+		$emailForm.email = data.user?.email || $checkoutStore.email || '';
 
-			// Pre-populate shipping form with user profile data
-			if (data.user.profile) {
-				$shippingForm.firstName =
-					data.user.profile.firstName || $checkoutStore.shippingConfig.firstName;
-				$shippingForm.lastName =
-					data.user.profile.lastName || $checkoutStore.shippingConfig.lastName;
-			}
-		} else if ($checkoutStore.email) {
-			// For guest users, use the email if already in store
-			$emailForm.email = $checkoutStore.email;
+		// Set shipping form from store
+		$shippingForm.firstName = $checkoutStore.shippingConfig.firstName || data.user?.firstName || '';
+		$shippingForm.lastName = $checkoutStore.shippingConfig.lastName || data.user?.lastName || '';
+		$shippingForm.addressLine1 =
+			$checkoutStore.shippingConfig.addressLine1 || data.user?.address || '';
+		$shippingForm.addressLine2 = $checkoutStore.shippingConfig.addressLine2 || '';
+		$shippingForm.city = $checkoutStore.shippingConfig.city || data.user?.city || '';
+		$shippingForm.state = $checkoutStore.shippingConfig.state || data.user?.state || '';
+		$shippingForm.postalCode =
+			$checkoutStore.shippingConfig.postalCode || data.user?.postalCode || '';
+		$shippingForm.country = $checkoutStore.shippingConfig.country || data.user?.country || 'US';
+		$shippingForm.shippingMethod = $checkoutStore.shippingConfig.shippingMethod || 'standard';
+
+		// Payment form is initialized empty for security reasons
+		// We don't retrieve payment data from any store
+
+		// Explicitly validate both forms after setting values
+		// This ensures proper initial validation state
+		if ($emailForm.email) {
+			await validateEmailForm();
 		}
 
-		// Populate shipping form with stored data
-		$shippingForm.firstName = $shippingForm.firstName || $checkoutStore.shippingConfig.firstName;
-		$shippingForm.lastName = $shippingForm.lastName || $checkoutStore.shippingConfig.lastName;
-		$shippingForm.addressLine1 = $checkoutStore.shippingConfig.addressLine1;
-		$shippingForm.addressLine2 = $checkoutStore.shippingConfig.addressLine2;
-		$shippingForm.city = $checkoutStore.shippingConfig.city;
-		$shippingForm.state = $checkoutStore.shippingConfig.state;
-		$shippingForm.postalCode = $checkoutStore.shippingConfig.postalCode;
-		$shippingForm.country = $checkoutStore.shippingConfig.country;
-		$shippingForm.shippingMethod = $checkoutStore.shippingConfig.shippingMethod;
+		// Start with email section for validation
+		currentSection = 'email';
 	});
+
+	// Handle section changes
+	async function handleSectionChange(section: string | undefined) {
+		window.scrollTo(0, 0);
+
+		// If no section is selected or same section clicked again,
+		// we want to close the current section and show its summary
+		if (!section || section === currentSection) {
+			// When closing a section, we don't change the currentSection state
+			// This allows us to keep track of the last selected section for
+			// display purposes while still allowing the accordion to close
+			return;
+		}
+
+		// Email section is always accessible
+		if (section === 'email') {
+			currentSection = section;
+			return;
+		}
+
+		// For shipping section, validate email first
+		if (section === 'shipping') {
+			// Use validateForm for more reliable email validation
+			const result = await validateEmailForm();
+			if (result.valid) {
+				// Update store with validated email
+				checkoutStore.setEmail($emailForm.email);
+				currentSection = section;
+			}
+			return;
+		}
+
+		// For payment section, validate both email and shipping
+		if (section === 'payment') {
+			// First validate email to ensure it's still valid
+			const emailResult = await validateEmailForm();
+
+			if (!emailResult.valid) {
+				currentSection = 'email';
+				return;
+			}
+
+			// Then validate shipping
+			const shippingResult = await validateShippingForm();
+
+			if (shippingResult.valid) {
+				// Update store with validated data
+				checkoutStore.setEmail($emailForm.email);
+				checkoutStore.updateShippingConfig({
+					firstName: $shippingForm.firstName,
+					lastName: $shippingForm.lastName,
+					addressLine1: $shippingForm.addressLine1,
+					addressLine2: $shippingForm.addressLine2,
+					city: $shippingForm.city,
+					state: $shippingForm.state,
+					postalCode: $shippingForm.postalCode,
+					country: $shippingForm.country,
+					shippingMethod: $shippingForm.shippingMethod
+				});
+
+				const method = shippingMethods.find((sm) => sm.id === $shippingForm.shippingMethod);
+				if (method) {
+					checkoutStore.setShippingCost(method.price);
+					checkoutStore.setEstimatedDays(method.estimatedDays);
+				}
+
+				currentSection = section;
+			} else {
+				currentSection = 'shipping';
+			}
+		}
+	}
 
 	// Shipping methods data
 	const shippingMethods = [
@@ -140,60 +256,15 @@
 		}
 	];
 
-	// Handle form action results
-	$effect(() => {
-		// Email form handling
-		if (data.emailForm?.error) {
-			// Email validation failed
-			checkoutStore.setEmail($emailForm.email, false);
-		} else if (data.emailForm?.success) {
-			// Email validation successful
-			checkoutStore.setEmail($emailForm.email, true);
-			currentSection = 'shipping';
-		}
-
-		// Shipping form handling
-		if (data.shippingForm?.error) {
-			// Shipping validation failed
-			checkoutStore.setShippingValidated(false);
-		} else if (data.shippingForm?.success) {
-			// Shipping validation successful
-
-			// Update shipping config in store
-			checkoutStore.updateShippingConfig({
-				firstName: $shippingForm.firstName,
-				lastName: $shippingForm.lastName,
-				addressLine1: $shippingForm.addressLine1,
-				addressLine2: $shippingForm.addressLine2,
-				city: $shippingForm.city,
-				state: $shippingForm.state,
-				postalCode: $shippingForm.postalCode,
-				country: $shippingForm.country,
-				shippingMethod: $shippingForm.shippingMethod
-			});
-
-			// Find shipping cost based on selected method
-			const method = shippingMethods.find((m) => m.id === $shippingForm.shippingMethod);
-			if (method) {
-				checkoutStore.setShippingCost(method.price);
-				checkoutStore.setEstimatedDays(method.estimatedDays);
-			}
-
-			// Mark shipping as validated and proceed to payment
-			checkoutStore.setShippingValidated(true);
-			currentSection = 'payment';
-		}
-	});
-
 	// Update shipping method in form and store
 	function handleShippingMethodChange(method: string) {
-		// Update the form value
+		// Update shipping method in form
 		$shippingForm.shippingMethod = method;
 
-		// Update shipping method details
+		// Update shipping method details in store
 		const selectedMethod = shippingMethods.find((sm) => sm.id === method);
 		if (selectedMethod) {
-			// Update shipping cost and estimated days in store
+			checkoutStore.updateShippingConfig({ shippingMethod: method });
 			checkoutStore.setShippingCost(selectedMethod.price);
 			checkoutStore.setEstimatedDays(selectedMethod.estimatedDays);
 		}
@@ -210,22 +281,74 @@
 		imageStates = imageStates;
 	}
 
-	// Handle section change requests
-	function handleSectionChange(section: string) {
-		// Prevent unauthorized section changes
-		if (section === 'shipping' && !checkout.emailValidated) {
-			return;
-		}
+	// Handle field blur
+	async function handleFieldBlur(field: string, form: 'email' | 'shipping' | 'payment') {
+		if (form === 'email') {
+			const isValid = await validateEmail(field);
+			// Always save the email to store regardless of validation result
+			// This ensures we always have the latest email value
+			checkoutStore.setEmail($emailForm.email);
+		} else if (form === 'shipping') {
+			const isValid = await validateShipping(field);
 
-		if (section === 'payment' && !checkout.shippingValidated) {
-			return;
-		}
+			// Always update the store with latest values regardless of validation
+			checkoutStore.updateShippingConfig({
+				firstName: $shippingForm.firstName,
+				lastName: $shippingForm.lastName,
+				addressLine1: $shippingForm.addressLine1,
+				addressLine2: $shippingForm.addressLine2,
+				city: $shippingForm.city,
+				state: $shippingForm.state,
+				postalCode: $shippingForm.postalCode,
+				country: $shippingForm.country
+			});
+		} else if (form === 'payment') {
+			const isValid = await validatePayment(field);
 
-		// Allow section change if validation passed
-		currentSection = section as 'email' | 'shipping' | 'payment';
+			// Do not store payment data for security reasons
+			// Only validate the form
+		}
 	}
+
+	// Update store on form success
+	$effect(() => {
+		if (data.emailForm?.success) {
+			checkoutStore.setEmail($emailForm.email);
+		}
+
+		if (data.shippingForm?.success) {
+			checkoutStore.updateShippingConfig({
+				firstName: $shippingForm.firstName,
+				lastName: $shippingForm.lastName,
+				addressLine1: $shippingForm.addressLine1,
+				addressLine2: $shippingForm.addressLine2,
+				city: $shippingForm.city,
+				state: $shippingForm.state,
+				postalCode: $shippingForm.postalCode,
+				country: $shippingForm.country,
+				shippingMethod: $shippingForm.shippingMethod
+			});
+
+			const method = shippingMethods.find((sm) => sm.id === $shippingForm.shippingMethod);
+			if (method) {
+				checkoutStore.setShippingCost(method.price);
+				checkoutStore.setEstimatedDays(method.estimatedDays);
+			}
+		}
+
+		if (data.paymentForm?.success) {
+			checkoutStore.updatePaymentConfig({
+				cardNumber: $paymentForm.cardNumber,
+				cardHolder: $paymentForm.cardHolder,
+				expiryDate: $paymentForm.expiryDate,
+				cvv: $paymentForm.cvv,
+				savePaymentMethod: $paymentForm.savePaymentMethod
+			});
+		}
+	});
 </script>
 
+<!-- <pre>{JSON.stringify($checkoutStore, null, 2)}</pre> -->
 <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
 	<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
 		<!-- Main checkout flow -->
@@ -239,71 +362,63 @@
 								<Mail class="h-5 w-5" />
 								{m.checkout_tab_email()}
 							</h2>
-							{#if checkout.emailValidated && currentSection !== 'email'}
+							{#if checkout.emailValidated}
 								<div class="text-sm text-muted-foreground flex items-center gap-2">
 									<User class="h-4 w-4" />
-									<span>{checkout.email}</span>
+									<span>{$emailForm.email}</span>
 								</div>
 							{/if}
 						</div>
 					</Accordion.Trigger>
-					<Accordion.Content class="pt-4">
-						<div class="space-y-6">
-							{#if checkout.isLoggedIn}
-								<!-- Logged in user view -->
-								<div class="flex items-start gap-4">
-									<div class="bg-muted p-4 rounded-lg flex-1">
-										<div class="flex items-center gap-2 mb-2">
-											<User class="h-5 w-5 text-primary" />
-											<p class="font-medium">Signed in as</p>
+					<Accordion.Content>
+						<div class="pt-4">
+							<div class="space-y-6">
+								{#if checkout.isLoggedIn}
+									<!-- Logged in user view -->
+									<div class="flex items-start gap-4">
+										<div class="bg-muted p-4 rounded-lg flex-1">
+											<div class="flex items-center gap-2 mb-2">
+												<User class="h-5 w-5 text-primary" />
+												<p class="font-medium">Signed in as</p>
+											</div>
+											<p class="text-muted-foreground">{data.user.email}</p>
 										</div>
-										<p class="text-muted-foreground">{data.user.email}</p>
 									</div>
-								</div>
-							{:else}
-								<div class="flex items-center justify-between">
-									<h3 class="text-lg font-medium">Contact information</h3>
-									<div class="text-sm">
-										Already have an account?
-										<a href="/auth/login?redirect=/checkout" class="text-primary hover:underline"
-											>Log in</a
-										>
+								{:else}
+									<div class="flex items-center justify-between">
+										<h3 class="text-lg font-medium">Contact information</h3>
+										<div class="text-sm">
+											Already have an account?
+											<a href="/auth/login?redirect=/checkout" class="text-primary hover:underline"
+												>Log in</a
+											>
+										</div>
 									</div>
-								</div>
 
-								<div class="space-y-4">
-									<div class="space-y-2">
-										<Input
-											type="email"
-											name="email"
-											bind:value={$emailForm.email}
-											placeholder="Email"
-											required
-											onblur={() => {
-												if (!$emailForm.email || $emailForm.email.trim() === '') {
-													// Don't validate empty emails, just update store with empty value
-													checkoutStore.setEmail('', false);
-													return;
-												}
-
-												const result = emailSchema.safeParse({ email: $emailForm.email });
-												if (result.success) {
-													checkoutStore.setEmail($emailForm.email, true);
-													currentSection = 'shipping';
-												} else {
-													// Set email to empty in the store
-													checkoutStore.setEmail($emailForm.email, false);
-												}
-											}}
-										/>
-										{#if $emailErrors.email}
-											<p class="text-sm text-destructive">{$emailErrors.email}</p>
-										{:else if !checkout.emailValidated && $emailForm.email && $emailForm.email.length > 0}
-											<p class="text-sm text-destructive">Please enter a valid email address</p>
-										{/if}
+									<div class="space-y-4">
+										<div class="space-y-2">
+											<Input
+												type="email"
+												name="email"
+												bind:value={$emailForm.email}
+												placeholder="Email"
+												aria-invalid={$emailErrors.email ? 'true' : undefined}
+												{...$emailConstraints.email}
+												onblur={() => handleFieldBlur('email', 'email')}
+												oninput={async (e) => {
+													// Always keep store in sync with form value
+													checkoutStore.setEmail(e.currentTarget.value);
+													// Also validate on input
+													await validateEmail('email');
+												}}
+											/>
+											{#if $emailErrors.email}
+												<p class="text-sm text-destructive">{$emailErrors.email}</p>
+											{/if}
+										</div>
 									</div>
-								</div>
-							{/if}
+								{/if}
+							</div>
 						</div>
 					</Accordion.Content>
 				</Accordion.Item>
@@ -337,181 +452,274 @@
 							{/if}
 						</div>
 					</Accordion.Trigger>
-					<Accordion.Content class="pt-4">
-						<div class="py-6">
-							<form method="POST" action="?/shipping" use:shippingEnhance class="space-y-6">
-								<!-- Country Selection -->
-								<div class="grid gap-2">
-									<Label for="country">{m.country()}</Label>
-									{#if browser}
-										<Select
-											type="single"
-											value={$shippingForm.country}
-											onValueChange={(value) => ($shippingForm.country = value)}
-										>
-											<SelectTrigger class="w-full">
-												{countries.find((c) => c.value === $shippingForm.country)?.label ||
-													m.country_us()}
-											</SelectTrigger>
-											<SelectContent>
-												<SelectGroup>
-													{#each countries as country}
-														<SelectItem value={country.value}>
-															{country.label}
-														</SelectItem>
-													{/each}
-												</SelectGroup>
-											</SelectContent>
-										</Select>
-									{:else}
-										<Input type="text" name="country" value={$shippingForm.country} readonly />
-									{/if}
-								</div>
-
-								<!-- Form Fields -->
-								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-									<div class="grid gap-2">
-										<Label for="firstName">{m.checkout_first_name()}</Label>
-										<Input
-											type="text"
-											name="firstName"
-											bind:value={$shippingForm.firstName}
-											required
-										/>
-									</div>
-
-									<div class="grid gap-2">
-										<Label for="lastName">{m.checkout_last_name()}</Label>
-										<Input
-											type="text"
-											name="lastName"
-											bind:value={$shippingForm.lastName}
-											required
-										/>
-									</div>
-
-									<div class="grid gap-2 md:col-span-2">
-										<Label for="addressLine1">{checkout.addressStructure.labels.addressLine1}</Label
-										>
-										<Input
-											type="text"
-											name="addressLine1"
-											bind:value={$shippingForm.addressLine1}
-											placeholder={checkout.addressStructure.placeholders.addressLine1}
-											required
-										/>
-									</div>
-
-									<div class="grid gap-2 md:col-span-2">
-										<Label for="addressLine2">{checkout.addressStructure.labels.addressLine2}</Label
-										>
-										<Input
-											type="text"
-											name="addressLine2"
-											bind:value={$shippingForm.addressLine2}
-											placeholder={checkout.addressStructure.placeholders.addressLine2}
-										/>
-									</div>
-
-									<div class="grid gap-2">
-										<Label for="city">{checkout.addressStructure.labels.city}</Label>
-										<Input
-											type="text"
-											name="city"
-											bind:value={$shippingForm.city}
-											placeholder={checkout.addressStructure.placeholders.city}
-											required
-										/>
-									</div>
-
-									{#if checkout.addressStructure.fields.includes('state')}
+					{#if currentSection === 'shipping'}
+						<Accordion.Content>
+							<div class="pt-4">
+								<div class="py-6">
+									<div class="space-y-6">
+										<!-- Country Selection -->
 										<div class="grid gap-2">
-											<Label for="state">{checkout.addressStructure.labels.state}</Label>
-											<Input
-												type="text"
-												name="state"
-												bind:value={$shippingForm.state}
-												placeholder={checkout.addressStructure.placeholders.state}
-												required
-											/>
+											<Label for="country">{m.country()}</Label>
+											{#if browser}
+												<Select
+													type="single"
+													value={$shippingForm.country}
+													onValueChange={async (value) => {
+														// Update the form value
+														$shippingForm.country = value;
+
+														// Update the store
+														checkoutStore.updateShippingConfig({ country: value });
+
+														// Validate with new country rules
+														await validateShipping('country');
+													}}
+												>
+													<SelectTrigger class="w-full">
+														{countries.find((c) => c.value === $shippingForm.country)?.label ||
+															m.country_us()}
+													</SelectTrigger>
+													<SelectContent>
+														<SelectGroup>
+															{#each countries as country}
+																<SelectItem value={country.value}>
+																	{country.label}
+																</SelectItem>
+															{/each}
+														</SelectGroup>
+													</SelectContent>
+												</Select>
+											{:else}
+												<Input type="text" name="country" value={$shippingForm.country} readonly />
+											{/if}
+											{#if $shippingErrors.country}
+												<p class="text-sm text-destructive">{$shippingErrors.country[0]}</p>
+											{/if}
 										</div>
-									{/if}
 
-									<div class="grid gap-2">
-										<Label for="postalCode">{checkout.addressStructure.labels.postalCode}</Label>
-										<Input
-											type="text"
-											name="postalCode"
-											bind:value={$shippingForm.postalCode}
-											placeholder={checkout.addressStructure.placeholders.postalCode}
-											required
-										/>
-									</div>
-								</div>
+										<!-- Form Fields -->
+										<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+											<div class="grid gap-2">
+												<Label for="firstName">{m.checkout_first_name()}</Label>
+												<Input
+													type="text"
+													name="firstName"
+													bind:value={$shippingForm.firstName}
+													required
+													onblur={() => handleFieldBlur('firstName', 'shipping')}
+													oninput={async () => {
+														// Always keep store in sync with form value
+														checkoutStore.updateShippingConfig({
+															firstName: $shippingForm.firstName
+														});
+														// Also validate on input
+														await validateShipping('firstName');
+													}}
+												/>
+												{#if $shippingErrors.firstName}
+													<p class="text-sm text-destructive">{$shippingErrors.firstName[0]}</p>
+												{/if}
+											</div>
 
-								<!-- Shipping Method -->
-								<div class="space-y-6">
-									<h3 class="text-lg font-medium">{m.checkout_shipping_method()}</h3>
-									<input
-										type="hidden"
-										name="shippingMethod"
-										bind:value={$shippingForm.shippingMethod}
-									/>
-									<div
-										class="space-y-4"
-										role="radiogroup"
-										aria-label={m.checkout_shipping_method()}
-									>
-										{#each shippingMethods as method}
-											<button
-												type="button"
-												role="radio"
-												aria-checked={$shippingForm.shippingMethod === method.id}
-												class={`w-full text-left flex items-start gap-4 p-4 rounded-lg bg-muted/5 cursor-pointer hover:bg-muted/10 transition-colors ${$shippingForm.shippingMethod === method.id ? 'ring-1 ring-primary' : ''}`}
-												onclick={() => handleShippingMethodChange(method.id)}
-											>
-												<div class="flex-1">
-													<div class="flex items-center gap-2">
-														<div
-															class="w-4 h-4 rounded-full border-2 border-primary flex items-center justify-center"
-														>
-															{#if $shippingForm.shippingMethod === method.id}
-																<div class="w-2 h-2 rounded-full bg-primary"></div>
-															{/if}
-														</div>
-														<span class="font-medium">{method.name}</span>
-														<span class="text-sm text-muted-foreground">
-															({method.estimatedDays}
-															{m.shipping_business_days()})
-														</span>
-													</div>
-													<p class="text-sm text-muted-foreground ml-6 mt-1">
-														{method.description}
-													</p>
+											<div class="grid gap-2">
+												<Label for="lastName">{m.checkout_last_name()}</Label>
+												<Input
+													type="text"
+													name="lastName"
+													bind:value={$shippingForm.lastName}
+													required
+													onblur={() => handleFieldBlur('lastName', 'shipping')}
+													oninput={async () => {
+														checkoutStore.updateShippingConfig({
+															lastName: $shippingForm.lastName
+														});
+														await validateShipping('lastName');
+													}}
+												/>
+												{#if $shippingErrors.lastName}
+													<p class="text-sm text-destructive">{$shippingErrors.lastName[0]}</p>
+												{/if}
+											</div>
+
+											<div class="grid gap-2 md:col-span-2">
+												<Label for="addressLine1"
+													>{checkout.addressStructure.labels.addressLine1}</Label
+												>
+												<Input
+													type="text"
+													name="addressLine1"
+													bind:value={$shippingForm.addressLine1}
+													placeholder={checkout.addressStructure.placeholders.addressLine1}
+													required
+													onblur={() => handleFieldBlur('addressLine1', 'shipping')}
+													oninput={async () => {
+														checkoutStore.updateShippingConfig({
+															addressLine1: $shippingForm.addressLine1
+														});
+														await validateShipping('addressLine1');
+													}}
+												/>
+												{#if $shippingErrors.addressLine1}
+													<p class="text-sm text-destructive">{$shippingErrors.addressLine1[0]}</p>
+												{/if}
+											</div>
+
+											<div class="grid gap-2 md:col-span-2">
+												<Label for="addressLine2"
+													>{checkout.addressStructure.labels.addressLine2}</Label
+												>
+												<Input
+													type="text"
+													name="addressLine2"
+													bind:value={$shippingForm.addressLine2}
+													placeholder={checkout.addressStructure.placeholders.addressLine2}
+													onblur={() => handleFieldBlur('addressLine2', 'shipping')}
+													oninput={(e) => {
+														checkoutStore.updateShippingConfig({
+															addressLine2: e.currentTarget.value || ''
+														});
+													}}
+												/>
+											</div>
+
+											<div class="grid gap-2">
+												<Label for="city">{checkout.addressStructure.labels.city}</Label>
+												<Input
+													type="text"
+													name="city"
+													bind:value={$shippingForm.city}
+													placeholder={checkout.addressStructure.placeholders.city}
+													required
+													onblur={() => handleFieldBlur('city', 'shipping')}
+													oninput={async () => {
+														checkoutStore.updateShippingConfig({
+															city: $shippingForm.city
+														});
+														await validateShipping('city');
+													}}
+												/>
+												{#if $shippingErrors.city}
+													<p class="text-sm text-destructive">{$shippingErrors.city[0]}</p>
+												{/if}
+											</div>
+
+											{#if checkout.addressStructure.fields.includes('state')}
+												<div class="grid gap-2">
+													<Label for="state">{checkout.addressStructure.labels.state}</Label>
+													<Input
+														type="text"
+														name="state"
+														bind:value={$shippingForm.state}
+														placeholder={checkout.addressStructure.placeholders.state}
+														required
+														onblur={() => handleFieldBlur('state', 'shipping')}
+														oninput={async () => {
+															checkoutStore.updateShippingConfig({
+																state: $shippingForm.state
+															});
+															await validateShipping('state');
+														}}
+													/>
+													{#if $shippingErrors.state}
+														<p class="text-sm text-destructive">{$shippingErrors.state[0]}</p>
+													{/if}
 												</div>
-												<div class="font-medium">{formatPrice(method.price)}</div>
-											</button>
-										{/each}
+											{/if}
+
+											<div class="grid gap-2">
+												<Label for="postalCode">{checkout.addressStructure.labels.postalCode}</Label
+												>
+												<Input
+													type="text"
+													name="postalCode"
+													bind:value={$shippingForm.postalCode}
+													placeholder={checkout.addressStructure.placeholders.postalCode}
+													required
+													onblur={() => handleFieldBlur('postalCode', 'shipping')}
+													oninput={async () => {
+														checkoutStore.updateShippingConfig({
+															postalCode: $shippingForm.postalCode
+														});
+														await validateShipping('postalCode');
+													}}
+												/>
+												{#if $shippingErrors.postalCode}
+													<p class="text-sm text-destructive">{$shippingErrors.postalCode[0]}</p>
+												{/if}
+											</div>
+										</div>
+
+										<!-- Shipping Method -->
+										<div class="space-y-6">
+											<h3 class="text-lg font-medium">{m.checkout_shipping_method()}</h3>
+											<input
+												type="hidden"
+												name="shippingMethod"
+												bind:value={$shippingForm.shippingMethod}
+											/>
+											<div
+												class="space-y-4"
+												role="radiogroup"
+												aria-label={m.checkout_shipping_method()}
+											>
+												{#each shippingMethods as method}
+													<button
+														type="button"
+														role="radio"
+														aria-checked={$shippingForm.shippingMethod === method.id}
+														class={`w-full text-left flex items-start gap-4 p-4 rounded-lg bg-muted/5 cursor-pointer hover:bg-muted/10 transition-colors ${$shippingForm.shippingMethod === method.id ? 'ring-1 ring-primary' : ''}`}
+														onclick={() => {
+															handleShippingMethodChange(method.id);
+														}}
+													>
+														<div class="flex-1">
+															<div class="flex items-center gap-2">
+																<div
+																	class="w-4 h-4 rounded-full border-2 border-primary flex items-center justify-center"
+																>
+																	{#if $shippingForm.shippingMethod === method.id}
+																		<div class="w-2 h-2 rounded-full bg-primary"></div>
+																	{/if}
+																</div>
+																<span class="font-medium">{method.name}</span>
+																<span class="text-sm text-muted-foreground">
+																	({method.estimatedDays}
+																	{m.shipping_business_days()})
+																</span>
+															</div>
+															<p class="text-sm text-muted-foreground ml-6 mt-1">
+																{method.description}
+															</p>
+														</div>
+														<div class="font-medium">{formatPrice(method.price)}</div>
+													</button>
+												{/each}
+											</div>
+										</div>
 									</div>
 								</div>
-
-								<Button type="submit" class="w-full">
-									{m.checkout_continue()}
-								</Button>
-							</form>
-						</div>
-					</Accordion.Content>
+							</div>
+						</Accordion.Content>
+					{/if}
 				</Accordion.Item>
 
 				<!-- Payment Section -->
-				<Accordion.Item value="payment" disabled={!checkout.shippingValidated}>
+				<Accordion.Item
+					value="payment"
+					disabled={!checkout.emailValidated || !checkout.shippingValidated}
+				>
 					<Accordion.Trigger class="w-full py-4">
 						<div class="flex items-center justify-between w-full">
 							<h2 class="text-2xl font-semibold flex items-center gap-2">
 								<CreditCard class="h-5 w-5" />
 								{m.checkout_tab_payment()}
 							</h2>
-							{#if currentSection !== 'payment'}
+							{#if checkout.paymentValidated && currentSection !== 'payment' && checkout.paymentMethod}
+								<div class="text-sm text-muted-foreground flex items-center gap-2">
+									<CreditCard class="h-4 w-4" />
+									<span>{checkout.paymentMethod}</span>
+								</div>
+							{:else if currentSection !== 'payment'}
 								<div class="text-sm text-muted-foreground flex items-center gap-2">
 									<CreditCard class="h-4 w-4" />
 									<span>Not provided</span>
@@ -519,22 +727,101 @@
 							{/if}
 						</div>
 					</Accordion.Trigger>
-					<Accordion.Content class="pt-4">
-						<div class="py-6">
-							<div class="flex gap-4">
-								<button
-									class="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md"
-								>
-									{m.simulate_successful_payment()}
-								</button>
-								<button
-									class="bg-destructive text-destructive-foreground hover:bg-destructive/90 px-4 py-2 rounded-md"
-								>
-									{m.simulate_failed_payment()}
-								</button>
+					{#if currentSection === 'payment'}
+						<Accordion.Content class="pt-4">
+							<div class="py-6">
+								<div class="space-y-6">
+									<h3 class="text-lg font-medium">Payment Details</h3>
+
+									<div class="grid grid-cols-1 gap-6">
+										<!-- Card Number -->
+										<div class="grid gap-2">
+											<Label for="cardNumber">{m.checkout_card_number()}</Label>
+											<Input
+												type="text"
+												name="cardNumber"
+												bind:value={$paymentForm.cardNumber}
+												placeholder="1234 5678 9012 3456"
+												required
+												onblur={() => handleFieldBlur('cardNumber', 'payment')}
+												oninput={async () => {
+													// Validate without storing
+													await validatePayment('cardNumber');
+												}}
+											/>
+											{#if $paymentErrors.cardNumber}
+												<p class="text-sm text-destructive">{$paymentErrors.cardNumber}</p>
+											{/if}
+										</div>
+
+										<!-- Card Holder -->
+										<div class="grid gap-2">
+											<Label for="cardHolder">{m.checkout_card_holder()}</Label>
+											<Input
+												type="text"
+												name="cardHolder"
+												bind:value={$paymentForm.cardHolder}
+												placeholder="John Doe"
+												required
+												onblur={() => handleFieldBlur('cardHolder', 'payment')}
+												oninput={async () => {
+													// Validate without storing
+													await validatePayment('cardHolder');
+												}}
+											/>
+											{#if $paymentErrors.cardHolder}
+												<p class="text-sm text-destructive">{$paymentErrors.cardHolder}</p>
+											{/if}
+										</div>
+
+										<div class="grid grid-cols-2 gap-4">
+											<!-- Expiry Date -->
+											<div class="grid gap-2">
+												<Label for="expiryDate">{m.checkout_expiry_date()}</Label>
+												<Input
+													type="text"
+													name="expiryDate"
+													bind:value={$paymentForm.expiryDate}
+													placeholder="MM/YY"
+													required
+													onblur={() => handleFieldBlur('expiryDate', 'payment')}
+													oninput={async () => {
+														// Validate without storing
+														await validatePayment('expiryDate');
+													}}
+												/>
+												{#if $paymentErrors.expiryDate}
+													<p class="text-sm text-destructive">{$paymentErrors.expiryDate}</p>
+												{/if}
+											</div>
+
+											<!-- CVV -->
+											<div class="grid gap-2">
+												<Label for="cvv">{m.checkout_cvv()}</Label>
+												<Input
+													type="text"
+													name="cvv"
+													bind:value={$paymentForm.cvv}
+													placeholder="123"
+													required
+													onblur={() => handleFieldBlur('cvv', 'payment')}
+													oninput={async () => {
+														// Validate without storing
+														await validatePayment('cvv');
+													}}
+												/>
+												{#if $paymentErrors.cvv}
+													<p class="text-sm text-destructive">{$paymentErrors.cvv}</p>
+												{/if}
+											</div>
+										</div>
+
+										<!-- Save Payment Method Checkbox - Removed for security -->
+									</div>
+								</div>
 							</div>
-						</div>
-					</Accordion.Content>
+						</Accordion.Content>
+					{/if}
 				</Accordion.Item>
 			</Accordion.Root>
 		</div>
@@ -671,14 +958,3 @@
 		</div>
 	</div>
 </div>
-
-{#if browser && import.meta.env.DEV}
-	<div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-8 border-t">
-		<details>
-			<summary class="cursor-pointer font-medium mb-4">Debug Store State</summary>
-			<div class="bg-muted p-4 rounded overflow-auto max-h-[500px]">
-				<pre class="text-xs">{JSON.stringify($checkoutStore, null, 2)}</pre>
-			</div>
-		</details>
-	</div>
-{/if}
