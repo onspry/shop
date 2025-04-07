@@ -18,7 +18,7 @@
 	} from '$lib/schemas/shipping';
 	import * as m from '$lib/paraglide/messages';
 	import { formatPrice } from '$lib/utils/price';
-	import { ShoppingBag, User, Truck, ImageOff, Mail, MapPin } from 'lucide-svelte';
+	import { ShoppingBag, User, Truck, ImageOff, Mail, MapPin, Globe } from 'lucide-svelte';
 	import type { PageData } from './$types';
 	import { browser } from '$app/environment';
 	import { countries, addressStructures } from '$lib/config/address-structures';
@@ -26,6 +26,7 @@
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button';
+	import * as Form from '$lib/components/ui/form';
 
 	// Page data props
 	const { data } = $props<{ data: PageData }>();
@@ -34,15 +35,24 @@
 	let imageStates = $state(new Map<string, { error: boolean; loaded: boolean }>());
 
 	// Initialize forms with proper types
+	const emailSuperForm = superForm(data.emailForm, {
+		validators: zod(emailSchema),
+		validationMethod: 'onblur',
+		taintedMessage: false
+	});
+
 	const {
 		form: emailForm,
 		errors: emailErrors,
 		validate: validateEmail,
 		constraints: emailConstraints,
 		validateForm: validateEmailForm
-	} = superForm(data.emailForm, {
-		validators: zod(emailSchema),
-		validationMethod: 'oninput'
+	} = emailSuperForm;
+
+	const shippingSuperForm = superForm(data.shippingForm, {
+		validators: zod(shippingSchema),
+		validationMethod: 'onblur',
+		taintedMessage: false
 	});
 
 	const {
@@ -52,10 +62,7 @@
 		constraints: shippingConstraints,
 		validateForm: validateShippingForm,
 		options: shippingOptions
-	} = superForm(data.shippingForm, {
-		validators: zod(shippingSchema),
-		validationMethod: 'oninput'
-	});
+	} = shippingSuperForm;
 
 	// Define schema after form initialization
 	const currentCountrySchema = $derived<ShippingZodSchema>(
@@ -258,11 +265,30 @@
 
 		if (!emailValid.valid) {
 			showValidationFeedback('Please correct the errors in the email section.');
-			window.scrollTo(0, 0);
+			// Force validation on email field
+			await validateEmail('email');
+			// Scroll to email section
+			const emailSection = document.querySelector('[data-section="email"]');
+			if (emailSection) {
+				emailSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			}
 			return;
 		}
 		if (!shippingValid.valid) {
 			showValidationFeedback('Please correct the errors in the shipping section.');
+			// Force validation on all shipping fields
+			await validateShipping('firstName');
+			await validateShipping('lastName');
+			await validateShipping('addressLine1');
+			await validateShipping('city');
+			await validateShipping('state');
+			await validateShipping('postalCode');
+			await validateShipping('country');
+			// Scroll to shipping section
+			const shippingSection = document.querySelector('[data-section="shipping"]');
+			if (shippingSection) {
+				shippingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			}
 			return;
 		}
 
@@ -312,13 +338,13 @@
 <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
 	<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
 		<!-- Main checkout flow -->
-		<div class="lg:col-span-8">
+		<div class="lg:col-span-7">
 			<!-- Email Section -->
-			<div class="mb-8">
-				<div class="flex items-center justify-between w-full mb-4">
+			<div class="mb-8" data-section="email">
+				<div class="flex items-center justify-between w-full mb-6">
 					<h2 class="text-2xl font-semibold flex items-center gap-2">
 						<Mail class="h-5 w-5" />
-						{m.checkout_tab_email()}
+						{m.checkout_contact_info_title()}
 						{#if formErrors.email}
 							<span
 								class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-destructive ml-2 error-indicator"
@@ -342,42 +368,45 @@
 							</div>
 						</div>
 					{:else}
-						<div class="flex items-center justify-between">
-							<h3 class="text-lg font-medium">Contact information</h3>
-							<div class="text-sm">
+						<div class="flex items-center justify-between mb-4">
+							<div class="text-sm text-muted-foreground">
 								Already have an account?
-								<a href="/auth/login?redirect=/checkout" class="text-primary hover:underline"
+								<a href="/auth/login?redirect=/checkout" class="text-primary hover:underline ml-1"
 									>Log in</a
 								>
 							</div>
 						</div>
 
-						<div class="space-y-4">
-							<div class="space-y-2">
-								<Input
-									type="email"
-									name="email"
-									bind:value={$emailForm.email}
-									placeholder="Email"
-									aria-invalid={$emailErrors.email ? 'true' : undefined}
-									{...$emailConstraints.email}
-									oninput={async (e) => {
-										checkoutStore.setEmail(e.currentTarget.value);
-										await validateEmail('email');
-									}}
-								/>
-								{#if $emailErrors.email}
-									<p class="text-sm text-destructive">{$emailErrors.email}</p>
-								{/if}
-							</div>
-						</div>
+						<form>
+							<Form.Field form={emailSuperForm} name="email">
+								<Form.Control>
+									{#snippet children({ props })}
+										<Form.Label>Email</Form.Label>
+										<Input
+											{...props}
+											type="email"
+											bind:value={$emailForm.email}
+											placeholder="Email"
+											aria-invalid={$emailErrors.email ? 'true' : undefined}
+											{...$emailConstraints.email}
+											oninput={async (e: any) => {
+												checkoutStore.setEmail(e.currentTarget.value);
+												await validateEmail('email');
+											}}
+										/>
+									{/snippet}
+								</Form.Control>
+								<Form.Description>We'll send your order confirmation here</Form.Description>
+								<Form.FieldErrors />
+							</Form.Field>
+						</form>
 					{/if}
 				</div>
 			</div>
 
 			<!-- Shipping Section -->
-			<div>
-				<div class="flex items-center justify-between w-full mb-4">
+			<div class="mb-8" data-section="shipping">
+				<div class="flex items-center justify-between w-full mb-6">
 					<h2 class="text-2xl font-semibold flex items-center gap-2">
 						<MapPin class="h-5 w-5" />
 						{m.checkout_tab_shipping()}
@@ -393,228 +422,257 @@
 					</h2>
 				</div>
 
-				<div class="space-y-6">
-					<!-- Country Selection -->
-					<div class="input-wrapper">
-						<Label for="country">{m.country()}</Label>
-						{#if browser}
-							<Select
-								type="single"
-								value={$shippingForm.country}
-								onValueChange={handleCountryChange}
-							>
-								<SelectTrigger class="w-full">
-									{countries.find((c) => c.value === $shippingForm.country)?.label ||
-										m.country_us()}
-								</SelectTrigger>
-								<SelectContent>
-									<SelectGroup>
-										{#each countries as country}
-											<SelectItem value={country.value}>
-												{country.label}
-											</SelectItem>
-										{/each}
-									</SelectGroup>
-								</SelectContent>
-							</Select>
-						{:else}
-							<Input type="text" name="country" value={$shippingForm.country} readonly />
-						{/if}
-						{#if $shippingErrors.country}
-							<p class="error-message">{$shippingErrors.country[0]}</p>
-						{/if}
-					</div>
+				<form>
+					<div class="grid gap-6">
+						<!-- Country Selection -->
+						<Form.Field form={shippingSuperForm} name="country">
+							<Form.Control>
+								{#snippet children({ props })}
+									<Form.Label>{m.country()}</Form.Label>
+									{#if browser}
+										<Select
+											type="single"
+											value={$shippingForm.country}
+											onValueChange={handleCountryChange}
+										>
+											<SelectTrigger class="w-full">
+												{countries.find((c) => c.value === $shippingForm.country)?.label ||
+													m.country_us()}
+											</SelectTrigger>
+											<SelectContent>
+												<SelectGroup>
+													{#each countries as country}
+														<SelectItem value={country.value}>
+															{country.label}
+														</SelectItem>
+													{/each}
+												</SelectGroup>
+											</SelectContent>
+										</Select>
+									{:else}
+										<Input type="text" {...props} value={$shippingForm.country} readonly />
+									{/if}
+								{/snippet}
+							</Form.Control>
+							<Form.FieldErrors />
+						</Form.Field>
 
-					<!-- Name Fields -->
-					<div class="form-row form-row-2">
-						<div class="input-wrapper">
-							<Label for="firstName">{m.checkout_first_name()}</Label>
-							<Input
-								type="text"
-								name="firstName"
-								bind:value={$shippingForm.firstName}
-								oninput={async () => {
-									checkoutStore.updateShippingConfig({
-										firstName: $shippingForm.firstName
-									});
-									await validateShipping('firstName');
-								}}
-							/>
-							{#if $shippingErrors.firstName}
-								<p class="error-message">{$shippingErrors.firstName[0]}</p>
-							{/if}
+						<!-- Name Fields -->
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<Form.Field form={shippingSuperForm} name="firstName">
+								<Form.Control>
+									{#snippet children({ props })}
+										<Form.Label>{m.checkout_first_name()}</Form.Label>
+										<Input
+											{...props}
+											bind:value={$shippingForm.firstName}
+											onblur={async () => {
+												await validateShipping('firstName');
+											}}
+											oninput={() => {
+												checkoutStore.updateShippingConfig({
+													firstName: $shippingForm.firstName
+												});
+											}}
+										/>
+									{/snippet}
+								</Form.Control>
+								<Form.FieldErrors />
+							</Form.Field>
+
+							<Form.Field form={shippingSuperForm} name="lastName">
+								<Form.Control>
+									{#snippet children({ props })}
+										<Form.Label>{m.checkout_last_name()}</Form.Label>
+										<Input
+											{...props}
+											bind:value={$shippingForm.lastName}
+											onblur={async () => {
+												await validateShipping('lastName');
+											}}
+											oninput={() => {
+												checkoutStore.updateShippingConfig({
+													lastName: $shippingForm.lastName
+												});
+											}}
+										/>
+									{/snippet}
+								</Form.Control>
+								<Form.FieldErrors />
+							</Form.Field>
 						</div>
 
-						<div class="input-wrapper">
-							<Label for="lastName">{m.checkout_last_name()}</Label>
-							<Input
-								type="text"
-								name="lastName"
-								bind:value={$shippingForm.lastName}
-								oninput={async () => {
-									checkoutStore.updateShippingConfig({
-										lastName: $shippingForm.lastName
-									});
-									await validateShipping('lastName');
-								}}
-							/>
-							{#if $shippingErrors.lastName}
-								<p class="error-message">{$shippingErrors.lastName[0]}</p>
+						<!-- Address Fields -->
+						<Form.Field form={shippingSuperForm} name="addressLine1">
+							<Form.Control>
+								{#snippet children({ props })}
+									<Form.Label>{checkout.addressStructure.labels.addressLine1}</Form.Label>
+									<Input
+										{...props}
+										bind:value={$shippingForm.addressLine1}
+										onblur={async () => {
+											await validateShipping('addressLine1');
+										}}
+										oninput={() => {
+											checkoutStore.updateShippingConfig({
+												addressLine1: $shippingForm.addressLine1
+											});
+										}}
+									/>
+								{/snippet}
+							</Form.Control>
+							<Form.FieldErrors />
+						</Form.Field>
+
+						<Form.Field form={shippingSuperForm} name="addressLine2">
+							<Form.Control>
+								{#snippet children({ props })}
+									<Form.Label>{checkout.addressStructure.labels.addressLine2}</Form.Label>
+									<Input
+										{...props}
+										bind:value={$shippingForm.addressLine2}
+										placeholder={checkout.addressStructure.placeholders.addressLine2}
+										oninput={(e: any) => {
+											checkoutStore.updateShippingConfig({
+												addressLine2: e.currentTarget.value || ''
+											});
+										}}
+									/>
+								{/snippet}
+							</Form.Control>
+						</Form.Field>
+
+						<!-- City, State, ZIP -->
+						<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+							<Form.Field form={shippingSuperForm} name="city">
+								<Form.Control>
+									{#snippet children({ props })}
+										<Form.Label>{checkout.addressStructure.labels.city}</Form.Label>
+										<Input
+											{...props}
+											bind:value={$shippingForm.city}
+											onblur={async () => {
+												await validateShipping('city');
+											}}
+											oninput={() => {
+												checkoutStore.updateShippingConfig({
+													city: $shippingForm.city
+												});
+											}}
+										/>
+									{/snippet}
+								</Form.Control>
+								<Form.FieldErrors />
+							</Form.Field>
+
+							{#if checkout.addressStructure.fields.includes('state') || checkout.addressStructure.fields.includes('prefecture') || checkout.addressStructure.fields.includes('province') || checkout.addressStructure.fields.includes('county')}
+								<Form.Field form={shippingSuperForm} name="state">
+									<Form.Control>
+										{#snippet children({ props })}
+											<Form.Label>
+												{checkout.addressStructure.labels.state ||
+													checkout.addressStructure.labels.prefecture ||
+													checkout.addressStructure.labels.province ||
+													checkout.addressStructure.labels.county}
+											</Form.Label>
+											<Input
+												{...props}
+												bind:value={$shippingForm.state}
+												placeholder={checkout.addressStructure.placeholders.state ||
+													checkout.addressStructure.placeholders.prefecture ||
+													checkout.addressStructure.placeholders.province ||
+													checkout.addressStructure.placeholders.county}
+												oninput={async () => {
+													checkoutStore.updateShippingConfig({
+														state: $shippingForm.state
+													});
+													await validateShipping('state');
+												}}
+											/>
+										{/snippet}
+									</Form.Control>
+									<Form.FieldErrors />
+								</Form.Field>
 							{/if}
-						</div>
-					</div>
 
-					<!-- Address Fields -->
-					<div class="input-wrapper">
-						<Label for="addressLine1">{checkout.addressStructure.labels.addressLine1}</Label>
-						<Input
-							type="text"
-							name="addressLine1"
-							bind:value={$shippingForm.addressLine1}
-							placeholder={checkout.addressStructure.placeholders.addressLine1}
-							oninput={async () => {
-								checkoutStore.updateShippingConfig({
-									addressLine1: $shippingForm.addressLine1
-								});
-								await validateShipping('addressLine1');
-							}}
-						/>
-						{#if $shippingErrors.addressLine1}
-							<p class="error-message">{$shippingErrors.addressLine1[0]}</p>
-						{/if}
-					</div>
-
-					<div class="input-wrapper">
-						<Label for="addressLine2">{checkout.addressStructure.labels.addressLine2}</Label>
-						<Input
-							type="text"
-							name="addressLine2"
-							bind:value={$shippingForm.addressLine2}
-							placeholder={checkout.addressStructure.placeholders.addressLine2}
-							oninput={(e) => {
-								checkoutStore.updateShippingConfig({
-									addressLine2: e.currentTarget.value || ''
-								});
-							}}
-						/>
-					</div>
-
-					<!-- City, State, ZIP -->
-					<div class="form-row form-row-3">
-						<div class="input-wrapper">
-							<Label for="city">{checkout.addressStructure.labels.city}</Label>
-							<Input
-								type="text"
-								name="city"
-								bind:value={$shippingForm.city}
-								placeholder={checkout.addressStructure.placeholders.city}
-								oninput={async () => {
-									checkoutStore.updateShippingConfig({
-										city: $shippingForm.city
-									});
-									await validateShipping('city');
-								}}
-							/>
-							{#if $shippingErrors.city}
-								<p class="error-message">{$shippingErrors.city[0]}</p>
-							{/if}
+							<Form.Field form={shippingSuperForm} name="postalCode">
+								<Form.Control>
+									{#snippet children({ props })}
+										<Form.Label>{checkout.addressStructure.labels.postalCode}</Form.Label>
+										<Input
+											{...props}
+											bind:value={$shippingForm.postalCode}
+											onblur={async () => {
+												await validateShipping('postalCode');
+											}}
+											oninput={() => {
+												checkoutStore.updateShippingConfig({
+													postalCode: $shippingForm.postalCode
+												});
+											}}
+										/>
+									{/snippet}
+								</Form.Control>
+								<Form.FieldErrors />
+							</Form.Field>
 						</div>
 
-						{#if checkout.addressStructure.fields.includes('state') || checkout.addressStructure.fields.includes('prefecture') || checkout.addressStructure.fields.includes('province') || checkout.addressStructure.fields.includes('county')}
-							<div class="input-wrapper">
-								<Label for="state">
-									{checkout.addressStructure.labels.state ||
-										checkout.addressStructure.labels.prefecture ||
-										checkout.addressStructure.labels.province ||
-										checkout.addressStructure.labels.county}
-								</Label>
-								<Input
-									type="text"
-									name="state"
-									bind:value={$shippingForm.state}
-									placeholder={checkout.addressStructure.placeholders.state ||
-										checkout.addressStructure.placeholders.prefecture ||
-										checkout.addressStructure.placeholders.province ||
-										checkout.addressStructure.placeholders.county}
-									oninput={async () => {
-										checkoutStore.updateShippingConfig({
-											state: $shippingForm.state
-										});
-										await validateShipping('state');
-									}}
-								/>
-								{#if $shippingErrors.state}
-									<p class="error-message">{$shippingErrors.state[0]}</p>
-								{/if}
-							</div>
-						{/if}
-
-						<div class="input-wrapper">
-							<Label for="postalCode">{checkout.addressStructure.labels.postalCode}</Label>
-							<Input
-								type="text"
-								name="postalCode"
-								bind:value={$shippingForm.postalCode}
-								placeholder={checkout.addressStructure.placeholders.postalCode}
-								oninput={async () => {
-									checkoutStore.updateShippingConfig({
-										postalCode: $shippingForm.postalCode
-									});
-									await validateShipping('postalCode');
-								}}
-							/>
-							{#if $shippingErrors.postalCode}
-								<p class="error-message">{$shippingErrors.postalCode[0]}</p>
-							{/if}
-						</div>
-					</div>
-
-					<!-- Shipping Method -->
-					<div class="mt-6">
-						<h3 class="text-lg font-medium mb-3">{m.checkout_shipping_method()}</h3>
-						<input type="hidden" name="shippingMethod" bind:value={$shippingForm.shippingMethod} />
-						<div class="space-y-2" role="radiogroup" aria-label={m.checkout_shipping_method()}>
-							{#each shippingMethods as method}
-								<button
-									type="button"
-									role="radio"
-									aria-checked={$shippingForm.shippingMethod === method.id}
-									class={`w-full text-left flex items-start gap-4 p-4 rounded-lg bg-muted/5 cursor-pointer hover:bg-muted/10 transition-colors ${$shippingForm.shippingMethod === method.id ? 'ring-1 ring-primary' : ''}`}
-									onclick={() => {
-										handleShippingMethodChange(method.id);
-									}}
-								>
-									<div class="flex-1">
-										<div class="flex items-center gap-2">
-											<div
-												class="w-4 h-4 rounded-full border-2 border-primary flex items-center justify-center"
-											>
-												{#if $shippingForm.shippingMethod === method.id}
-													<div class="w-2 h-2 rounded-full bg-primary"></div>
-												{/if}
-											</div>
-											<span class="font-medium">{method.name}</span>
-											<span class="text-sm text-muted-foreground">
-												({method.estimatedDays}
-												{m.shipping_business_days()})
-											</span>
+						<!-- Shipping Method -->
+						<div class="grid gap-4">
+							<h3 class="text-lg font-medium">{m.checkout_shipping_method()}</h3>
+							<Form.Field form={shippingSuperForm} name="shippingMethod">
+								<Form.Control>
+									{#snippet children({ props })}
+										<div
+											class="grid gap-2"
+											role="radiogroup"
+											aria-label={m.checkout_shipping_method()}
+										>
+											{#each shippingMethods as method}
+												<button
+													type="button"
+													role="radio"
+													aria-checked={$shippingForm.shippingMethod === method.id}
+													class={`w-full text-left flex items-start gap-4 p-4 rounded-lg bg-muted/5 cursor-pointer hover:bg-muted/10 transition-colors ${$shippingForm.shippingMethod === method.id ? 'ring-1 ring-primary' : ''}`}
+													onclick={() => {
+														handleShippingMethodChange(method.id);
+													}}
+												>
+													<div class="flex-1">
+														<div class="flex items-center gap-2">
+															<div
+																class="w-4 h-4 rounded-full border-2 border-primary flex items-center justify-center"
+															>
+																{#if $shippingForm.shippingMethod === method.id}
+																	<div class="w-2 h-2 rounded-full bg-primary"></div>
+																{/if}
+															</div>
+															<span class="font-medium">{method.name}</span>
+															<span class="text-sm text-muted-foreground">
+																({method.estimatedDays}
+																{m.shipping_business_days()})
+															</span>
+														</div>
+														<p class="text-sm text-muted-foreground ml-6 mt-1">
+															{method.description}
+														</p>
+													</div>
+													<div class="font-medium">{formatPrice(method.price)}</div>
+												</button>
+											{/each}
 										</div>
-										<p class="text-sm text-muted-foreground ml-6 mt-1">
-											{method.description}
-										</p>
-									</div>
-									<div class="font-medium">{formatPrice(method.price)}</div>
-								</button>
-							{/each}
+									{/snippet}
+								</Form.Control>
+							</Form.Field>
 						</div>
 					</div>
-				</div>
+				</form>
 			</div>
 		</div>
 
 		<!-- Order summary -->
-		<div class="lg:col-span-4 lg:sticky lg:top-[calc(var(--header-height)+1rem)] lg:h-fit">
-			<div class="flex items-center justify-between w-full mb-4">
+		<div class="lg:col-span-5 lg:sticky lg:top-[calc(var(--header-height)+1rem)] lg:h-fit">
+			<div class="flex items-center justify-between w-full mb-6">
 				<h2 class="text-2xl font-semibold flex items-center gap-2">
 					<ShoppingBag class="h-5 w-5" />
 					{m.checkout_order_summary()}
@@ -724,36 +782,45 @@
 				<!-- Estimated delivery -->
 				{#if checkout.shippingValidated && checkout.shippingAddress}
 					<div class="border-t pt-6">
-						<div class="flex items-center gap-2 text-base mb-4">
-							<Truck class="h-5 w-5" />
+						<div class="flex items-center gap-2 text-base mb-6">
+							<Truck class="h-5 w-5 text-primary animate-bounce" />
 							<span class="font-medium">{m.checkout_estimated_delivery()}</span>
+							<span class="text-muted-foreground">
+								({checkout.estimatedDays}
+								{m.shipping_business_days()})
+							</span>
 						</div>
-						<p class="text-base mb-6">
-							{checkout.estimatedDays}
-							{m.shipping_business_days()}
-						</p>
-						<div class="space-y-1">
-							<p class="font-medium text-muted-foreground mb-3">
+						<div class="space-y-4">
+							<p class="font-medium text-muted-foreground mb-3 flex items-center gap-2">
+								<MapPin class="h-4 w-4" />
 								{m.checkout_delivery_address()}
 							</p>
-							<div class="bg-muted/5 p-4 rounded-lg space-y-1 font-medium">
-								<p class="uppercase">
-									{checkout.shippingAddress.firstName}
-									{checkout.shippingAddress.lastName}
-								</p>
-								<p>{checkout.shippingAddress.addressLine1}</p>
-								{#if checkout.shippingAddress.addressLine2}
-									<p>{checkout.shippingAddress.addressLine2}</p>
-								{/if}
-								<p>
-									{checkout.shippingAddress.city}{#if checkout.shippingAddress.state}, {checkout
-											.shippingAddress.state}{/if}
-									{checkout.shippingAddress.postalCode}
-								</p>
-								<p class="uppercase">
-									{countries.find((c) => c.value === checkout.shippingAddress!.country)?.label ||
-										checkout.shippingAddress!.country}
-								</p>
+							<div class="bg-muted/5 p-4 rounded-lg font-medium ml-8">
+								<div class="grid grid-cols-[auto,1fr] gap-x-3 gap-y-4">
+									<User class="h-4 w-4 text-primary mt-1" />
+									<div>
+										<p class="uppercase">
+											{checkout.shippingAddress.firstName}
+											{checkout.shippingAddress.lastName}
+										</p>
+										<div class="space-y-1 mt-1">
+											<p>{checkout.shippingAddress.addressLine1}</p>
+											{#if checkout.shippingAddress.addressLine2}
+												<p>{checkout.shippingAddress.addressLine2}</p>
+											{/if}
+											<p>
+												{checkout.shippingAddress.city}{#if checkout.shippingAddress.state}, {checkout
+														.shippingAddress.state}{/if}
+												{checkout.shippingAddress.postalCode}
+											</p>
+										</div>
+									</div>
+									<Globe class="h-4 w-4 text-primary mt-1" />
+									<p class="uppercase">
+										{countries.find((c) => c.value === checkout.shippingAddress!.country)?.label ||
+											checkout.shippingAddress!.country}
+									</p>
+								</div>
 							</div>
 						</div>
 					</div>

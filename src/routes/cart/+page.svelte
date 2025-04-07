@@ -120,7 +120,7 @@
 <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
 	<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
 		<!-- Cart items list -->
-		<div class="lg:col-span-8">
+		<div class="lg:col-span-7">
 			<div class="flex items-center justify-between w-full mb-6">
 				<h1 class="text-2xl font-semibold flex items-center gap-2">
 					<ShoppingCart class="h-5 w-5" />
@@ -154,19 +154,17 @@
 		</div>
 
 		<!-- Cart summary -->
-		<div class="lg:col-span-4">
+		<div class="lg:col-span-5 lg:sticky lg:top-[calc(var(--header-height)+1rem)] lg:h-fit">
 			{#if cartData && cartData.items && cartData.items.length > 0}
-				<div
-					class="bg-background rounded-lg lg:sticky lg:top-[calc(var(--header-height)+1rem)] lg:h-fit"
-				>
-					<div class="flex items-center justify-between w-full p-6 mb-0 border-b">
+				<div class="bg-background rounded-lg">
+					<div class="flex items-center justify-between w-full mb-6">
 						<h2 class="text-2xl font-semibold flex items-center gap-2">
 							<ShoppingCart class="h-5 w-5" />
 							{m.cart_summary()}
 						</h2>
 					</div>
 
-					<div class="p-6 space-y-6">
+					<div class="space-y-6">
 						<!-- Items Summary -->
 						<div class="text-sm text-muted-foreground">
 							<div class="flex justify-between mb-1">
@@ -185,7 +183,7 @@
 						</div>
 
 						<!-- Price Breakdown -->
-						<div class="space-y-4 pt-4">
+						<div class="space-y-4 border-t pt-6">
 							{#if cartData.discountAmount > 0}
 								<div class="flex justify-between text-green-600 dark:text-green-400">
 									<span>{m.cart_discount()}</span>
@@ -193,14 +191,14 @@
 								</div>
 							{/if}
 
-							<div class="flex justify-between text-muted-foreground">
-								<span>{m.cart_shipping()}</span>
-								<span>{m.cart_calculated_at_next_step()}</span>
+							<div class="flex justify-between text-base">
+								<span class="text-muted-foreground">{m.cart_shipping()}</span>
+								<span class="text-muted-foreground">{m.cart_calculated_at_next_step()}</span>
 							</div>
 
-							<div class="flex justify-between text-muted-foreground">
-								<span>{m.cart_tax()}</span>
-								<span>{m.cart_calculated_at_next_step()}</span>
+							<div class="flex justify-between text-base">
+								<span class="text-muted-foreground">{m.cart_tax()}</span>
+								<span class="text-muted-foreground">{m.cart_calculated_at_next_step()}</span>
 							</div>
 
 							<div class="flex justify-between text-xl font-semibold pt-4 mt-4 border-t">
@@ -209,21 +207,8 @@
 							</div>
 						</div>
 
-						<!-- Estimated Delivery -->
-						<div class="pt-4 border-t">
-							<div class="flex items-center gap-2 text-base mb-2">
-								<Truck class="h-5 w-5" />
-								<span>{m.cart_estimated_delivery()}</span>
-							</div>
-							<p class="text-base font-medium">
-								{new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString()} - {new Date(
-									Date.now() + 10 * 24 * 60 * 60 * 1000
-								).toLocaleDateString()}
-							</p>
-						</div>
-
 						<!-- Discount code form -->
-						<div class="pt-4 border-t">
+						<div class="border-t pt-6">
 							<div class="flex gap-2 mb-2">
 								<Input
 									placeholder={m.cart_discount_placeholder()}
@@ -248,7 +233,7 @@
 								{:else}
 									<Button
 										variant="outline"
-										disabled={isApplyingDiscount || !discountCode}
+										disabled={isApplyingDiscount}
 										onclick={handleApplyDiscount}
 									>
 										{#if isApplyingDiscount}
@@ -259,32 +244,25 @@
 									</Button>
 								{/if}
 							</div>
-
 							{#if discountError}
-								<p class="text-sm text-destructive">{discountError}</p>
-							{:else if cartData.discountCode}
-								<p class="text-sm text-green-600 dark:text-green-400">
-									{m.cart_discount_applied({ code: cartData.discountCode })}
-								</p>
+								<p class="text-sm text-destructive mt-2">{discountError}</p>
 							{/if}
 						</div>
 
 						<!-- Checkout button -->
-						<div class="pt-6 border-t">
-							<Button
-								class="w-full"
-								size="lg"
-								disabled={cartData.items.length === 0}
-								href="/checkout"
-							>
+						<div class="border-t pt-6">
+							<Button class="w-full" size="lg" onclick={handleCheckout}>
 								{m.cart_proceed_to_checkout()}
-								<ArrowRight class="ml-2" size={16} />
+								<ArrowRight class="ml-2 h-4 w-4" />
 							</Button>
+							<p class="text-center text-xs text-muted-foreground/60 mt-2">
+								{m.cart_secure_transaction()}
+							</p>
+						</div>
 
-							<div class="text-xs text-muted-foreground/60 text-center space-y-1.5 mt-2">
-								<p>{m.cart_terms_agreement()}</p>
-								<p>{m.cart_secure_transaction()}</p>
-							</div>
+						<!-- Terms Agreement -->
+						<div class="text-xs text-muted-foreground/60 text-center space-y-1.5 border-t pt-6">
+							<p>{m.cart_terms_agreement()}</p>
 						</div>
 					</div>
 				</div>

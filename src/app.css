@@ -225,49 +225,6 @@ html.fonts-failed {
   }
 }
 
-/* Form styling */
-.form {
-    max-width: 650px;
-    margin: 0 auto;
-}
-
-/* Form section spacing */
-.form > .space-y-4 {
-    gap: 0.75rem;
-    display: flex;
-    flex-direction: column;
-}
-
-/* Input field wrapper - ensures consistent height and top alignment */
-.input-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-}
-
-/* Label styling for consistent positioning */
-.input-wrapper :global(label) {
-    margin-bottom: 0.25rem;
-}
-
-/* Input container to maintain full width */
-.input-wrapper :global(input),
-.input-wrapper :global(.select-trigger) {
-    width: 100%;
-}
-
-/* Error message styling */
-.error-message {
-    color: hsl(var(--destructive));
-    font-size: 0.75rem;
-    margin-top: 0.25rem;
-}
-
-/* Form grid row alignment */
-.form-grid {
-    align-items: start;
-}
-
 /* Error indicator animation */
 @keyframes pulse {
     0% {
@@ -284,28 +241,4 @@ html.fonts-failed {
 .error-indicator {
     animation: pulse 1.5s infinite;
     box-shadow: 0 0 0 3px rgba(240, 82, 82, 0.2);
-}
-
-/* Grid alignment for form rows */
-.form-row {
-    display: grid;
-    align-items: start;
-    gap: 0.75rem;
-    margin-bottom: 0;
-}
-
-/* Default form grid columns */
-.form-row {
-    grid-template-columns: 1fr;
-}
-
-/* Responsive grid columns */
-@media (min-width: 768px) {
-    .form-row-2 {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .form-row-3 {
-        grid-template-columns: repeat(3, 1fr);
-    }
 }
