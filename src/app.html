@@ -5,14 +5,42 @@
 	<meta charset="utf-8" />
 	<link rel="icon" href="%sveltekit.assets%/favicon.png" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<!-- Font loading script -->
+	<!-- Improved Font loading script -->
 	<script>
-		// Check if font is loaded
-		document.fonts.ready.then(() => {
-			document.documentElement.classList.add('fonts-loaded');
-		}).catch(() => {
+		// Add a class during loading
+		document.documentElement.classList.add('fonts-loading');
+
+		// Set a timeout to ensure the UI doesn't hang if fonts take too long
+		const fontTimeout = setTimeout(() => {
+			document.documentElement.classList.remove('fonts-loading');
 			document.documentElement.classList.add('fonts-failed');
-		});
+			document.documentElement.style.visibility = 'visible';
+		}, 3000); // 3 second timeout
+
+		// Check when fonts are loaded
+		if ("fonts" in document) {
+			document.fonts.ready.then(() => {
+				clearTimeout(fontTimeout);
+				document.documentElement.classList.remove('fonts-loading');
+				document.documentElement.classList.add('fonts-loaded');
+				document.documentElement.style.visibility = 'visible';
+
+				// Force reflow to ensure all elements use the loaded fonts
+				document.body && document.body.offsetHeight;
+			}).catch(() => {
+				// If font loading promise rejects
+				clearTimeout(fontTimeout);
+				document.documentElement.classList.remove('fonts-loading');
+				document.documentElement.classList.add('fonts-failed');
+				document.documentElement.style.visibility = 'visible';
+			});
+		} else {
+			// Browser doesn't support document.fonts
+			clearTimeout(fontTimeout);
+			document.documentElement.classList.remove('fonts-loading');
+			document.documentElement.classList.add('fonts-failed');
+			document.documentElement.style.visibility = 'visible';
+		}
 	</script>
 	%sveltekit.head%
 	<script>

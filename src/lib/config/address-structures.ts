@@ -151,7 +151,7 @@ export const addressStructures: Record<string, AddressStructure> = {
             addressLine1: m.checkout_address(),
             addressLine2: m.checkout_apartment(),
             city: m.checkout_city(),
-            county: m.checkout_state(),
+            county: m.checkout_county(),
             postalCode: m.checkout_zip()
         },
         placeholders: {
@@ -213,17 +213,19 @@ export const addressStructures: Record<string, AddressStructure> = {
         }
     },
     FR: {
-        fields: ['firstName', 'lastName', 'addressLine1', 'addressLine2', 'city', 'postalCode'],
+        fields: ['firstName', 'lastName', 'addressLine1', 'addressLine2', 'prefecture', 'city', 'postalCode'],
         labels: {
             addressLine1: m.checkout_address(),
             addressLine2: m.checkout_apartment(),
             city: m.checkout_city(),
+            prefecture: m.checkout_prefecture(),
             postalCode: m.checkout_zip()
         },
         placeholders: {
             addressLine1: '123 Rue de Paris',
             addressLine2: 'Appartement 4B',
             city: 'Paris',
+            prefecture: 'Paris',
             postalCode: '75001'
         },
         validation: {
@@ -239,7 +241,7 @@ export const addressStructures: Record<string, AddressStructure> = {
             addressLine1: m.checkout_address(),
             addressLine2: m.checkout_apartment(),
             city: m.checkout_city(),
-            province: m.checkout_state(),
+            province: m.checkout_province(),
             postalCode: m.checkout_zip()
         },
         placeholders: {
@@ -262,7 +264,7 @@ export const addressStructures: Record<string, AddressStructure> = {
             addressLine1: m.checkout_address(),
             addressLine2: m.checkout_apartment(),
             city: m.checkout_city(),
-            province: m.checkout_state(),
+            province: m.checkout_province(),
             postalCode: m.checkout_zip()
         },
         placeholders: {
@@ -285,7 +287,7 @@ export const addressStructures: Record<string, AddressStructure> = {
             addressLine1: m.checkout_address(),
             addressLine2: m.checkout_apartment(),
             city: m.checkout_city(),
-            prefecture: m.checkout_state(),
+            prefecture: m.checkout_prefecture(),
             postalCode: m.checkout_zip()
         },
         placeholders: {
@@ -436,7 +438,7 @@ export const addressStructures: Record<string, AddressStructure> = {
             addressLine1: m.checkout_address(),
             addressLine2: m.checkout_apartment(),
             city: m.checkout_city(),
-            county: m.checkout_state(),
+            county: m.checkout_county(),
             postalCode: m.checkout_zip()
         },
         placeholders: {
