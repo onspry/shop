@@ -18,7 +18,7 @@
 	} from '$lib/schemas/shipping';
 	import * as m from '$lib/paraglide/messages';
 	import { formatPrice } from '$lib/utils/price';
-	import { ShoppingBag, User, Truck, ImageOff, Mail, MapPin, Globe } from 'lucide-svelte';
+	import { ShoppingBag, User, Truck, ImageOff, Mail, MapPin, Globe, Globe2 } from 'lucide-svelte';
 	import type { PageData } from './$types';
 	import { browser } from '$app/environment';
 	import { countries, addressStructures } from '$lib/config/address-structures';
@@ -779,48 +779,41 @@
 					</div>
 				</div>
 
-				<!-- Estimated delivery -->
-				{#if checkout.shippingValidated && checkout.shippingAddress}
+				<!-- Estimated Delivery -->
+				{#if checkout.shippingValidated && checkout.shippingAddress && checkout.shippingMethod && checkout.estimatedDays && checkout.shippingAddress.addressLine1}
 					<div class="border-t pt-6">
-						<div class="flex items-center gap-2 text-base mb-6">
-							<Truck class="h-5 w-5 text-primary animate-bounce" />
+						<div class="flex items-center gap-2 text-base">
+							<Truck class="h-5 w-5 text-primary" />
 							<span class="font-medium">{m.checkout_estimated_delivery()}</span>
-							<span class="text-muted-foreground">
-								({checkout.estimatedDays}
-								{m.shipping_business_days()})
-							</span>
+							<span class="text-muted-foreground"
+								>({checkout.estimatedDays} {m.shipping_business_days()})</span
+							>
 						</div>
-						<div class="space-y-4">
-							<p class="font-medium text-muted-foreground mb-3 flex items-center gap-2">
-								<MapPin class="h-4 w-4" />
-								{m.checkout_delivery_address()}
-							</p>
-							<div class="bg-muted/5 p-4 rounded-lg font-medium ml-8">
-								<div class="grid grid-cols-[auto,1fr] gap-x-3 gap-y-4">
-									<User class="h-4 w-4 text-primary mt-1" />
-									<div>
-										<p class="uppercase">
-											{checkout.shippingAddress.firstName}
-											{checkout.shippingAddress.lastName}
-										</p>
-										<div class="space-y-1 mt-1">
-											<p>{checkout.shippingAddress.addressLine1}</p>
-											{#if checkout.shippingAddress.addressLine2}
-												<p>{checkout.shippingAddress.addressLine2}</p>
-											{/if}
-											<p>
-												{checkout.shippingAddress.city}{#if checkout.shippingAddress.state}, {checkout
-														.shippingAddress.state}{/if}
-												{checkout.shippingAddress.postalCode}
-											</p>
-										</div>
-									</div>
-									<Globe class="h-4 w-4 text-primary mt-1" />
-									<p class="uppercase">
-										{countries.find((c) => c.value === checkout.shippingAddress!.country)?.label ||
-											checkout.shippingAddress!.country}
-									</p>
+						<div class="mt-4 ml-7 space-y-1">
+							<div class="flex items-center gap-2">
+								<User class="h-4 w-4 text-primary" />
+								<span>{checkout.shippingAddress.firstName} {checkout.shippingAddress.lastName}</span
+								>
+							</div>
+							<div class="flex items-center gap-2">
+								<MapPin class="h-4 w-4 text-primary" />
+								<span>{checkout.shippingAddress.addressLine1}</span>
+							</div>
+							{#if checkout.shippingAddress.addressLine2}
+								<div class="flex items-center gap-2">
+									<span class="ml-6">{checkout.shippingAddress.addressLine2}</span>
 								</div>
+							{/if}
+							<div class="flex items-center gap-2">
+								<Globe class="h-4 w-4 text-primary" />
+								<span
+									>{checkout.shippingAddress.city}, {checkout.shippingAddress.state}
+									{checkout.shippingAddress.postalCode}</span
+								>
+							</div>
+							<div class="flex items-center gap-2">
+								<Globe2 class="h-4 w-4 text-primary" />
+								<span>{checkout.shippingAddress.country}</span>
 							</div>
 						</div>
 					</div>
