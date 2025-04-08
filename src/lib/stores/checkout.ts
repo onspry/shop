@@ -32,7 +32,7 @@ export type CheckoutState = {
 
 // Initial checkout state
 const DEFAULT_COUNTRY = 'US';
-const DEFAULT_SHIPPING_METHOD = 'standard';
+const DEFAULT_SHIPPING_METHOD = '';
 
 const initialCheckoutState: CheckoutState = {
     email: '',
@@ -204,4 +204,4 @@ const createCheckoutStore = () => {
     };
 };
 
-export const checkoutStore = createCheckoutStore(); 
+export const checkoutStore = createCheckoutStore();
