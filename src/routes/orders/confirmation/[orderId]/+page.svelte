@@ -5,57 +5,15 @@
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { formatPrice } from '$lib/utils/price';
 	import { CheckCircle, Package, Truck, ShoppingBag, ArrowRight, CreditCard } from 'lucide-svelte';
-	// Import messages if needed
-	// import * as m from '$lib/paraglide/messages';
+	import * as m from '$lib/paraglide/messages';
 
-	// Get the order ID from the data
+	// Get the order data from the server
 	export let data: PageData;
-	const orderId = data.orderId;
+	const { order, orderId } = data;
 
-	// In a real implementation, we would fetch the order details from the server
-	// For now, we'll use mock data
-	const mockOrder = {
-		id: orderId,
-		status: 'processing',
-		createdAt: new Date().toISOString(),
-		estimatedDelivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-		items: [
-			{
-				id: 'item1',
-				name: 'Mechanical Keyboard',
-				variant: 'Black / Cherry MX Red',
-				price: 149.99,
-				quantity: 1,
-				imageUrl: '/images/placeholder.jpg'
-			},
-			{
-				id: 'item2',
-				name: 'Keycap Set',
-				variant: 'PBT / Blue',
-				price: 49.99,
-				quantity: 1,
-				imageUrl: '/images/placeholder.jpg'
-			}
-		],
-		subtotal: 199.98,
-		shipping: 5.99,
-		tax: 16.00,
-		total: 221.97,
-		shippingAddress: {
-			firstName: 'John',
-			lastName: 'Doe',
-			addressLine1: '123 Main St',
-			addressLine2: 'Apt 4B',
-			city: 'Anytown',
-			state: 'CA',
-			postalCode: '12345',
-			country: 'US'
-		},
-		paymentMethod: {
-			cardType: 'Visa',
-			lastFour: '4242'
-		}
-	};
+	// Calculate estimated delivery date (7 days from order date)
+	const orderDate = new Date(order.createdAt);
+	const estimatedDelivery = new Date(orderDate.getTime() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString();
 
 	// Format date for display
 	const formatDate = (dateString: string) => {
@@ -68,6 +26,12 @@
 			minute: '2-digit'
 		});
 	};
+
+	// Determine payment method display
+	const paymentMethod = {
+		cardType: order.paymentMethod.includes('stripe') ? 'Credit Card' : order.paymentMethod,
+		lastFour: '••••' // In a real implementation, we would have the last 4 digits
+	};
 </script>
 
 <div class="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -78,7 +42,7 @@
 		</div>
 		<h1 class="text-3xl font-bold mb-2">Thank You for Your Order!</h1>
 		<p class="text-xl text-muted-foreground">
-			Order #{mockOrder.id} has been successfully placed
+			Order #{order.id} has been successfully placed
 		</p>
 		<p class="text-muted-foreground mt-2">
 			A confirmation email has been sent to your email address.
@@ -100,7 +64,7 @@
 						<ShoppingBag class="h-6 w-6 text-primary" />
 					</div>
 					<h3 class="font-medium">Order Placed</h3>
-					<p class="text-sm text-muted-foreground">{formatDate(mockOrder.createdAt)}</p>
+					<p class="text-sm text-muted-foreground">{formatDate(order.createdAt)}</p>
 				</div>
 
 				<div class="flex flex-col items-center p-4 bg-muted/30 rounded-lg">
@@ -116,7 +80,7 @@
 						<Truck class="h-6 w-6 text-primary" />
 					</div>
 					<h3 class="font-medium">Estimated Delivery</h3>
-					<p class="text-sm text-muted-foreground">{mockOrder.estimatedDelivery}</p>
+					<p class="text-sm text-muted-foreground">{estimatedDelivery}</p>
 				</div>
 			</div>
 
@@ -148,7 +112,7 @@
 				</CardHeader>
 				<CardContent>
 					<div class="space-y-6">
-						{#each mockOrder.items as item}
+						{#each order.items as item}
 							<div class="flex justify-between items-start border-b pb-4">
 								<div class="flex gap-4">
 									<div class="w-16 h-16 bg-muted rounded-md flex items-center justify-center">
@@ -156,12 +120,12 @@
 									</div>
 									<div>
 										<h3 class="font-medium">{item.name}</h3>
-										<p class="text-sm text-muted-foreground">{item.variant}</p>
+										<p class="text-sm text-muted-foreground">{item.variantName}</p>
 										<p class="text-sm">Qty: {item.quantity}</p>
 									</div>
 								</div>
 								<div class="text-right">
-									<p class="font-medium">{formatPrice(item.price * item.quantity)}</p>
+									<p class="font-medium">{formatPrice(item.totalPrice)}</p>
 								</div>
 							</div>
 						{/each}
@@ -170,19 +134,25 @@
 						<div class="space-y-2 pt-4">
 							<div class="flex justify-between text-sm">
 								<span class="text-muted-foreground">Subtotal</span>
-								<span>{formatPrice(mockOrder.subtotal)}</span>
+								<span>{formatPrice(order.subtotal)}</span>
 							</div>
 							<div class="flex justify-between text-sm">
 								<span class="text-muted-foreground">Shipping</span>
-								<span>{formatPrice(mockOrder.shipping)}</span>
+								<span>{formatPrice(order.shippingAmount)}</span>
 							</div>
 							<div class="flex justify-between text-sm">
 								<span class="text-muted-foreground">Tax</span>
-								<span>{formatPrice(mockOrder.tax)}</span>
+								<span>{formatPrice(order.taxAmount)}</span>
 							</div>
+							{#if order.discountAmount && order.discountAmount > 0}
+								<div class="flex justify-between text-sm text-green-600 dark:text-green-400">
+									<span>Discount</span>
+									<span>-{formatPrice(order.discountAmount)}</span>
+								</div>
+							{/if}
 							<div class="flex justify-between font-medium text-lg pt-4 border-t mt-4">
 								<span>Total</span>
-								<span>{formatPrice(mockOrder.total)}</span>
+								<span>{formatPrice(order.total)}</span>
 							</div>
 						</div>
 					</div>
@@ -203,17 +173,20 @@
 				<CardContent>
 					<div class="space-y-2">
 						<p class="font-medium">
-							{mockOrder.shippingAddress.firstName} {mockOrder.shippingAddress.lastName}
+							{order.shippingAddress.firstName} {order.shippingAddress.lastName}
 						</p>
-						<p>{mockOrder.shippingAddress.addressLine1}</p>
-						{#if mockOrder.shippingAddress.addressLine2}
-							<p>{mockOrder.shippingAddress.addressLine2}</p>
+						<p>{order.shippingAddress.address1}</p>
+						{#if order.shippingAddress.address2}
+							<p>{order.shippingAddress.address2}</p>
 						{/if}
 						<p>
-							{mockOrder.shippingAddress.city}, {mockOrder.shippingAddress.state}
-							{mockOrder.shippingAddress.postalCode}
+							{order.shippingAddress.city}, {order.shippingAddress.state}
+							{order.shippingAddress.postalCode}
 						</p>
-						<p>{mockOrder.shippingAddress.country}</p>
+						<p>{order.shippingAddress.country}</p>
+						{#if order.shippingAddress.phone}
+							<p>{order.shippingAddress.phone}</p>
+						{/if}
 					</div>
 				</CardContent>
 			</Card>
@@ -229,7 +202,7 @@
 				<CardContent>
 					<div class="space-y-2">
 						<p>
-							{mockOrder.paymentMethod.cardType} ending in {mockOrder.paymentMethod.lastFour}
+							{paymentMethod.cardType} ending in {paymentMethod.lastFour}
 						</p>
 						<p class="text-sm text-muted-foreground">
 							Billed to the same address as shipping

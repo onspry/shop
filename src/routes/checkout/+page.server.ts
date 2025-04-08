@@ -47,57 +47,69 @@ export const load: PageServerLoad = async ({ cookies, locals }) => {
 export const actions = {
     placeOrder: async ({ request, locals }) => {
         const formData = await request.formData();
-        const cartId = formData.get('cartId')?.toString();
-        const email = formData.get('email')?.toString();
-        const shippingData = JSON.parse(formData.get('shippingData')?.toString() || '{}');
-        const paymentData = JSON.parse(formData.get('paymentData')?.toString() || '{}');
-
-        if (!cartId || !email || !shippingData || !paymentData) {
-            return { success: false, error: 'Missing required data' };
-        }
 
         try {
-            // Get cart data
-            const cart = await cartRepository.getCartViewModel(cartId, locals.user?.id);
-            if (!cart || !cart.items.length) {
-                return { success: false, error: 'Cart is empty' };
+            // Extract order data from form
+            const email = formData.get('email')?.toString();
+            const firstName = formData.get('firstName')?.toString();
+            const lastName = formData.get('lastName')?.toString();
+            const addressLine1 = formData.get('addressLine1')?.toString();
+            const addressLine2 = formData.get('addressLine2')?.toString();
+            const city = formData.get('city')?.toString();
+            const state = formData.get('state')?.toString();
+            const postalCode = formData.get('postalCode')?.toString();
+            const country = formData.get('country')?.toString();
+            const shippingMethod = formData.get('shippingMethod')?.toString();
+            const shippingCost = parseFloat(formData.get('shippingCost')?.toString() || '0');
+            const cartId = formData.get('cartId')?.toString() || 'guest-cart';
+            const subtotal = parseFloat(formData.get('subtotal')?.toString() || '0');
+            const taxAmount = parseFloat(formData.get('taxAmount')?.toString() || '0');
+            const discountAmount = parseFloat(formData.get('discountAmount')?.toString() || '0');
+            const itemsJson = formData.get('items')?.toString();
+
+            // Validate required fields
+            if (!email || !firstName || !lastName || !addressLine1 || !city || !state || !postalCode || !country || !shippingMethod || !itemsJson) {
+                return { success: false, error: 'Missing required data' };
             }
+
+            // Parse items
+            const items = JSON.parse(itemsJson);
 
             // Create order data
             const orderData = {
                 userId: locals.user?.id,
                 cartId,
-                items: cart.items.map(item => ({
-                    productId: item.variant.id,
-                    variantId: item.productVariantId,
+                items: items.map((item: { productId: string; variantId: string; quantity: number; price: number; name: string; variantName?: string }) => ({
+                    productId: item.productId,
+                    variantId: item.variantId,
                     quantity: item.quantity,
                     unitPrice: item.price,
                     name: item.name,
-                    variantName: item.variant.name
+                    variantName: item.variantName || ''
                 })),
                 shipping: {
-                    method: 'standard',
-                    amount: 0, // Free shipping for now
+                    method: shippingMethod,
+                    amount: shippingCost,
                     address: {
-                        firstName: shippingData.firstName,
-                        lastName: shippingData.lastName,
-                        address1: shippingData.address1,
-                        address2: shippingData.address2,
-                        city: shippingData.city,
-                        state: shippingData.state,
-                        postalCode: shippingData.postalCode,
-                        country: shippingData.country,
-                        phone: shippingData.phone,
-                        email: email
+                        firstName,
+                        lastName,
+                        address1: addressLine1,
+                        address2: addressLine2 || undefined,
+                        city,
+                        state,
+                        postalCode,
+                        country,
+                        email
                     }
                 },
                 payment: {
-                    method: paymentData.method || 'card',
-                    intentId: paymentData.intentId
+                    method: 'credit_card',
+                    // In a real implementation, this would be a payment intent ID from Stripe or similar
+                    intentId: `mock-payment-${Date.now()}`
                 },
-                subtotal: cart.subtotal,
-                taxAmount: 0, // Tax calculation will be implemented later
-                discountAmount: cart.discountAmount,
+                subtotal,
+                taxAmount,
+                discountAmount,
                 currency: 'USD'
             };
 
@@ -117,7 +129,7 @@ export const actions = {
             console.error('Error creating order:', error);
             return {
                 success: false,
-                error: 'Failed to create order'
+                error: error instanceof Error ? error.message : 'Failed to create order'
             };
         }
     }

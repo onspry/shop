@@ -33,6 +33,7 @@
 	import { goto } from '$app/navigation';
 	import { countries, addressStructures } from '$lib/config/address-structures';
 	import { checkoutStore } from '$lib/stores/checkout';
+import { cart } from '$lib/stores/cart';
 	import { cartActions } from '$lib/stores/cart';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
@@ -420,15 +421,53 @@
 		const processingToast = toast.loading('Processing your order...', { duration: 10000 });
 
 		try {
-			// 4. Submit order data to server (simulated for now)
-			// In a real implementation, this would be an API call to create the order
+			// 4. Submit order data to server using the server action
 			console.log('Placing order with:', $checkoutStore);
 
-			// Simulate API call with a delay
-			await new Promise((resolve) => setTimeout(resolve, 1500));
+			// Prepare cart items for the order
+			const cartItems = $cart.items.map((item: any) => ({
+				productId: item.product.id,
+				variantId: item.variant?.id,
+				quantity: item.quantity,
+				price: item.price,
+				name: item.product.name,
+				variantName: item.variant?.name || ''
+			}));
 
-			// Generate a mock order ID (in real app, this would come from the server)
-			const orderId = 'ORD-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+			// Create form data for the server action
+			const formData = new FormData();
+			formData.append('email', $emailForm.email);
+			formData.append('firstName', $shippingForm.firstName);
+			formData.append('lastName', $shippingForm.lastName);
+			formData.append('addressLine1', $shippingForm.addressLine1);
+			formData.append('addressLine2', $shippingForm.addressLine2 || '');
+			formData.append('city', $shippingForm.city);
+			formData.append('state', $shippingForm.state);
+			formData.append('postalCode', $shippingForm.postalCode);
+			formData.append('country', $shippingForm.country);
+			formData.append('shippingMethod', $shippingForm.shippingMethod);
+			formData.append('shippingCost', $checkoutStore.shippingCost.toString());
+			formData.append('cardNumber', $paymentForm.cardNumber);
+			formData.append('cardHolder', $paymentForm.cardHolder);
+			formData.append('subtotal', $cart.subtotal.toString());
+			formData.append('taxAmount', ($cart.subtotal * 0.08).toString()); // 8% tax rate
+			formData.append('discountAmount', '0');
+			formData.append('items', JSON.stringify(cartItems));
+			formData.append('cartId', $cart.id || 'guest-cart');
+
+			// Submit the form data to the server action
+			const response = await fetch('?/placeOrder', {
+				method: 'POST',
+				body: formData
+			});
+
+			const result = await response.json();
+
+			if (!result.success) {
+				throw new Error(result.message || 'Failed to place order');
+			}
+
+			const orderId = result.orderId;
 
 			// 5. Clear the processing toast
 			toast.dismiss(processingToast);
