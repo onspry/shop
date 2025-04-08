@@ -16,6 +16,8 @@
 	import { goto } from '$app/navigation';
 	import * as m from '$lib/paraglide/messages';
 	import { onMount } from 'svelte';
+	// Import toast for notifications
+	import { toast } from 'svelte-sonner';
 
 	// Use data from the server
 	let { data } = $props();
@@ -60,24 +62,72 @@
 	// Handle updating cart item quantity
 	async function handleQuantityChange(itemId: string, newQuantity: number) {
 		try {
+			// Find the item name for the toast message
+			const itemName = cartData?.items.find(item => item.id === itemId)?.variant?.name || 'Item';
+
+			// Show loading toast
+			const toastId = toast.loading(`Updating ${itemName}...`);
+
 			const result = await updateCartItem(itemId, newQuantity);
-			if (!result.success) {
+
+			if (result.success) {
+				// Update the toast to success
+				toast.success(`${itemName} quantity updated`, {
+					id: toastId,
+					duration: 2000
+				});
+			} else {
 				console.error('Failed to update quantity:', result.error);
+				// Update the toast to error
+				toast.error(`Couldn't update ${itemName}`, {
+					id: toastId,
+					description: result.error || 'Please try again',
+					duration: 3000
+				});
 			}
 		} catch (error) {
 			console.error('Error updating quantity:', error);
+			// Show error toast
+			toast.error('Error updating cart', {
+				description: 'Please try again later',
+				duration: 3000
+			});
 		}
 	}
 
 	// Handle removing item from cart
 	async function handleRemoveItem(itemId: string) {
 		try {
+			// Find the item name for the toast message
+			const itemName = cartData?.items.find(item => item.id === itemId)?.variant?.name || 'Item';
+
+			// Show loading toast
+			const toastId = toast.loading(`Removing ${itemName}...`);
+
 			const result = await removeCartItem(itemId);
-			if (!result.success) {
+
+			if (result.success) {
+				// Update the toast to success
+				toast.success(`${itemName} removed from cart`, {
+					id: toastId,
+					duration: 2000
+				});
+			} else {
 				console.error('Failed to remove item:', result.error);
+				// Update the toast to error
+				toast.error(`Couldn't remove ${itemName}`, {
+					id: toastId,
+					description: result.error || 'Please try again',
+					duration: 3000
+				});
 			}
 		} catch (error) {
 			console.error('Error removing item:', error);
+			// Show error toast
+			toast.error('Error updating cart', {
+				description: 'Please try again later',
+				duration: 3000
+			});
 		}
 	}
 
@@ -90,24 +140,55 @@
 
 		discountError = '';
 		isApplyingDiscount = true;
+
+		// Show loading toast
+		const toastId = toast.loading(`Applying discount code...`);
+
 		const result = await applyDiscount(discountCode);
 		isApplyingDiscount = false;
 
-		if (!result.success) {
+		if (result.success) {
+			// Update toast to success
+			toast.success(`Discount applied successfully`, {
+				id: toastId,
+				duration: 2000
+			});
+		} else {
 			discountError = result.error || m.cart_discount_invalid();
+			// Update toast to error
+			toast.error(`Couldn't apply discount`, {
+				id: toastId,
+				description: result.error || m.cart_discount_invalid(),
+				duration: 3000
+			});
 		}
 	}
 
 	// Handle removing discount code
 	async function handleRemoveDiscount() {
 		isRemovingDiscount = true;
+
+		// Show loading toast
+		const toastId = toast.loading(`Removing discount...`);
+
 		const result = await removeDiscount();
 		isRemovingDiscount = false;
 
-		if (!result.success) {
-			console.error('Failed to remove discount:', result.error);
-		} else {
+		if (result.success) {
 			discountCode = '';
+			// Update toast to success
+			toast.success(`Discount removed`, {
+				id: toastId,
+				duration: 2000
+			});
+		} else {
+			console.error('Failed to remove discount:', result.error);
+			// Update toast to error
+			toast.error(`Couldn't remove discount`, {
+				id: toastId,
+				description: result.error || 'Please try again',
+				duration: 3000
+			});
 		}
 	}
 
