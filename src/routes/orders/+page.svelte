@@ -5,7 +5,7 @@
 	import * as m from '$lib/paraglide/messages';
 	import { onMount } from 'svelte';
 	import { userStore } from '$lib/stores/auth';
-	import { ShoppingBag, Package, Clock } from 'lucide-svelte';
+	import { ShoppingBag, Package, Clock, ArrowRight } from 'lucide-svelte';
 
 	let { data } = $props<{ data: { orders: any[] } }>();
 	const user = $derived($userStore);
@@ -22,17 +22,17 @@
 		return () => clearTimeout(timer);
 	});
 
-	// Get status icon based on order status
-	const statusIcons: Record<string, typeof Clock | typeof Package | typeof ShoppingBag> = {
-		pending: Clock,
-		processing: Package,
-		shipped: Package,
-		delivered: Package
-	};
+	// Get status icon based on order status - used directly in the template
+	// const statusIcons: Record<string, typeof Clock | typeof Package | typeof ShoppingBag> = {
+	// 	pending: Clock,
+	// 	processing: Package,
+	// 	shipped: Package,
+	// 	delivered: Package
+	// };
 
-	function getStatusIcon(status: string) {
-		return statusIcons[status.toLowerCase()] || ShoppingBag;
-	}
+	// function getStatusIcon(status: string) {
+	// 	return statusIcons[status.toLowerCase()] || ShoppingBag;
+	// }
 
 	// Get status color based on order status
 	function getStatusColor(status: string) {
@@ -57,29 +57,45 @@
 		class:opacity-0={!contentVisible}
 		class:opacity-100={contentVisible}
 	>
-		<h1 class="text-3xl font-bold mb-8">{m.orders_title()}</h1>
-
 		{#if !user}
-			<div class="flex flex-col items-center justify-center py-12 px-4 border rounded-lg">
-				<ShoppingBag size={64} class="text-muted-foreground mb-4" />
-				<h2 class="text-xl font-medium mb-2">{m.orders_login_required()}</h2>
-				<p class="text-muted-foreground mb-6 text-center">
+			<div class="flex flex-col items-center justify-center py-24 px-4">
+				<div class="w-24 h-24 mb-6 relative">
+					<ShoppingBag size={64} class="text-muted-foreground absolute" />
+					<div class="w-full h-full rounded-full bg-muted/20 animate-pulse"></div>
+				</div>
+				<h2 class="text-3xl font-bold mb-3 text-center">{m.orders_login_required()}</h2>
+				<p class="text-muted-foreground mb-8 text-center max-w-md text-lg">
 					{m.orders_login_message()}
 				</p>
-				<Button href="/auth/login?redirect=/orders">
-					{m.sign_in()}
-				</Button>
+				<div class="flex flex-col sm:flex-row gap-4">
+					<Button href="/auth/login?redirect=/orders" size="lg" class="px-8">
+						{m.sign_in()}
+						<ArrowRight class="ml-2 h-5 w-5" />
+					</Button>
+					<Button href="/" variant="outline" size="lg">
+						Return to Home
+					</Button>
+				</div>
 			</div>
 		{:else if !data.orders || data.orders.length === 0}
-			<div class="flex flex-col items-center justify-center py-12 px-4 border rounded-lg">
-				<ShoppingBag size={64} class="text-muted-foreground mb-4" />
-				<h2 class="text-xl font-medium mb-2">{m.orders_empty_title()}</h2>
-				<p class="text-muted-foreground mb-6 text-center">
+			<div class="flex flex-col items-center justify-center py-24 px-4">
+				<div class="w-24 h-24 mb-6 relative">
+					<Package size={64} class="text-muted-foreground absolute" />
+					<div class="w-full h-full rounded-full bg-muted/20 animate-pulse"></div>
+				</div>
+				<h2 class="text-3xl font-bold mb-3 text-center">{m.orders_empty_title()}</h2>
+				<p class="text-muted-foreground mb-8 text-center max-w-md text-lg">
 					{m.orders_empty_message()}
 				</p>
-				<Button href="/products">
-					{m.orders_browse_products()}
-				</Button>
+				<div class="flex flex-col sm:flex-row gap-4">
+					<Button href="/products" size="lg" class="px-8">
+						{m.orders_browse_products()}
+						<ArrowRight class="ml-2 h-5 w-5" />
+					</Button>
+					<Button href="/" variant="outline" size="lg">
+						Return to Home
+					</Button>
+				</div>
 			</div>
 		{:else}
 			<div class="space-y-6">

@@ -11,7 +11,7 @@
 	import CartItem from '$lib/components/cart-item.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import { ShoppingCart, ArrowRight, Loader2, Truck } from 'lucide-svelte';
+	import { ShoppingCart, ArrowRight, Loader2 } from 'lucide-svelte';
 	import { formatPrice } from '$lib/utils/price';
 	import { goto } from '$app/navigation';
 	import * as m from '$lib/paraglide/messages';
@@ -117,29 +117,40 @@
 	}
 </script>
 
-<div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-	<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-		<!-- Cart items list -->
-		<div class="lg:col-span-7">
-			<div class="flex items-center justify-between w-full mb-6">
-				<h1 class="text-2xl font-semibold flex items-center gap-2">
-					<ShoppingCart class="h-5 w-5" />
-					{m.cart_title()}
-				</h1>
+<div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-opacity duration-500" class:opacity-0={!contentVisible} class:opacity-100={contentVisible}>
+	{#if !cartData || !cartData.items || cartData.items.length === 0}
+		<!-- Empty Cart View - Full Width Layout -->
+		<div class="flex flex-col items-center justify-center py-24 px-4">
+			<div class="w-24 h-24 mb-6 relative">
+				<ShoppingCart size={64} class="text-muted-foreground absolute" />
+				<div class="w-full h-full rounded-full bg-muted/20 animate-pulse"></div>
 			</div>
-
-			{#if !cartData || !cartData.items || cartData.items.length === 0}
-				<div class="flex flex-col items-center justify-center py-16 bg-muted/5 rounded-lg">
-					<ShoppingCart size={64} class="text-muted-foreground mb-4" />
-					<h2 class="text-xl font-medium mb-2">{m.cart_empty_title()}</h2>
-					<p class="text-muted-foreground mb-6 text-center">
-						{m.cart_empty_message()}
-					</p>
-					<Button href="/products">
-						{m.cart_browse_products()}
-					</Button>
+			<h1 class="text-3xl font-bold mb-3 text-center">{m.cart_empty_title()}</h1>
+			<p class="text-muted-foreground mb-8 text-center max-w-md text-lg">
+				{m.cart_empty_message()}
+			</p>
+			<div class="flex flex-col sm:flex-row gap-4">
+				<Button href="/products" size="lg" class="px-8">
+					{m.cart_browse_products()}
+					<ArrowRight class="ml-2 h-5 w-5" />
+				</Button>
+				<Button href="/" variant="outline" size="lg">
+					Return to Home
+				</Button>
+			</div>
+		</div>
+	{:else}
+		<!-- Populated Cart View - Two Column Layout -->
+		<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+			<!-- Cart items list -->
+			<div class="lg:col-span-7">
+				<div class="flex items-center justify-between w-full mb-6">
+					<h1 class="text-2xl font-semibold flex items-center gap-2">
+						<ShoppingCart class="h-5 w-5" />
+						{m.cart_title()}
+					</h1>
 				</div>
-			{:else}
+
 				<div class="space-y-6">
 					{#each cartData.items as item (item.id)}
 						<CartItem
@@ -150,8 +161,7 @@
 						/>
 					{/each}
 				</div>
-			{/if}
-		</div>
+			</div>
 
 		<!-- Cart summary -->
 		<div class="lg:col-span-5 lg:sticky lg:top-[calc(var(--header-height)+1rem)] lg:h-fit">
@@ -269,4 +279,5 @@
 			{/if}
 		</div>
 	</div>
+{/if}
 </div>

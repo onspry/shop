@@ -22,8 +22,10 @@ import * as m from '$lib/paraglide/messages';
 	import { ShoppingBag, User, Truck, ImageOff, Mail, MapPin, Globe, Globe2, CreditCard } from 'lucide-svelte';
 	import type { PageData } from './$types';
 	import { browser } from '$app/environment';
+import { goto } from '$app/navigation';
 	import { countries, addressStructures } from '$lib/config/address-structures';
 	import { checkoutStore } from '$lib/stores/checkout';
+import { cartActions } from '$lib/stores/cart';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button';
@@ -389,12 +391,50 @@ import * as m from '$lib/paraglide/messages';
 			savePaymentMethod: $paymentForm.savePaymentMethod
 		});
 
-		// 3. Proceed with placing the order (replace with actual API call)
-		console.log('Placing order with:', $checkoutStore);
-		// TODO: Replace console log with actual order submission logic
+		// 3. Show processing indicator
+		const processingToast = toast.loading('Processing your order...', { duration: 10000 });
 
-		// 4. Show success feedback
-		toast.success('Order placed successfully!', { duration: 3000 });
+		try {
+			// 4. Submit order data to server (simulated for now)
+			// In a real implementation, this would be an API call to create the order
+			console.log('Placing order with:', $checkoutStore);
+
+			// Simulate API call with a delay
+			await new Promise(resolve => setTimeout(resolve, 1500));
+
+			// Generate a mock order ID (in real app, this would come from the server)
+			const orderId = 'ORD-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+
+			// 5. Clear the processing toast
+			toast.dismiss(processingToast);
+
+			// 6. Show brief success message
+			toast.success('Order placed successfully!', { duration: 3000 });
+
+			// 7. Redirect to order confirmation page
+			toast.success(`Order ${orderId} placed successfully! Redirecting to confirmation page...`, { duration: 3000 });
+
+			// Redirect after a short delay to allow the toast to be seen
+			setTimeout(() => {
+				// Redirect to the order confirmation page
+				goto(`/orders/confirmation/${orderId}`);
+			}, 2000);
+
+			// 8. Clear cart and checkout data
+			// In a real implementation with actual cart actions:
+			// Clear cart data
+			if (typeof cartActions !== 'undefined' && cartActions.clearCart) {
+				cartActions.clearCart();
+			}
+
+			// Reset checkout store
+			checkoutStore.reset();
+		} catch (error) {
+			// Handle errors
+			toast.dismiss(processingToast);
+			toast.error('There was a problem processing your order. Please try again.', { duration: 5000 });
+			console.error('Order placement error:', error);
+		}
 	}
 
 	// Simplify handleCountryChange - Postal code revalidation moved here
