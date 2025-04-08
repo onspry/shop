@@ -16,9 +16,10 @@
 		createShippingSchema,
 		type ShippingSchema as ShippingZodSchema
 	} from '$lib/schemas/shipping';
-	import * as m from '$lib/paraglide/messages';
+	import { paymentSchema } from '$lib/schemas/payment';
+import * as m from '$lib/paraglide/messages';
 	import { formatPrice } from '$lib/utils/price';
-	import { ShoppingBag, User, Truck, ImageOff, Mail, MapPin, Globe, Globe2 } from 'lucide-svelte';
+	import { ShoppingBag, User, Truck, ImageOff, Mail, MapPin, Globe, Globe2, CreditCard } from 'lucide-svelte';
 	import type { PageData } from './$types';
 	import { browser } from '$app/environment';
 	import { countries, addressStructures } from '$lib/config/address-structures';
@@ -63,6 +64,20 @@
 		validateForm: validateShippingForm,
 		options: shippingOptions
 	} = shippingSuperForm;
+
+	const paymentSuperForm = superForm(data.paymentForm, {
+		validators: zod(paymentSchema),
+		validationMethod: 'onblur',
+		taintedMessage: false
+	});
+
+	const {
+		form: paymentForm,
+		errors: paymentErrors,
+		validate: validatePayment,
+		constraints: paymentConstraints,
+		validateForm: validatePaymentForm
+	} = paymentSuperForm;
 
 	// Define schema after form initialization
 	const currentCountrySchema = $derived<ShippingZodSchema>(
@@ -109,6 +124,7 @@
 		// Validation states correctly checking for undefined error values
 		emailValidated: $emailErrors.email === undefined,
 		shippingValidated: Object.values($shippingErrors).every((error) => error === undefined),
+		paymentValidated: Object.values($paymentErrors).every((error) => error === undefined),
 		// User data
 		email: $emailForm.email,
 		// Shipping config
@@ -117,6 +133,10 @@
 		// Shipping details for display
 		shippingCost: $checkoutStore.shippingCost,
 		estimatedDays: $checkoutStore.estimatedDays,
+		// Payment details
+		cardNumber: $paymentForm.cardNumber,
+		cardHolder: $paymentForm.cardHolder,
+		expiryDate: $paymentForm.expiryDate,
 		// Computed values
 		shippingAddress: Object.values($shippingErrors).every((error) => error === undefined)
 			? {
@@ -143,7 +163,8 @@
 	// Add derived state to check for section errors
 	const formErrors = $derived({
 		email: $emailErrors.email !== undefined && $emailErrors.email !== null,
-		shipping: Object.values($shippingErrors).some((error) => error !== undefined && error !== null)
+		shipping: Object.values($shippingErrors).some((error) => error !== undefined && error !== null),
+		payment: Object.values($paymentErrors).some((error) => error !== undefined && error !== null)
 	});
 
 	// Initialize forms from store
@@ -163,6 +184,15 @@
 			$checkoutStore.shippingConfig.postalCode || data.user?.postalCode || '';
 		$shippingForm.country = $checkoutStore.shippingConfig.country || data.user?.country || 'US';
 		$shippingForm.shippingMethod = $checkoutStore.shippingConfig.shippingMethod || 'standard';
+
+		// Set payment form from store
+		if ($checkoutStore.paymentConfig) {
+			$paymentForm.cardNumber = $checkoutStore.paymentConfig.cardNumber || '';
+			$paymentForm.cardHolder = $checkoutStore.paymentConfig.cardHolder || '';
+			$paymentForm.expiryDate = $checkoutStore.paymentConfig.expiryDate || '';
+			$paymentForm.cvv = $checkoutStore.paymentConfig.cvv || '';
+			$paymentForm.savePaymentMethod = $checkoutStore.paymentConfig.savePaymentMethod || false;
+		}
 
 		// Explicitly validate email form after setting values
 		if ($emailForm.email) {
@@ -257,11 +287,36 @@
 		}
 	});
 
+	// Add a more detailed error indicator for payment information
+	const paymentErrorDetails = $derived({
+		cardNumber: $paymentErrors.cardNumber !== undefined,
+		cardHolder: $paymentErrors.cardHolder !== undefined,
+		expiryDate: $paymentErrors.expiryDate !== undefined,
+		cvv: $paymentErrors.cvv !== undefined,
+		get hasErrors() {
+			return (
+				this.cardNumber ||
+				this.cardHolder ||
+				this.expiryDate ||
+				this.cvv
+			);
+		},
+		get errorCount() {
+			return [
+				this.cardNumber,
+				this.cardHolder,
+				this.expiryDate,
+				this.cvv
+			].filter(Boolean).length;
+		}
+	});
+
 	// Handle place order
 	async function placeOrder() {
-		// 1. Validate Email and Shipping again before placing order
+		// 1. Validate Email, Shipping, and Payment before placing order
 		const emailValid = await validateEmailForm();
 		const shippingValid = await validateShippingForm();
+		const paymentValid = await validatePaymentForm();
 
 		if (!emailValid.valid) {
 			showValidationFeedback('Please correct the errors in the email section.');
@@ -291,6 +346,20 @@
 			}
 			return;
 		}
+		if (!paymentValid.valid) {
+			showValidationFeedback('Please correct the errors in the payment section.');
+			// Force validation on all payment fields
+			await validatePayment('cardNumber');
+			await validatePayment('cardHolder');
+			await validatePayment('expiryDate');
+			await validatePayment('cvv');
+			// Scroll to payment section
+			const paymentSection = document.querySelector('[data-section="payment"]');
+			if (paymentSection) {
+				paymentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			}
+			return;
+		}
 
 		// 2. Update store with latest validated data
 		checkoutStore.setEmail($emailForm.email);
@@ -310,6 +379,15 @@
 			checkoutStore.setShippingCost(method.price);
 			checkoutStore.setEstimatedDays(method.estimatedDays);
 		}
+
+		// Update payment config in store
+		checkoutStore.updatePaymentConfig({
+			cardNumber: $paymentForm.cardNumber,
+			cardHolder: $paymentForm.cardHolder,
+			expiryDate: $paymentForm.expiryDate,
+			cvv: $paymentForm.cvv,
+			savePaymentMethod: $paymentForm.savePaymentMethod
+		});
 
 		// 3. Proceed with placing the order (replace with actual API call)
 		console.log('Placing order with:', $checkoutStore);
@@ -668,6 +746,141 @@
 					</div>
 				</form>
 			</div>
+
+			<!-- Payment Section -->
+			<div class="mb-8" data-section="payment">
+				<div class="flex items-center justify-between w-full mb-6">
+					<h2 class="text-2xl font-semibold flex items-center gap-2">
+						<CreditCard class="h-5 w-5" />
+						Payment Information
+						{#if formErrors.payment}
+							<span
+								class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-destructive ml-2 error-indicator"
+							>
+								<span class="text-xs font-bold text-destructive-foreground">
+									{paymentErrorDetails.errorCount > 0 ? paymentErrorDetails.errorCount : '!'}
+								</span>
+							</span>
+						{/if}
+					</h2>
+				</div>
+
+				<form>
+					<div class="grid gap-6">
+						<!-- Card Number -->
+						<Form.Field form={paymentSuperForm} name="cardNumber">
+							<Form.Control>
+								{#snippet children({ props })}
+									<Form.Label>Card Number</Form.Label>
+									<Input
+										{...props}
+										bind:value={$paymentForm.cardNumber}
+										placeholder="1234 5678 9012 3456"
+										onblur={async () => {
+											await validatePayment('cardNumber');
+										}}
+										oninput={() => {
+											checkoutStore.updatePaymentConfig({
+												cardNumber: $paymentForm.cardNumber
+											});
+										}}
+									/>
+								{/snippet}
+							</Form.Control>
+							<Form.FieldErrors />
+						</Form.Field>
+
+						<!-- Card Holder -->
+						<Form.Field form={paymentSuperForm} name="cardHolder">
+							<Form.Control>
+								{#snippet children({ props })}
+									<Form.Label>Cardholder Name</Form.Label>
+									<Input
+										{...props}
+										bind:value={$paymentForm.cardHolder}
+										placeholder="John Doe"
+										onblur={async () => {
+											await validatePayment('cardHolder');
+										}}
+										oninput={() => {
+											checkoutStore.updatePaymentConfig({
+												cardHolder: $paymentForm.cardHolder
+											});
+										}}
+									/>
+								{/snippet}
+							</Form.Control>
+							<Form.FieldErrors />
+						</Form.Field>
+
+						<!-- Expiry Date and CVV -->
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<Form.Field form={paymentSuperForm} name="expiryDate">
+								<Form.Control>
+									{#snippet children({ props })}
+										<Form.Label>Expiry Date</Form.Label>
+										<Input
+											{...props}
+											bind:value={$paymentForm.expiryDate}
+											placeholder="MM/YY"
+											onblur={async () => {
+												await validatePayment('expiryDate');
+											}}
+											oninput={() => {
+												checkoutStore.updatePaymentConfig({
+													expiryDate: $paymentForm.expiryDate
+												});
+											}}
+										/>
+									{/snippet}
+								</Form.Control>
+								<Form.FieldErrors />
+							</Form.Field>
+
+							<Form.Field form={paymentSuperForm} name="cvv">
+								<Form.Control>
+									{#snippet children({ props })}
+										<Form.Label>CVV</Form.Label>
+										<Input
+											{...props}
+											bind:value={$paymentForm.cvv}
+											type="password"
+											placeholder="123"
+											onblur={async () => {
+												await validatePayment('cvv');
+											}}
+											oninput={() => {
+												checkoutStore.updatePaymentConfig({
+													cvv: $paymentForm.cvv
+												});
+											}}
+										/>
+									{/snippet}
+								</Form.Control>
+								<Form.FieldErrors />
+							</Form.Field>
+						</div>
+
+						<!-- Save Payment Method -->
+						<div class="flex items-center space-x-2">
+							<input
+								type="checkbox"
+								id="savePaymentMethod"
+								bind:checked={$paymentForm.savePaymentMethod}
+								onchange={() => {
+									checkoutStore.updatePaymentConfig({
+										savePaymentMethod: $paymentForm.savePaymentMethod
+									});
+								}}
+								class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+							/>
+							<label for="savePaymentMethod" class="text-sm text-muted-foreground">
+								Save this payment method for future purchases
+							</label>
+						</div>
+					</div>
+				</form>
+			</div>
 		</div>
 
 		<!-- Order summary -->
@@ -825,7 +1038,7 @@
 						class="w-full"
 						size="lg"
 						onclick={placeOrder}
-						disabled={!checkout.emailValidated || !checkout.shippingValidated}
+						disabled={!checkout.emailValidated || !checkout.shippingValidated || !checkout.paymentValidated}
 					>
 						{m.checkout_place_order()}
 					</Button>
