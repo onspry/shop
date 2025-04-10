@@ -375,16 +375,24 @@ export const cartRepository = {
                 createdAt: new Date(),
                 updatedAt: new Date()
             });
+            // Get the first image if available
             const firstImage = item.variant.product?.images?.[0];
             return {
                 id: item.id,
                 cartId: item.cartId,
                 quantity: item.quantity,
                 price: item.price,
-                productVariantId: item.productVariantId,
-                variant: variantViewModel,
+                variant: {
+                    ...variantViewModel,
+                    // Add product information to the variant
+                    product: {
+                        id: item.variant.productId,
+                        name: item.variant.name,
+                        slug: '',
+                        description: null
+                    }
+                },
                 imageUrl: firstImage?.url || '',
-                name: item.variant.name,
                 composites: (item.composites || []).map(composite => ({
                     variantId: composite.variantId,
                     name: composite.name,

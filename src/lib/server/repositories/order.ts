@@ -12,51 +12,16 @@ import {
     type OrderAddress
 } from '$lib/server/db';
 
-import { order } from '../db/schema/order';
+import type { CreateOrderViewModel } from '$lib/models/order';
+import { isValidOrderItem } from '$lib/models/order';
 import { orderItem } from '../db/schema/order-item';
 import { orderAddress } from '../db/schema/order-address';
 import { orderStatusHistory } from '../db/schema/order-status-history';
 import { inventoryTransaction } from '../db/schema/inventory-transaction';
 import { paymentTransaction } from '../db/schema/payment-transaction';
 import { refund } from '../db/schema/refund';
+import { order } from '../db/schema/order';
 
-
-interface CreateOrderData {
-    userId?: string;
-    cartId: string;
-    items: Array<{
-        productId: string;
-        variantId?: string;
-        quantity: number;
-        unitPrice: number;
-        name: string;
-        variantName: string;
-    }>;
-    shipping: {
-        method: string;
-        amount: number;
-        address: {
-            firstName: string;
-            lastName: string;
-            address1: string;
-            address2?: string;
-            city: string;
-            state: string;
-            postalCode: string;
-            country: string;
-            phone?: string;
-            email: string;
-        };
-    };
-    payment: {
-        method: string;
-        intentId?: string;
-    };
-    subtotal: number;
-    taxAmount: number;
-    discountAmount?: number;
-    currency?: string;
-}
 
 interface OrderViewModel {
     id: string;
@@ -100,7 +65,7 @@ interface OrderQueryResult extends Order {
 }
 
 export class OrderRepository {
-    private validate(data: CreateOrderData): void {
+    private validate(data: CreateOrderViewModel): void {
         if (data.items.length === 0) {
             throw new Error('Order must have at least one item');
         }
@@ -129,7 +94,7 @@ export class OrderRepository {
         }
     }
 
-    async createOrder(data: CreateOrderData): Promise<OrderViewModel> {
+    async createOrder(data: CreateOrderViewModel): Promise<Order> {
         this.validate(data);
 
         const orderId = randomUUID();
@@ -154,17 +119,41 @@ export class OrderRepository {
                 });
 
             // Create order items
-            const orderItemsData = data.items.map(item => ({
-                id: randomUUID(),
-                orderId,
-                productVariantId: item.variantId || '',
-                quantity: item.quantity,
-                price: item.unitPrice,
-                name: item.name,
-                variantName: item.variantName
-            }));
+            // Log the items for debugging
+            console.log('Order items before filtering:', data.items);
 
-            await tx.insert(orderItem).values(orderItemsData);
+            // Use our strict validation function to filter items
+            const orderItemsData = data.items
+                .filter(isValidOrderItem)
+                .map(item => ({
+                    id: randomUUID(),
+                    orderId,
+                    // The variantId in our OrderItemViewModel maps to productVariantId in the database
+                    productVariantId: item.variantId,
+                    quantity: item.quantity,
+                    price: item.unitPrice, // Use unitPrice from our model
+                    // Map productName to name for the database
+                    name: item.productName,
+                    variantName: item.variantName || ''
+                }));
+
+            console.log('Order items after filtering:', orderItemsData);
+
+            // Only insert order items if there are any
+            if (orderItemsData.length > 0) {
+                try {
+                    // Insert the order items - we've already validated them
+                    await tx.insert(orderItem).values(orderItemsData);
+                } catch (error) {
+                    console.error('Error inserting order items:', error);
+                    // Create a dummy order item as a fallback
+                    // We need to find a valid product variant ID from the database
+                    // For now, we'll throw an error with a more helpful message
+                    throw new Error('Failed to create order items. No valid product variant IDs found. Please check your cart items.');
+                }
+            } else {
+                throw new Error('Order must have at least one item');
+            }
 
             // Create shipping address
             await tx.insert(orderAddress).values({
@@ -205,10 +194,20 @@ export class OrderRepository {
             }
         });
 
-        const createdOrder = await this.getOrderById(orderId);
-        if (!createdOrder) {
+        const orderViewModel = await this.getOrderById(orderId);
+        if (!orderViewModel) {
             throw new Error('Failed to create order');
         }
+
+        // Get the full Order record from the database
+        const createdOrder = await db.query.order.findFirst({
+            where: eq(order.id, orderId)
+        });
+
+        if (!createdOrder) {
+            throw new Error('Failed to retrieve created order');
+        }
+
         return createdOrder;
     }
 
@@ -426,4 +425,4 @@ export class OrderRepository {
 
         return orderRefunds;
     }
-} 
+}

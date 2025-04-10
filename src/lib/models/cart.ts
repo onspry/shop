@@ -7,21 +7,19 @@ export interface CartItemCompositeViewModel {
     variant: ProductVariantViewModel;
 }
 
+/**
+ * Represents an item in the cart with a fully normalized structure
+ */
 export interface CartItemViewModel {
     id: string;
-    productVariantId: string;
     quantity: number;
     price: number;
+    // The variant contains all the product information we need
     variant: ProductVariantViewModel;
+    // For convenience in UI display
     imageUrl: string;
-    name: string;
+    // For composite products
     composites: CartItemCompositeViewModel[];
-    product?: {
-        id: string;
-        name: string;
-        slug?: string;
-        description?: string | null;
-    };
 }
 
 export interface CartViewModel {
@@ -67,4 +65,4 @@ export interface CartSummaryViewModel {
     discountAmount: number;
     total: number;
     itemCount: number;
-} 
+}

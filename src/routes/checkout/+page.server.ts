@@ -7,6 +7,8 @@ import { emailSchema } from '$lib/schemas/auth';
 import { shippingSchema } from '$lib/schemas/shipping';
 import { paymentSchema } from '$lib/schemas/payment';
 import { OrderRepository } from '$lib/server/repositories/order';
+import type { CreateOrderViewModel, OrderItemViewModel } from '$lib/models/order';
+
 
 export const load: PageServerLoad = async ({ cookies, locals }) => {
     // Get session or user ID
@@ -72,21 +74,14 @@ export const actions = {
                 return { success: false, error: 'Missing required data' };
             }
 
-            // Parse items
-            const items = JSON.parse(itemsJson);
+            // Parse items with proper typing
+            const items = JSON.parse(itemsJson) as OrderItemViewModel[];
 
-            // Create order data
-            const orderData = {
+            // Create order data with proper typing
+            const orderData: CreateOrderViewModel = {
                 userId: locals.user?.id,
                 cartId,
-                items: items.map((item: { productId: string; variantId: string; quantity: number; price: number; name: string; variantName?: string }) => ({
-                    productId: item.productId,
-                    variantId: item.variantId,
-                    quantity: item.quantity,
-                    unitPrice: item.price,
-                    name: item.name,
-                    variantName: item.variantName || ''
-                })),
+                items, // Use the items directly since they're already in the correct format
                 shipping: {
                     method: shippingMethod,
                     amount: shippingCost,
@@ -120,16 +115,25 @@ export const actions = {
             // Clear cart after successful order creation
             await cartRepository.clearCart(cartId);
 
-            // Return order ID for redirection
+            // Return just the order data
+            // SvelteKit will automatically wrap it in a response object
             return {
                 success: true,
                 orderId: order.id
             };
         } catch (error) {
             console.error('Error creating order:', error);
+            // Provide a more descriptive error message
+            const errorMessage = error instanceof Error ? error.message : 'Failed to create order';
+            console.error('Order creation error details:', errorMessage);
+
+            // Return just the error data
+            // SvelteKit will automatically wrap it in a response object
             return {
                 success: false,
-                error: error instanceof Error ? error.message : 'Failed to create order'
+                orderId: '',
+                error: errorMessage,
+                message: 'There was a problem processing your order. Please try again.'
             };
         }
     }

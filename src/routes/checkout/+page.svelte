@@ -31,14 +31,18 @@
 	import type { PageData } from './$types';
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
+	import { enhance } from '$app/forms';
 	import { countries, addressStructures } from '$lib/config/address-structures';
 	import { checkoutStore } from '$lib/stores/checkout';
-import { cart } from '$lib/stores/cart';
+	import { cart } from '$lib/stores/cart';
+import { mapCartItemToOrderItem, isValidOrderItem, type OrderItemViewModel } from '$lib/models/order';
+import type { OrderResponse, OrderResponseData } from '$lib/types/checkout';
 	import { cartActions } from '$lib/stores/cart';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button';
 	import * as Form from '$lib/components/ui/form';
+	import type { CartItemViewModel } from '$lib/models/cart';
 
 	// Page data props
 	const { data } = $props<{ data: PageData }>();
@@ -138,16 +142,31 @@ import { cart } from '$lib/stores/cart';
 	const checkout = $derived({
 		// Validation states check if fields are filled and error-free
 		emailValidated: $emailForm.email && $emailErrors.email === undefined,
-		shippingValidated:
-			$shippingForm.firstName &&
-			$shippingForm.lastName &&
-			$shippingForm.addressLine1 &&
-			$shippingForm.city &&
-			$shippingForm.state &&
-			$shippingForm.postalCode &&
-			$shippingForm.country &&
-			$shippingForm.shippingMethod &&
-			Object.values($shippingErrors).every((error) => error === undefined),
+		get shippingValidated() {
+			// Get the address structure for the selected country
+			const countryStructure = addressStructures[$shippingForm.country] || addressStructures.DEFAULT;
+
+			// Check if state is required for this country
+			const stateRequired = countryStructure.fields.includes('state');
+
+			// Basic required fields check
+			const basicFieldsValid =
+				$shippingForm.firstName &&
+				$shippingForm.lastName &&
+				$shippingForm.addressLine1 &&
+				$shippingForm.city &&
+				$shippingForm.postalCode &&
+				$shippingForm.country &&
+				$shippingForm.shippingMethod;
+
+			// State field check - only require if needed for this country
+			const stateFieldValid = !stateRequired || (stateRequired && $shippingForm.state);
+
+			// No validation errors
+			const noValidationErrors = Object.values($shippingErrors).every((error) => error === undefined);
+
+			return basicFieldsValid && stateFieldValid && noValidationErrors;
+		},
 		paymentValidated:
 			$paymentForm.cardNumber &&
 			$paymentForm.cardHolder &&
@@ -338,171 +357,63 @@ import { cart } from '$lib/stores/cart';
 		}
 	});
 
-	// Handle place order
-	async function placeOrder() {
-
-		// Use existing validateForm functions from superForm
-		const emailValid = await emailSuperForm.validateForm();
-		const shippingValid = await shippingSuperForm.validateForm();
-		const paymentValid = await paymentSuperForm.validateForm();
-
-		if (!emailValid.valid) {
-			showValidationFeedback('Please correct the errors in the email section.');
-			// Force validation on email field
-			await validateEmail('email');
-			// Scroll to email section
-			const emailSection = document.querySelector('[data-section="email"]');
-			if (emailSection) {
-				emailSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-			}
-			return;
-		}
-		if (!shippingValid.valid) {
-			showValidationFeedback('Please correct the errors in the shipping section.');
-			// Force validation on all shipping fields
-			await validateShipping('firstName');
-			await validateShipping('lastName');
-			await validateShipping('addressLine1');
-			await validateShipping('city');
-			await validateShipping('state');
-			await validateShipping('postalCode');
-			await validateShipping('country');
-			// Scroll to shipping section
-			const shippingSection = document.querySelector('[data-section="shipping"]');
-			if (shippingSection) {
-				shippingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-			}
-			return;
-		}
-		if (!paymentValid.valid) {
-			showValidationFeedback('Please correct the errors in the payment section.');
-			// Force validation on all payment fields
-			await validatePayment('cardNumber');
-			await validatePayment('cardHolder');
-			await validatePayment('expiryDate');
-			await validatePayment('cvv');
-			// Scroll to payment section
-			const paymentSection = document.querySelector('[data-section="payment"]');
-			if (paymentSection) {
-				paymentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-			}
-			return;
-		}
-
-		// 2. Update store with latest validated data
-		checkoutStore.setEmail($emailForm.email);
-		checkoutStore.updateShippingConfig({
-			firstName: $shippingForm.firstName,
-			lastName: $shippingForm.lastName,
-			addressLine1: $shippingForm.addressLine1,
-			addressLine2: $shippingForm.addressLine2,
-			city: $shippingForm.city,
-			state: $shippingForm.state,
-			postalCode: $shippingForm.postalCode,
-			country: $shippingForm.country,
-			shippingMethod: $shippingForm.shippingMethod
-		});
-		const method = shippingMethods.find((sm) => sm.id === $shippingForm.shippingMethod);
-		if (method) {
-			checkoutStore.setShippingCost(method.price);
-			checkoutStore.setEstimatedDays(method.estimatedDays);
-		}
-
-		// Update payment config in store
-		checkoutStore.updatePaymentConfig({
-			cardNumber: $paymentForm.cardNumber,
-			cardHolder: $paymentForm.cardHolder,
-			expiryDate: $paymentForm.expiryDate,
-			cvv: $paymentForm.cvv,
-			savePaymentMethod: $paymentForm.savePaymentMethod
-		});
-
-		// 3. Show processing indicator
+	// Handle form submission with enhance
+	function handleOrderSubmit({ }: { formData: FormData; cancel: () => void }) {
+		// Show processing indicator
 		const processingToast = toast.loading('Processing your order...', { duration: 10000 });
 
-		try {
-			// 4. Submit order data to server using the server action
-			console.log('Placing order with:', $checkoutStore);
+		// Return the enhance callback
+		return async ({ result, update }: { result: any; update: () => void }) => {
+			// Log the server response
+			console.log('Server response:', result);
 
-			// Prepare cart items for the order
-			const cartItems = $cart.items.map((item: any) => ({
-				productId: item.product.id,
-				variantId: item.variant?.id,
-				quantity: item.quantity,
-				price: item.price,
-				name: item.product.name,
-				variantName: item.variant?.name || ''
-			}));
+			// Handle the result
+			if (result.type === 'success') {
+				// Get the order data directly from the response
+				const orderData = result.data as OrderResponseData;
+				console.log('Order data:', orderData);
 
-			// Create form data for the server action
-			const formData = new FormData();
-			formData.append('email', $emailForm.email);
-			formData.append('firstName', $shippingForm.firstName);
-			formData.append('lastName', $shippingForm.lastName);
-			formData.append('addressLine1', $shippingForm.addressLine1);
-			formData.append('addressLine2', $shippingForm.addressLine2 || '');
-			formData.append('city', $shippingForm.city);
-			formData.append('state', $shippingForm.state);
-			formData.append('postalCode', $shippingForm.postalCode);
-			formData.append('country', $shippingForm.country);
-			formData.append('shippingMethod', $shippingForm.shippingMethod);
-			formData.append('shippingCost', $checkoutStore.shippingCost.toString());
-			formData.append('cardNumber', $paymentForm.cardNumber);
-			formData.append('cardHolder', $paymentForm.cardHolder);
-			formData.append('subtotal', $cart.subtotal.toString());
-			formData.append('taxAmount', ($cart.subtotal * 0.08).toString()); // 8% tax rate
-			formData.append('discountAmount', '0');
-			formData.append('items', JSON.stringify(cartItems));
-			formData.append('cartId', $cart.id || 'guest-cart');
+				// Get the order ID
+				const orderId = orderData.orderId;
 
-			// Submit the form data to the server action
-			const response = await fetch('?/placeOrder', {
-				method: 'POST',
-				body: formData
-			});
+				// Check if we have a valid order ID
+				if (!orderId) {
+					toast.dismiss(processingToast);
+					toast.error('No order ID returned from server');
+					return;
+				}
 
-			const result = await response.json();
+				// Clear the processing toast
+				toast.dismiss(processingToast);
 
-			if (!result.success) {
-				throw new Error(result.message || 'Failed to place order');
-			}
+				// Show brief success message
+				toast.success('Order placed successfully!', { duration: 3000 });
 
-			const orderId = result.orderId;
+				// Clear cart data and cookies
+				if (typeof cartActions !== 'undefined' && cartActions.clearCart) {
+					cartActions.clearCart();
+				}
 
-			// 5. Clear the processing toast
-			toast.dismiss(processingToast);
+				// Reset checkout store
+				checkoutStore.reset();
 
-			// 6. Show brief success message
-			toast.success('Order placed successfully!', { duration: 3000 });
-
-			// 7. Redirect to order confirmation page
-			toast.success(`Order ${orderId} placed successfully! Redirecting to confirmation page...`, {
-				duration: 3000
-			});
-
-			// Redirect after a short delay to allow the toast to be seen
-			setTimeout(() => {
-				// Redirect to the order confirmation page
+				// Redirect immediately to the order confirmation page
 				goto(`/orders/confirmation/${orderId}`);
-			}, 2000);
+			} else {
+				// Handle error
+				toast.dismiss(processingToast);
 
-			// 8. Clear cart and checkout data
-			// In a real implementation with actual cart actions:
-			// Clear cart data
-			if (typeof cartActions !== 'undefined' && cartActions.clearCart) {
-				cartActions.clearCart();
+				// Get error data from the response
+				const errorData = result.data as OrderResponseData;
+				console.log('Error data:', errorData);
+
+				// Show error message
+				toast.error(errorData.error || errorData.message || 'Failed to place order');
+
+				// Update the form with validation errors
+				update();
 			}
-
-			// Reset checkout store
-			checkoutStore.reset();
-		} catch (error) {
-			// Handle errors
-			toast.dismiss(processingToast);
-			toast.error('There was a problem processing your order. Please try again.', {
-				duration: 5000
-			});
-			console.error('Order placement error:', error);
-		}
+		};
 	}
 
 	// Functions to navigate between steps
@@ -554,10 +465,7 @@ import { cart } from '$lib/stores/cart';
 		<ol class="relative grid grid-cols-3 w-full">
 			<!-- Email Step -->
 			<li class="flex flex-col items-center">
-				<button
-					class="flex flex-col items-center focus:outline-none"
-					onclick={() => goToStep(1)}
-				>
+				<button class="flex flex-col items-center focus:outline-none" onclick={() => goToStep(1)}>
 					<div
 						class="flex items-center justify-center w-10 h-10 rounded-full border-2 z-10 transition-colors duration-300 mb-2"
 						class:bg-primary={checkout.currentStep >= 1 || activeStep === 1}
@@ -712,8 +620,17 @@ import { cart } from '$lib/stores/cart';
 							>
 								<span class="flex items-center gap-2">
 									Continue to Shipping
-									<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-										<path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										class="h-5 w-5"
+										viewBox="0 0 20 20"
+										fill="currentColor"
+									>
+										<path
+											fill-rule="evenodd"
+											d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+											clip-rule="evenodd"
+										/>
 									</svg>
 								</span>
 							</Button>
@@ -989,27 +906,37 @@ import { cart } from '$lib/stores/cart';
 				<!-- Navigation Buttons -->
 				<div class="mt-8 border-t pt-6">
 					<div class="flex justify-between items-center">
-						<Button
-							variant="outline"
-							class="md:w-auto"
-							onclick={goToPreviousStep}
-						>
+						<Button variant="outline" class="md:w-auto" onclick={goToPreviousStep}>
 							<span class="flex items-center gap-2">
-								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-									<path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									class="h-5 w-5"
+									viewBox="0 0 20 20"
+									fill="currentColor"
+								>
+									<path
+										fill-rule="evenodd"
+										d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+										clip-rule="evenodd"
+									/>
 								</svg>
 								Back to Contact
 							</span>
 						</Button>
-						<Button
-							class="md:w-auto"
-							onclick={goToNextStep}
-							disabled={!checkout.shippingValidated}
-						>
+						<Button class="md:w-auto" onclick={goToNextStep} disabled={!checkout.shippingValidated}>
 							<span class="flex items-center gap-2">
 								Continue to Payment
-								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-									<path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									class="h-5 w-5"
+									viewBox="0 0 20 20"
+									fill="currentColor"
+								>
+									<path
+										fill-rule="evenodd"
+										d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+										clip-rule="evenodd"
+									/>
 								</svg>
 							</span>
 						</Button>
@@ -1257,14 +1184,19 @@ import { cart } from '$lib/stores/cart';
 				<!-- Navigation Buttons -->
 				<div class="mt-8 border-t pt-6">
 					<div class="flex justify-between items-center">
-						<Button
-							variant="outline"
-							class="md:w-auto"
-							onclick={goToPreviousStep}
-						>
+						<Button variant="outline" class="md:w-auto" onclick={goToPreviousStep}>
 							<span class="flex items-center gap-2">
-								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-									<path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									class="h-5 w-5"
+									viewBox="0 0 20 20"
+									fill="currentColor"
+								>
+									<path
+										fill-rule="evenodd"
+										d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+										clip-rule="evenodd"
+									/>
 								</svg>
 								Back to Shipping
 							</span>
@@ -1435,7 +1367,8 @@ import { cart } from '$lib/stores/cart';
 								<div class="flex items-center gap-2 mb-2">
 									<User class="h-4 w-4 text-primary" />
 									<span class="font-medium">
-										{checkout.shippingAddress.firstName} {checkout.shippingAddress.lastName}
+										{checkout.shippingAddress.firstName}
+										{checkout.shippingAddress.lastName}
 									</span>
 								</div>
 
@@ -1445,13 +1378,25 @@ import { cart } from '$lib/stores/cart';
 										<p>{checkout.shippingAddress.addressLine2}</p>
 									{/if}
 									<p>
-										{checkout.shippingAddress.city}, {checkout.shippingAddress.state} {checkout.shippingAddress.postalCode}
+										{checkout.shippingAddress.city}, {checkout.shippingAddress.state}
+										{checkout.shippingAddress.postalCode}
 									</p>
 									<div class="flex items-center gap-2 mt-1">
-										<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											class="h-4 w-4 text-primary"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+										>
 											<circle cx="12" cy="12" r="10"></circle>
 											<line x1="2" y1="12" x2="22" y2="12"></line>
-											<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+											<path
+												d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+											></path>
 										</svg>
 										<span>{checkout.shippingAddress.country}</span>
 									</div>
@@ -1459,11 +1404,15 @@ import { cart } from '$lib/stores/cart';
 							</div>
 
 							<!-- Delivery Estimate -->
-							<div class="flex items-center gap-2 text-sm bg-muted/20 rounded-lg p-3 border border-muted/40">
+							<div
+								class="flex items-center gap-2 text-sm bg-muted/20 rounded-lg p-3 border border-muted/40"
+							>
 								<Truck class="h-5 w-5 text-primary" />
 								<div>
 									<span class="font-medium">{m.checkout_estimated_delivery()}</span>
-									<span class="text-muted-foreground ml-1">({checkout.estimatedDays} {m.shipping_business_days()})</span>
+									<span class="text-muted-foreground ml-1"
+										>({checkout.estimatedDays} {m.shipping_business_days()})</span
+									>
 								</div>
 							</div>
 						</div>
@@ -1478,7 +1427,9 @@ import { cart } from '$lib/stores/cart';
 							</h3>
 
 							<!-- Payment Card Preview -->
-							<div class="bg-gradient-to-r from-primary/80 to-primary rounded-lg p-4 text-primary-foreground mb-4 shadow-sm">
+							<div
+								class="bg-gradient-to-r from-primary/80 to-primary rounded-lg p-4 text-primary-foreground mb-4 shadow-sm"
+							>
 								<div class="flex justify-between items-center mb-2">
 									<div class="w-10 h-6 bg-white/20 rounded-md"></div>
 									<CreditCard class="h-6 w-6 text-primary-foreground/80" />
@@ -1494,12 +1445,54 @@ import { cart } from '$lib/stores/cart';
 						</div>
 					{/if}
 
-					<!-- Moved Place Order Button and Text -->
-					<div class="pt-6 border-t">
+					<!-- Order Form -->
+					<form id="order-form" method="POST" action="?/placeOrder" use:enhance={handleOrderSubmit} class="pt-6 border-t">
+						<!-- Hidden fields for order data -->
+						{#if $emailForm.email}
+							<input type="hidden" name="email" value={$emailForm.email} />
+						{/if}
+
+						{#if $shippingForm.firstName}
+							<input type="hidden" name="firstName" value={$shippingForm.firstName} />
+							<input type="hidden" name="lastName" value={$shippingForm.lastName} />
+							<input type="hidden" name="addressLine1" value={$shippingForm.addressLine1} />
+							<input type="hidden" name="addressLine2" value={$shippingForm.addressLine2 || ''} />
+							<input type="hidden" name="city" value={$shippingForm.city} />
+							<input type="hidden" name="state" value={$shippingForm.state} />
+							<input type="hidden" name="postalCode" value={$shippingForm.postalCode} />
+							<input type="hidden" name="country" value={$shippingForm.country} />
+							<input type="hidden" name="shippingMethod" value={$shippingForm.shippingMethod} />
+						{/if}
+
+						{#if $checkoutStore.shippingCost}
+							<input type="hidden" name="shippingCost" value={$checkoutStore.shippingCost.toString()} />
+						{/if}
+
+						{#if $paymentForm.cardNumber}
+							<input type="hidden" name="cardNumber" value={$paymentForm.cardNumber} />
+							<input type="hidden" name="cardHolder" value={$paymentForm.cardHolder} />
+						{/if}
+
+						{#if $cart}
+							<input type="hidden" name="subtotal" value={$cart.subtotal.toString()} />
+							<input type="hidden" name="taxAmount" value={($cart.subtotal * 0.08).toString()} />
+							<input type="hidden" name="discountAmount" value="0" />
+							<input type="hidden" name="cartId" value={$cart.id || 'guest-cart'} />
+
+							<!-- Cart items -->
+							{#if $cart.items}
+								<input
+									type="hidden"
+									name="items"
+									value={JSON.stringify($cart.items.map(item => mapCartItemToOrderItem(item)).filter(item => isValidOrderItem(item)))}
+								/>
+							{/if}
+						{/if}
+
 						<Button
+							type="submit"
 							class="w-full relative overflow-hidden group transition-all duration-300 hover:shadow-lg"
 							size="lg"
-							onclick={placeOrder}
 							disabled={!checkout.emailValidated ||
 								!checkout.shippingValidated ||
 								!checkout.paymentValidated}
@@ -1509,7 +1502,7 @@ import { cart } from '$lib/stores/cart';
 						<p class="text-center text-xs text-muted-foreground/60 mt-2">
 							{m.checkout_secure_transaction()}
 						</p>
-					</div>
+					</form>
 
 					<!-- Moved Terms Agreement -->
 					<div class="text-xs text-muted-foreground/60 text-center space-y-1.5 border-t pt-6">

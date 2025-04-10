@@ -8,7 +8,7 @@ import { user, type User, type NewUser } from './schema/user';
 import { session, type Session } from './schema/session';
 import { emailVerificationRequest, type EmailVerificationRequest } from './schema/email-verification-request';
 import { passwordResetSession, type PasswordResetSession } from './schema/password-reset-session';
-import { Providers, userStatus, type Provider } from './schema/types';
+import { Providers, userStatus, orderStatus, type Provider } from './schema/types';
 
 import {
 	product, type Product,
@@ -40,15 +40,18 @@ import {
 } from './schema/discount';
 
 import {
-	order, orderStatus, type OrderStatus, type Order, type NewOrder
+	order, type OrderStatus, type Order, type NewOrder,
+	orderRelations
 } from './schema/order';
 
 import {
-	orderItem, type OrderItem, type NewOrderItem
+	orderItem, type OrderItem, type NewOrderItem,
+	orderItemRelations
 } from './schema/order-item';
 
 import {
-	orderAddress, addressType, type AddressType, type OrderAddress, type NewOrderAddress
+	orderAddress, addressType, type AddressType, type OrderAddress, type NewOrderAddress,
+	orderAddressRelations
 } from './schema/order-address';
 
 import {
@@ -98,7 +101,10 @@ const schema = {
 	cartItemToCartRelations,
 	productRelations,
 	productVariantRelations,
-	productImageRelations
+	productImageRelations,
+	orderRelations,
+	orderItemRelations,
+	orderAddressRelations
 };
 
 export const db = drizzle(client, { schema });

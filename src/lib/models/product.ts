@@ -24,6 +24,8 @@ export interface ProductImageViewModel {
     position: number;
 }
 
+// No forward declaration needed anymore
+
 // ViewModel for product variants with stock status
 export interface ProductVariantViewModel {
     id: string;
@@ -33,6 +35,15 @@ export interface ProductVariantViewModel {
     stock_quantity: number;
     attributes: Record<string, unknown>;
     stockStatus: 'in_stock' | 'low_stock' | 'out_of_stock';
+    // Reference to the parent product
+    productId: string;
+    // Optional full product reference (may not always be populated)
+    product?: {
+        id: string;
+        name: string;
+        slug?: string;
+        description?: string | null;
+    };
 }
 
 // Helper function to transform variant to ViewModel
@@ -44,7 +55,9 @@ export function toProductVariantViewModel(variant: ProductVariant): ProductVaria
         price: variant.price,
         stock_quantity: variant.stockQuantity,
         attributes: variant.attributes || {},
-        stockStatus: getStockStatus(variant.stockQuantity)
+        stockStatus: getStockStatus(variant.stockQuantity),
+        productId: variant.productId, // Add the product ID reference
+        // The full product object would be populated separately if needed
     };
 }
 
@@ -76,4 +89,4 @@ function getStockStatus(quantity: number): 'in_stock' | 'low_stock' | 'out_of_st
     if (quantity === 0) return 'out_of_stock';
     if (quantity < 5) return 'low_stock';
     return 'in_stock';
-} 
+}
