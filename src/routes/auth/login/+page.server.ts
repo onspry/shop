@@ -6,7 +6,7 @@ import type { PageServerLoad, Actions } from "./$types";
 import { verifyPasswordHash } from "$lib/server/auth/password";
 import { createSession, generateSessionToken, setSessionTokenCookie } from "$lib/server/auth/session";
 import { userRepo } from "$lib/server/repositories/user";
-import { cartRepository } from "$lib/server/repositories/cart";
+import { cartRepository } from "$lib/server/db/prisma/repositories/cart-repository";
 
 export const load: PageServerLoad = async ({ locals, url }) => {
     if (locals.session !== null && locals.user !== null) {

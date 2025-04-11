@@ -1,8 +1,8 @@
 import { eq, and } from 'drizzle-orm';
-import { db } from '$lib/server/db';
-import { user } from '$lib/server/db/schema/user';
-import type { User } from '$lib/server/db/schema/user';
-import type { Provider } from '$lib/server/db/schema/types';
+import { db } from '$lib/server/db_drizzle/schema';
+import { user } from '$lib/server/db_drizzle/schema/user';
+import type { User } from '$lib/server/db_drizzle/schema/user';
+import type { Provider } from '$lib/server/db_drizzle/schema/types';
 import { hashPassword } from '$lib/server/auth/password';
 
 export const userRepo = {

@@ -4,8 +4,8 @@ import { github } from "$lib/server/auth/oauth";
 import { randomUUID } from 'crypto';
 import type { RequestEvent } from "@sveltejs/kit";
 import type { OAuth2Tokens } from "arctic";
-import { cartRepository } from "$lib/server/repositories/cart";
-import { Providers } from "$lib/server/db";
+import { Providers } from "$lib/server/db_drizzle/schema";
+import { cartRepository } from "$lib/server/db/prisma/repositories/cart-repository";
 
 export async function GET(event: RequestEvent): Promise<Response> {
     // Get the stored redirect URL from the cookie

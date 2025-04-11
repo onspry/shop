@@ -1,0 +1,421 @@
+// This is your updated Prisma schema file with alignments to match the Drizzle schema
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Enum definitions
+enum Provider {
+  email
+  google
+  github
+  microsoft
+}
+
+enum UserStatus {
+  active
+  inactive
+  suspended
+}
+
+enum CartStatus {
+  active
+  merged
+  converted_to_order
+  abandoned
+}
+
+enum OrderStatus {
+  pending_payment // Changed from 'pending' to match Drizzle
+  payment_failed
+  processing
+  shipped
+  delivered
+  cancelled
+  refunded
+}
+
+enum PaymentStatus {
+  pending
+  succeeded
+  failed
+  refunded
+}
+
+enum RefundStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+enum AddressType {
+  shipping
+  billing
+}
+
+enum TransactionType {
+  order
+  manual_adjustment
+  return
+}
+
+// User Models
+model User {
+  id                String    @id @default(uuid())
+  provider          Provider
+  providerId        String    @map("provider_id")
+  email             String    @unique
+  image             String?
+  firstName         String    @map("first_name")
+  lastName          String    @map("last_name")
+  passwordHash      String?   @map("password_hash")
+  status            UserStatus @default(active)
+  emailVerified     Boolean   @default(false) @map("email_verified")
+  isAdmin           Boolean   @default(false) @map("is_admin")
+  stripeCustomerId  String?   @map("stripe_customer_id")
+  lastLoginAt       DateTime? @map("last_login_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  sessions          Session[]
+  emailVerifications EmailVerificationRequest[]
+  passwordResets    PasswordResetSession[]
+  carts             Cart[]
+  orders            Order[]
+
+  @@unique([provider, providerId])
+  @@index([email])
+  @@index([stripeCustomerId])
+  @@index([status])
+}
+
+model Session {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  expiresAt        DateTime @map("expires_at")
+
+  // Relations
+  user             User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model EmailVerificationRequest {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  email            String
+  code             String
+  expiresAt        DateTime @map("expires_at")
+
+  // Relations
+  user             User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model PasswordResetSession {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  email            String
+  code             String
+  expiresAt        DateTime @map("expires_at")
+  emailVerified    Boolean  @default(false) @map("email_verified")
+  twoFactorVerified Boolean @default(false) @map("two_factor_verified")
+
+  // Relations
+  user             User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+// Product Models
+model Product {
+  id               String    @id @default(uuid())
+  slug             String    @unique
+  category         String
+  name             String
+  description      String
+  features         String[]  @default([])
+  specifications   Json      @default("{}")
+  isAccessory      Boolean   @default(false) @map("is_accessory")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  variants         ProductVariant[]
+  images           ProductImage[]
+  cartItems        CartItem[]
+  orderItems       OrderItem[]
+
+  @@index([slug])
+  @@index([category])
+}
+
+model ProductVariant {
+  id               String    @id @default(uuid())
+  productId        String    @map("product_id")
+  sku              String    @unique
+  name             String
+  price            Int       // Stored in cents
+  stockQuantity    Int       @default(0) @map("stock_quantity")
+  attributes       Json      @default("{}")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  product          Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartItems        CartItem[]
+  orderItems       OrderItem[]
+  inventoryTransactions InventoryTransaction[]
+
+  @@index([productId])
+  @@index([sku])
+}
+
+model ProductImage {
+  id               String    @id @default(uuid())
+  productId        String    @map("product_id")
+  url              String
+  alt              String
+  position         Int
+
+  // Relations
+  product          Product   @relation(fields: [productId], references: [id])
+
+  @@index([productId])
+  @@index([position])
+}
+
+// Cart Models
+model Cart {
+  id               String    @id @default(uuid())
+  userId           String?   @map("user_id")
+  sessionId        String    @map("session_id")
+  status           CartStatus @default(active)
+  email            String?   // Added to match Drizzle
+  firstName        String?   @map("first_name") // Added to match Drizzle
+  lastName         String?   @map("last_name") // Added to match Drizzle
+  discountCode     String?   @map("discount_code")
+  discountAmount   Int       @default(0) @map("discount_amount") // Stored in cents
+  lastActivityAt   DateTime  @default(now()) @map("last_activity_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user             User?     @relation(fields: [userId], references: [id])
+  items            CartItem[]
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([email])
+  @@index([status])
+  @@index([lastActivityAt])
+}
+
+model CartItem {
+  id               String    @id @default(uuid())
+  cartId           String    @map("cart_id")
+  productId        String    @map("product_id")
+  variantId        String    @map("variant_id")
+  quantity         Int       @default(1)
+  price            Int       // Added to match Drizzle - price in cents
+  composites       Json      @default("[]") // Added to match Drizzle - for composite products
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  cart             Cart      @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product          Product   @relation(fields: [productId], references: [id])
+  variant          ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@index([cartId])
+  @@index([productId])
+  @@index([variantId])
+}
+
+// Discount Model
+model Discount {
+  id               String    @id @default(uuid())
+  code             String    @unique
+  description      String?
+  type             String    // 'percentage', 'fixed', 'shipping'
+  value            Int       // For percentage: 10 = 10%, for fixed: amount in cents
+  minSpend         Int?      @map("min_spend") // Minimum cart value in cents
+  maxUses          Int?      @map("max_uses") // Maximum number of uses
+  usedCount        Int       @default(0) @map("used_count")
+  validFrom        DateTime  @default(now()) @map("valid_from")
+  validUntil       DateTime? @map("valid_until")
+  active           Boolean   @default(true)
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  @@index([code])
+  @@index([active])
+}
+
+// Order Models
+model Order {
+  id                    String    @id @default(uuid())
+  userId                String?   @map("user_id")
+  cartId                String    @map("cart_id")
+  status                OrderStatus @default(pending_payment)
+  email                 String
+  firstName             String    @map("first_name")
+  lastName              String    @map("last_name")
+  subtotal              Int       // Stored in cents
+  discountCode          String?   @map("discount_code")
+  discountAmount        Int       @default(0) @map("discount_amount") // Stored in cents
+  total                 Int       // Stored in cents
+  stripePaymentIntentId String?   @map("stripe_payment_intent_id")
+  stripeClientSecret    String?   @map("stripe_client_secret")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user                  User?     @relation(fields: [userId], references: [id])
+  items                 OrderItem[]
+  addresses             OrderAddress[]
+  statusHistory         OrderStatusHistory[]
+  paymentTransactions   PaymentTransaction[]
+  refunds               Refund[]
+  inventoryTransactions InventoryTransaction[]
+
+  @@index([userId])
+  @@index([cartId])
+  @@index([email])
+  @@index([status])
+  @@index([stripePaymentIntentId])
+}
+
+model OrderItem {
+  id               String    @id @default(uuid())
+  orderId          String    @map("order_id")
+  productId        String    @map("product_id")
+  variantId        String    @map("variant_id")
+  quantity         Int
+  price            Int       // Price at time of purchase, in cents
+  name             String    // Added to match Drizzle - product name at time of order
+  variantName      String    @map("variant_name") // Added to match Drizzle - variant name at time of order
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at") // Added to match Drizzle
+
+  // Relations
+  order            Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product          Product   @relation(fields: [productId], references: [id])
+  variant          ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([variantId])
+}
+
+model OrderAddress {
+  id               String    @id @default(uuid())
+  orderId          String    @map("order_id")
+  type             AddressType
+  firstName        String    @map("first_name")
+  lastName         String    @map("last_name")
+  company          String?
+  address1         String
+  address2         String?
+  city             String
+  state            String
+  postalCode       String    @map("postal_code")
+  country          String
+  phone            String?
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at") // Added to match Drizzle
+
+  // Relations
+  order            Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([type])
+}
+
+model OrderStatusHistory {
+  id               String    @id @default(uuid())
+  orderId          String    @map("order_id")
+  status           OrderStatus
+  note             String?
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  order            Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([status])
+}
+
+// Payment Models
+model PaymentTransaction {
+  id                   String    @id @default(uuid())
+  orderId              String    @map("order_id")
+  status               PaymentStatus @default(pending)
+  amount               Int       // Stored in cents
+  currency             String    @default("USD") // Added to match Drizzle
+  stripePaymentIntentId String   @map("stripe_payment_intent_id") // Changed from transactionId to match Drizzle
+  stripePaymentMethodId String?  @map("stripe_payment_method_id") // Added to match Drizzle
+  errorMessage         String?   @map("error_message") // Added to match Drizzle
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  order                Order     @relation(fields: [orderId], references: [id])
+  refunds              Refund[]
+
+  @@index([orderId])
+  @@index([stripePaymentIntentId])
+  @@index([status])
+}
+
+model Refund {
+  id               String    @id @default(uuid())
+  orderId          String    @map("order_id")
+  transactionId    String    @map("transaction_id")
+  amount           Int       // Stored in cents
+  reason           String
+  note             String?   // Added to match Drizzle
+  status           RefundStatus @default(pending)
+  stripeRefundId   String?   @map("stripe_refund_id") // Added to match Drizzle
+  errorMessage     String?   @map("error_message") // Added to match Drizzle
+  refundId         String?   @map("refund_id") // Added to match Drizzle
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  order            Order     @relation(fields: [orderId], references: [id])
+  transaction      PaymentTransaction @relation(fields: [transactionId], references: [id])
+
+  @@index([orderId])
+  @@index([transactionId])
+  @@index([status])
+}
+
+// Inventory Models
+model InventoryTransaction {
+  id               String    @id @default(uuid())
+  variantId        String    @map("variant_id") // This corresponds to productVariantId in Drizzle
+  quantity         Int
+  type             TransactionType
+  note             String?
+  createdAt        DateTime  @default(now()) @map("created_at")
+  orderId          String?   @map("order_id")
+
+  // Relations
+  variant          ProductVariant @relation(fields: [variantId], references: [id])
+  order            Order?    @relation(fields: [orderId], references: [id])
+
+  @@index([variantId])
+  @@index([type])
+  @@index([orderId])
+}

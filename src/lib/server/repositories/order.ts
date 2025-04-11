@@ -10,17 +10,17 @@ import {
     type Order,
     type OrderItem,
     type OrderAddress
-} from '$lib/server/db';
+} from '$lib/server/db_drizzle/schema';
 
-import type { CreateOrderViewModel } from '$lib/models/order';
-import { isValidOrderItem } from '$lib/models/order';
-import { orderItem } from '../db/schema/order-item';
-import { orderAddress } from '../db/schema/order-address';
-import { orderStatusHistory } from '../db/schema/order-status-history';
-import { inventoryTransaction } from '../db/schema/inventory-transaction';
-import { paymentTransaction } from '../db/schema/payment-transaction';
-import { refund } from '../db/schema/refund';
-import { order } from '../db/schema/order';
+import type { CreateOrderViewModel } from '$lib/server/db/prisma/models/order';
+import { isValidOrderItem } from '$lib/server/db/prisma/models/order';
+import { orderItem } from '../db_drizzle/schema/order-item';
+import { orderAddress } from '../db_drizzle/schema/order-address';
+import { orderStatusHistory } from '../db_drizzle/schema/order-status-history';
+import { inventoryTransaction } from '../db_drizzle/schema/inventory-transaction';
+import { paymentTransaction } from '../db_drizzle/schema/payment-transaction';
+import { refund } from '../db_drizzle/schema/refund';
+import { order } from '../db_drizzle/schema/order';
 
 
 interface OrderViewModel {
@@ -63,7 +63,6 @@ interface OrderQueryResult extends Order {
     items: Array<OrderItem>;
     addresses: Array<OrderAddress>;
 }
-
 export class OrderRepository {
     private validate(data: CreateOrderViewModel): void {
         if (data.items.length === 0) {

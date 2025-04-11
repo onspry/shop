@@ -2,8 +2,8 @@ import { eq, and } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import type { RequestEvent } from "@sveltejs/kit";
 import { generateRandomOTP } from "./utils";
-import { db } from '$lib/server/db';
-import { emailVerificationRequest } from '$lib/server/db/schema/email-verification-request';
+import { db } from '$lib/server/db_drizzle/schema';
+import { emailVerificationRequest } from '$lib/server/db_drizzle/schema/email-verification-request';
 import { sendEmail } from '$lib/server/email/send-email';
 
 export async function getVerificationRequest(id: string, userId: string) {

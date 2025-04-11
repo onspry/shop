@@ -3,9 +3,9 @@ import { encodeHexLowerCase } from "@oslojs/encoding";
 import { sha256 } from "@oslojs/crypto/sha2";
 import type { RequestEvent } from "@sveltejs/kit";
 
-import { db, type User } from '$lib/server/db';
-import { passwordResetSession } from '$lib/server/db/schema/password-reset-session';
-import { user as userTable } from '$lib/server/db/schema/user';
+import { db, type User } from '$lib/server/db_drizzle/schema';
+import { passwordResetSession } from '$lib/server/db_drizzle/schema/password-reset-session';
+import { user as userTable } from '$lib/server/db_drizzle/schema/user';
 
 import { generateRandomOTP } from "./utils";
 import { sendVerificationEmail } from './email-verification';

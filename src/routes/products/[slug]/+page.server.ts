@@ -1,9 +1,9 @@
 import { productRepo } from '$lib/server/repositories/product';
-import type { ProductViewModel } from '$lib/models/product';
+import type { ProductViewModel } from '$lib/server/db/prisma/models/product';
 import type { PageServerLoad } from './$types';
 import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types';
-import { cartRepository } from '$lib/server/repositories/cart';
+import { cartRepository } from '$lib/server/db/prisma/repositories/cart-repository';
 
 export const load: PageServerLoad = async ({ params, url }) => {
     const result = await productRepo.getProduct(params.slug);

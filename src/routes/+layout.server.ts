@@ -1,9 +1,9 @@
 import type { LayoutServerLoad } from './$types';
-import { cartRepository } from '$lib/server/repositories/cart';
 import { randomUUID } from 'crypto';
-import { db } from '$lib/server/db';
-import { cart } from '$lib/server/db/schema/cart';
+import { db } from '$lib/server/db_drizzle/schema';
+import { cart } from '$lib/server/db_drizzle/schema/cart';
 import { eq } from 'drizzle-orm';
+import { cartRepository } from '$lib/server/db/prisma/repositories/cart-repository';
 
 /**
  * Layout server load function

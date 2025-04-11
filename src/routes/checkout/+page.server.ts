@@ -1,5 +1,4 @@
 import { redirect } from '@sveltejs/kit';
-import { cartRepository } from '$lib/server/repositories/cart';
 import { superValidate } from 'sveltekit-superforms/server';
 import { zod } from 'sveltekit-superforms/adapters';
 import type { PageServerLoad } from './$types';
@@ -7,7 +6,8 @@ import { emailSchema } from '$lib/schemas/auth';
 import { shippingSchema } from '$lib/schemas/shipping';
 import { paymentSchema } from '$lib/schemas/payment';
 import { OrderRepository } from '$lib/server/repositories/order';
-import type { CreateOrderViewModel, OrderItemViewModel } from '$lib/models/order';
+import type { CreateOrderViewModel, OrderItemViewModel } from '$lib/server/db/prisma/models/order';
+import { cartRepository } from '$lib/server/db/prisma/repositories/cart-repository';
 
 
 export const load: PageServerLoad = async ({ cookies, locals }) => {

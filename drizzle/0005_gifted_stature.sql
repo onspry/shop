@@ -1,1 +1,0 @@
-DROP INDEX `cart_item_cart_id_product_variant_id_unique_idx`;

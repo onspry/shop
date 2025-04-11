@@ -1,0 +1,586 @@
+import { PrismaClient, type Order, type OrderItem, type OrderAddress, type OrderStatusHistory, type PaymentTransaction, type Refund, OrderStatus, PaymentStatus, TransactionType } from '@prisma/client';
+import { randomUUID } from 'crypto';
+import type { CreateOrderViewModel } from '$lib/server/db/prisma/models/order';
+import { isValidOrderItem } from '$lib/server/db/prisma/models/order';
+
+// Initialize Prisma client
+const prisma = new PrismaClient();
+
+interface OrderViewModel {
+    id: string;
+    status: OrderStatus;
+    total: number;
+    subtotal: number;
+    taxAmount: number;
+    shippingAmount: number;
+    discountAmount?: number;
+    currency: string;
+    shippingMethod: string;
+    paymentMethod: string;
+    createdAt: string;
+    items: Array<{
+        id: string;
+        productId: string;
+        variantId?: string;
+        quantity: number;
+        unitPrice: number;
+        totalPrice: number;
+        name: string;
+        variantName: string;
+    }>;
+    shippingAddress: {
+        firstName: string;
+        lastName: string;
+        address1: string;
+        address2?: string;
+        city: string;
+        state: string;
+        postalCode: string;
+        country: string;
+        phone?: string;
+        email: string;
+    };
+}
+
+interface OrderQueryResult extends Order {
+    items: Array<OrderItem>;
+    addresses: Array<OrderAddress>;
+    statusHistory?: Array<OrderStatusHistory>;
+    payments?: Array<PaymentTransaction>;
+    refunds?: Array<Refund>;
+}
+
+export class OrderRepository {
+    /**
+     * Validates the order data before creation
+     * @param data - The order data to validate
+     * @throws Error if validation fails
+     */
+    private validate(data: CreateOrderViewModel): void {
+        if (data.items.length === 0) {
+            throw new Error('Order must have at least one item');
+        }
+        if (data.subtotal <= 0) {
+            throw new Error('Order subtotal must be greater than 0');
+        }
+        if (data.taxAmount < 0) {
+            throw new Error('Tax amount cannot be negative');
+        }
+        if (data.shipping.amount < 0) {
+            throw new Error('Shipping amount cannot be negative');
+        }
+        if (data.discountAmount && data.discountAmount < 0) {
+            throw new Error('Discount amount cannot be negative');
+        }
+        if (!data.shipping.address.email) {
+            throw new Error('Shipping email is required');
+        }
+        if (!data.shipping.address.firstName || !data.shipping.address.lastName) {
+            throw new Error('Shipping name is required');
+        }
+        if (!data.shipping.address.address1 || !data.shipping.address.city ||
+            !data.shipping.address.state || !data.shipping.address.postalCode ||
+            !data.shipping.address.country) {
+            throw new Error('Complete shipping address is required');
+        }
+    }
+
+    /**
+     * Creates a new order
+     * @param data - The order data
+     * @returns The created order
+     * @throws Error if order creation fails
+     */
+    async createOrder(data: CreateOrderViewModel): Promise<Order> {
+        this.validate(data);
+
+        const orderId = randomUUID();
+        const totalAmount = data.subtotal + data.taxAmount + data.shipping.amount - (data.discountAmount || 0);
+
+        try {
+            // Use Prisma transaction
+            await prisma.$transaction(async (tx) => {
+                // Create order
+                await tx.order.create({
+                    data: {
+                        id: orderId,
+                        userId: data.userId,
+                        cartId: data.cartId,
+                        status: OrderStatus.pending_payment,
+                        email: data.shipping.address.email,
+                        firstName: data.shipping.address.firstName,
+                        lastName: data.shipping.address.lastName,
+                        subtotal: data.subtotal,
+                        discountAmount: data.discountAmount || 0,
+                        total: totalAmount,
+                        stripePaymentIntentId: data.payment.intentId
+                    }
+                });
+
+                // Create order items
+                const orderItemsData = data.items
+                    .filter(isValidOrderItem)
+                    .map(item => ({
+                        id: randomUUID(),
+                        orderId,
+                        productId: item.productId,
+                        variantId: item.variantId,
+                        quantity: item.quantity,
+                        price: item.unitPrice,
+                        name: item.productName || 'Product',
+                        variantName: item.variantName || 'Variant'
+                    }));
+
+                console.log('Order items after filtering:', orderItemsData);
+
+                // Only insert order items if there are any
+                if (orderItemsData.length > 0) {
+                    try {
+                        // Insert the order items - we've already validated them
+                        await tx.orderItem.createMany({
+                            data: orderItemsData
+                        });
+                    } catch (error) {
+                        console.error('Error inserting order items:', error);
+                        throw new Error('Failed to create order items. No valid product variant IDs found. Please check your cart items.');
+                    }
+                } else {
+                    throw new Error('Order must have at least one item');
+                }
+
+                // Create shipping address
+                await tx.orderAddress.create({
+                    data: {
+                        id: randomUUID(),
+                        orderId,
+                        type: 'shipping',
+                        firstName: data.shipping.address.firstName,
+                        lastName: data.shipping.address.lastName,
+                        address1: data.shipping.address.address1,
+                        address2: data.shipping.address.address2,
+                        city: data.shipping.address.city,
+                        state: data.shipping.address.state,
+                        postalCode: data.shipping.address.postalCode,
+                        country: data.shipping.address.country,
+                        phone: data.shipping.address.phone
+                    }
+                });
+
+                // Create initial status history
+                await tx.orderStatusHistory.create({
+                    data: {
+                        id: randomUUID(),
+                        orderId,
+                        status: OrderStatus.pending_payment,
+                        note: 'Order created'
+                    }
+                });
+
+                // Update inventory
+                for (const item of data.items) {
+                    if (item.variantId) {
+                        await tx.inventoryTransaction.create({
+                            data: {
+                                id: randomUUID(),
+                                variantId: item.variantId,
+                                orderId,
+                                type: TransactionType.order,
+                                quantity: -item.quantity,
+                                note: `Order ${orderId}`
+                            }
+                        });
+                    }
+                }
+            });
+
+            const orderViewModel = await this.getOrderById(orderId);
+            if (!orderViewModel) {
+                throw new Error('Failed to create order');
+            }
+
+            // Get the full Order record from the database
+            const createdOrder = await prisma.order.findUnique({
+                where: { id: orderId }
+            });
+
+            if (!createdOrder) {
+                throw new Error('Failed to retrieve created order');
+            }
+
+            return createdOrder;
+        } catch (error) {
+            console.error('Error creating order:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Maps the database order data to a view model
+     * @param orderData - The order data from the database
+     * @returns The order view model or null if mapping fails
+     */
+    private mapToViewModel(orderData: OrderQueryResult): OrderViewModel | null {
+        const shippingAddress = orderData.addresses?.[0];
+        if (!shippingAddress) return null;
+
+        return {
+            id: orderData.id,
+            status: orderData.status as OrderStatus,
+            total: orderData.total,
+            subtotal: orderData.subtotal,
+            taxAmount: 0,
+            shippingAmount: 0,
+            discountAmount: orderData.discountAmount || undefined,
+            currency: 'USD',
+            shippingMethod: 'standard',
+            paymentMethod: orderData.stripePaymentIntentId ? 'stripe' : 'unknown',
+            createdAt: orderData.createdAt.toISOString(),
+            items: orderData.items.map((item) => ({
+                id: item.id,
+                productId: item.productId,
+                variantId: item.variantId,
+                quantity: item.quantity,
+                unitPrice: item.price,
+                totalPrice: item.quantity * item.price,
+                name: item.name,
+                variantName: item.variantName
+            })),
+            shippingAddress: {
+                firstName: shippingAddress.firstName,
+                lastName: shippingAddress.lastName,
+                address1: shippingAddress.address1,
+                address2: shippingAddress.address2 || undefined,
+                city: shippingAddress.city,
+                state: shippingAddress.state,
+                postalCode: shippingAddress.postalCode,
+                country: shippingAddress.country,
+                phone: shippingAddress.phone || undefined,
+                email: orderData.email
+            }
+        };
+    }
+
+    /**
+     * Gets an order by its ID
+     * @param id - The order ID
+     * @returns The order view model or null if not found
+     */
+    async getOrderById(id: string): Promise<OrderViewModel | null> {
+        try {
+            const result = await prisma.order.findUnique({
+                where: { id },
+                include: {
+                    items: true,
+                    addresses: {
+                        where: {
+                            type: 'shipping'
+                        }
+                    }
+                }
+            }) as OrderQueryResult | null;
+
+            if (!result) return null;
+            if (!result.items?.length || !result.addresses?.length) return null;
+
+            return this.mapToViewModel(result);
+        } catch (error) {
+            console.error(`Error getting order ${id}:`, error);
+            return null;
+        }
+    }
+
+    /**
+     * Updates the status of an order
+     * @param id - The order ID
+     * @param status - The new status
+     * @param note - Optional note about the status change
+     */
+    async updateOrderStatus(id: string, status: OrderStatus, note?: string): Promise<void> {
+        try {
+            await prisma.$transaction(async (tx) => {
+                // Update the order status
+                await tx.order.update({
+                    where: { id },
+                    data: {
+                        status,
+                        updatedAt: new Date()
+                    }
+                });
+
+                // Create a status history entry
+                await tx.orderStatusHistory.create({
+                    data: {
+                        id: randomUUID(),
+                        orderId: id,
+                        status,
+                        note
+                    }
+                });
+            });
+        } catch (error) {
+            console.error(`Error updating order status for ${id}:`, error);
+            throw new Error(`Failed to update order status: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
+    /**
+     * Creates a payment transaction for an order
+     * @param orderId - The order ID
+     * @param amount - The payment amount
+     * @param paymentMethod - The payment method
+     * @param paymentIntentId - Optional payment intent ID
+     * @param status - The payment status (default: 'pending')
+     */
+    async createPaymentTransaction(
+        orderId: string,
+        amount: number,
+        paymentMethod: string,
+        paymentIntentId?: string,
+        status: PaymentStatus = 'pending'
+    ): Promise<void> {
+        try {
+            await prisma.paymentTransaction.create({
+                data: {
+                    id: randomUUID(),
+                    orderId,
+                    status,
+                    amount,
+                    currency: 'USD',
+                    stripePaymentIntentId: paymentIntentId || randomUUID(),
+                    stripePaymentMethodId: paymentMethod
+                }
+            });
+        } catch (error) {
+            console.error(`Error creating payment transaction for order ${orderId}:`, error);
+            throw new Error(`Failed to create payment transaction: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
+    /**
+     * Creates a refund for an order
+     * @param orderId - The order ID
+     * @param transactionId - The payment transaction ID
+     * @param amount - The refund amount
+     * @param reason - Optional reason for the refund
+     * @param refundId - Optional refund ID
+     */
+    async createRefund(
+        orderId: string,
+        transactionId: string,
+        amount: number,
+        reason?: string,
+        refundId?: string
+    ): Promise<void> {
+        try {
+            await prisma.$transaction(async (tx) => {
+                // Create the refund
+                await tx.refund.create({
+                    data: {
+                        id: randomUUID(),
+                        orderId,
+                        transactionId,
+                        amount,
+                        reason: reason || 'Refund requested',
+                        status: 'pending',
+                        stripeRefundId: refundId
+                    }
+                });
+
+                // Update the order status
+                await tx.order.update({
+                    where: { id: orderId },
+                    data: {
+                        status: 'refunded',
+                        updatedAt: new Date()
+                    }
+                });
+
+                // Create status history entry
+                await tx.orderStatusHistory.create({
+                    data: {
+                        id: randomUUID(),
+                        orderId,
+                        status: 'refunded',
+                        note: reason
+                    }
+                });
+            });
+        } catch (error) {
+            console.error(`Error creating refund for order ${orderId}:`, error);
+            throw new Error(`Failed to create refund: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
+    /**
+     * Gets all orders for a user
+     * @param userId - The user ID
+     * @returns Array of order view models
+     */
+    async getOrdersByUserId(userId: string): Promise<OrderViewModel[]> {
+        try {
+            const results = await prisma.order.findMany({
+                where: { userId },
+                include: {
+                    items: true,
+                    addresses: {
+                        where: {
+                            type: 'shipping'
+                        }
+                    }
+                },
+                orderBy: {
+                    createdAt: 'desc'
+                }
+            }) as OrderQueryResult[];
+
+            const orders = results.map(result => this.mapToViewModel(result));
+            return orders.filter((order): order is OrderViewModel => order !== null);
+        } catch (error) {
+            console.error(`Error getting orders for user ${userId}:`, error);
+            return [];
+        }
+    }
+
+    /**
+     * Gets the status history for an order
+     * @param orderId - The order ID
+     * @returns Array of status history entries
+     */
+    async getOrderStatusHistory(orderId: string): Promise<Array<{ status: OrderStatus; note?: string; createdAt: string }>> {
+        try {
+            const history = await prisma.orderStatusHistory.findMany({
+                where: { orderId },
+                orderBy: {
+                    createdAt: 'desc'
+                }
+            });
+
+            return history.map(item => ({
+                status: item.status as OrderStatus,
+                note: item.note ?? undefined,
+                createdAt: item.createdAt.toISOString()
+            }));
+        } catch (error) {
+            console.error(`Error getting status history for order ${orderId}:`, error);
+            return [];
+        }
+    }
+
+    /**
+     * Gets all orders for an email address
+     * @param email - The email address
+     * @returns Array of order view models
+     */
+    async getOrdersByEmail(): Promise<OrderViewModel[]> {
+        console.warn('getOrdersByEmail is not implemented in the Prisma version');
+        return [];
+    }
+
+    /**
+     * Gets all orders within a date range
+     * @param startDate - The start date
+     * @param endDate - The end date
+     * @returns Array of order view models
+     */
+    async getOrdersByDateRange(startDate: Date, endDate: Date): Promise<OrderViewModel[]> {
+        try {
+            const results = await prisma.order.findMany({
+                where: {
+                    createdAt: {
+                        gte: startDate,
+                        lte: endDate
+                    }
+                },
+                include: {
+                    items: true,
+                    addresses: {
+                        where: {
+                            type: 'shipping'
+                        }
+                    }
+                },
+                orderBy: {
+                    createdAt: 'desc'
+                }
+            }) as OrderQueryResult[];
+
+            const orders = results.map(result => this.mapToViewModel(result));
+            return orders.filter((order): order is OrderViewModel => order !== null);
+        } catch (error) {
+            console.error(`Error getting orders between ${startDate} and ${endDate}:`, error);
+            return [];
+        }
+    }
+
+    /**
+     * Gets all orders with a specific status
+     * @param status - The order status
+     * @returns Array of order view models
+     */
+    async getOrdersByStatus(status: OrderStatus): Promise<OrderViewModel[]> {
+        try {
+            const results = await prisma.order.findMany({
+                where: { status },
+                include: {
+                    items: true,
+                    addresses: {
+                        where: {
+                            type: 'shipping'
+                        }
+                    }
+                },
+                orderBy: {
+                    createdAt: 'desc'
+                }
+            }) as OrderQueryResult[];
+
+            const orders = results.map(result => this.mapToViewModel(result));
+            return orders.filter((order): order is OrderViewModel => order !== null);
+        } catch (error) {
+            console.error(`Error getting orders with status ${status}:`, error);
+            return [];
+        }
+    }
+
+    /**
+     * Gets all payment transactions for an order
+     * @param orderId - The order ID
+     * @returns Array of payment transactions
+     */
+    async getOrderPaymentTransactions(orderId: string): Promise<PaymentTransaction[]> {
+        try {
+            const transactions = await prisma.paymentTransaction.findMany({
+                where: { orderId },
+                orderBy: {
+                    createdAt: 'desc'
+                }
+            });
+
+            return transactions;
+        } catch (error) {
+            console.error(`Error getting payment transactions for order ${orderId}:`, error);
+            return [];
+        }
+    }
+
+    /**
+     * Gets all refunds for an order
+     * @param orderId - The order ID
+     * @returns Array of refunds
+     */
+    async getOrderRefunds(orderId: string): Promise<Refund[]> {
+        try {
+            const orderRefunds = await prisma.refund.findMany({
+                where: { orderId },
+                orderBy: {
+                    createdAt: 'desc'
+                }
+            });
+
+            return orderRefunds;
+        } catch (error) {
+            console.error(`Error getting refunds for order ${orderId}:`, error);
+            return [];
+        }
+    }
+}

@@ -1,4 +1,4 @@
-import type { ProductViewModel, ProductVariantViewModel } from '$lib/models/product';
+import type { ProductViewModel, ProductVariantViewModel } from '$lib/server/db/prisma/models/product';
 
 interface CompatibilityRules {
     stemType: string | string[];

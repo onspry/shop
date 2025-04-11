@@ -28,10 +28,10 @@ You are an AI assistant seamlessly integrated with a developer's IDE, optimized 
 - Make changes only to the en.json file, never modify the generated .js files.
 - Respect the existing translation key structure and naming conventions.
 
-### 4. Database Management with Drizzle ORM
+### 4. Database Management with PRISMA ORM
 
 - Use db_structure.md as the single source of truth for the SQLite database schema.
-- Generate type-safe Drizzle ORM queries and validate against the defined schema.
+- Generate type-safe PRISMA ORM queries and validate against the defined schema.
 - Assist with database migrations and schema evolution while maintaining referential integrity.
 - Ensure proper implementation of relations between tables (products, variants, carts, users).
 
@@ -65,7 +65,7 @@ Parse db_structure.md to understand:
 - Discount and promotion schemas
 
 Use this information to:
-- Generate type-safe Drizzle ORM queries
+- Generate type-safe PRISMA ORM queries
 - Ensure proper table relations are maintained
 - Validate data integrity constraints
 
@@ -127,7 +127,7 @@ Use this information to:
 ### Repository Pattern Implementation
 
 - Data access should flow one way: Repository → Server Load Function → Page Component.
-- Never directly expose Drizzle schema objects to the client.
+- Never directly expose PRISMA schema objects to the client.
 - Always transform database entities to viewmodels before returning from repositories.
 - Use SvelteKit's server-only modules for repository implementations.
 - Implement proper transaction handling for operations that modify multiple tables.
@@ -151,10 +151,10 @@ Use this information to:
 - File-based routing and server-side rendering
 - Form actions and API routes
 
-### Database Design with Drizzle
+### Database Design with PRISMA
 
-- SQLite optimization techniques
-- Type-safe query building with Drizzle ORM
+- PostgresSQL optimization techniques
+- Type-safe query building with PRISMA ORM
 - Efficient relation management
 - Transaction handling for atomic operations
 
@@ -175,14 +175,14 @@ Use this information to:
 ```svelte
 <script>
   import { ImageWithSkeleton } from "$lib/components/ui/image-with-skeleton";
-  
+
   let count = $state(0);
   let doubledCount = $derived(count * 2);
-  
+
   $effect(() => {
     console.log(`Count changed to ${count}`);
   });
-  
+
   function incrementCount() {
     count++;
   }
@@ -192,7 +192,7 @@ Use this information to:
   Increment: {count} (doubled: {doubledCount})
 </Button>
 
-<ImageWithSkeleton 
+<ImageWithSkeleton
   src="/product-image.jpg"
   alt="Product display"
   className="w-full"
@@ -200,23 +200,25 @@ Use this information to:
 />
 ```
 
-### Drizzle Query Example
+### Prisma Query Example
 
 ```typescript
-import { eq, and } from "drizzle-orm";
-import { db } from "$lib/server/db";
-import { product, productVariant, productImage } from "$lib/server/db/schema";
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export async function getProductWithVariants(productId: string) {
   try {
-    const result = await db.query.product.findFirst({
-      where: eq(product.id, productId),
-      with: {
+    const result = await prisma.product.findUnique({
+      where: {
+        id: productId
+      },
+      include: {
         variants: true,
         images: true
       }
     });
-    
+
     return result;
   } catch (error) {
     console.error("Database query failed:", error);
@@ -229,21 +231,21 @@ export async function getProductWithVariants(productId: string) {
 
 ```typescript
 // src/lib/server/db/repositories/product-repository.ts
-import { eq } from "drizzle-orm";
-import { db } from "$lib/server/db";
-import { product, productVariant, productImage } from "$lib/server/db/schema";
+import { PrismaClient } from '@prisma/client';
 import type { ProductViewModel, ProductDetailViewModel } from "$lib/types";
+
+const prisma = new PrismaClient();
 
 export async function getProducts(): Promise<ProductViewModel[]> {
   try {
-    const products = await db.query.product.findMany({
-      with: {
+    const products = await prisma.product.findMany({
+      include: {
         images: {
-          limit: 1
+          take: 1
         }
       }
     });
-    
+
     // Transform to viewmodel
     return products.map(p => ({
       id: p.id,
@@ -260,16 +262,18 @@ export async function getProducts(): Promise<ProductViewModel[]> {
 
 export async function getProductById(id: string): Promise<ProductDetailViewModel | null> {
   try {
-    const result = await db.query.product.findFirst({
-      where: eq(product.id, id),
-      with: {
+    const result = await prisma.product.findUnique({
+      where: {
+        id: id
+      },
+      include: {
         variants: true,
         images: true
       }
     });
-    
+
     if (!result) return null;
-    
+
     // Transform to viewmodel
     return {
       id: result.id,
@@ -300,11 +304,11 @@ import { getProductById } from '$lib/server/db/repositories/product-repository';
 
 export async function load({ params }) {
   const product = await getProductById(params.id);
-  
+
   if (!product) {
     error(404, 'Product not found');
   }
-  
+
   return {
     product
   };
