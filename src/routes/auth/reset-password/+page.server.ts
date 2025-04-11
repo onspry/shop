@@ -15,7 +15,7 @@ import {
 import { superValidate, message } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { passwordUpdateSchema } from '$lib/schemas/auth';
-import { userRepo } from "$lib/server/repositories/user";
+import { userRepo } from "$lib/server/db/db_drizzle/repositories/user";
 
 import type { Actions, PageServerLoad } from "./$types";
 

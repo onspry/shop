@@ -1,5 +1,5 @@
 import { generateSessionToken, createSession } from "$lib/server/auth/session";
-import { userRepo } from "$lib/server/repositories/user";
+import { userRepo } from "$lib/server/db/db_drizzle/repositories/user";
 import { github } from "$lib/server/auth/oauth";
 import { randomUUID } from 'crypto';
 import type { RequestEvent } from "@sveltejs/kit";

@@ -35,14 +35,13 @@
 	import { countries, addressStructures } from '$lib/config/address-structures';
 	import { checkoutStore } from '$lib/stores/checkout';
 	import { cart } from '$lib/stores/cart';
-import { mapCartItemToOrderItem, isValidOrderItem, type OrderItemViewModel } from '$lib/models/order';
-import type { OrderResponse, OrderResponseData } from '$lib/types/checkout';
+	import { isValidOrderItem, mapCartItemToOrderItem } from '$lib/server/db/prisma/repositories/order-repository';
+	import type { OrderResponseData } from '$lib/server/db/prisma/models/checkout';
 	import { cartActions } from '$lib/stores/cart';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button';
 	import * as Form from '$lib/components/ui/form';
-	import type { CartItemViewModel } from '$lib/models/cart';
 
 	// Page data props
 	const { data } = $props<{ data: PageData }>();

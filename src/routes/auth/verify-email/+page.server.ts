@@ -8,7 +8,7 @@ import {
     setEmailVerificationRequestCookie
 } from "$lib/server/auth/email-verification";
 //import { invalidateUserPasswordResetSessions } from "$lib/server/auth/password-reset";
-import { userRepo } from "$lib/server/repositories/user";
+import { userRepo } from "$lib/server/db/db_drizzle/repositories/user";
 import { rateLimit } from "$lib/server/auth/rate-limit";
 import { validateVerificationCode } from "$lib/server/auth/validation";
 

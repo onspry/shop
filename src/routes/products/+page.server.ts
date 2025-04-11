@@ -1,5 +1,5 @@
 import type { PageServerLoad } from './$types';
-import { productRepo } from '$lib/server/repositories/product';
+import { productRepo } from '$lib/server/db/db_drizzle/repositories/product';
 
 export const load: PageServerLoad = async ({ url }) => {
     const page = parseInt(url.searchParams.get('page') || '1', 10);

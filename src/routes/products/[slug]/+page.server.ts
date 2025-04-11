@@ -1,4 +1,4 @@
-import { productRepo } from '$lib/server/repositories/product';
+import { productRepo } from '$lib/server/db/db_drizzle/repositories/product';
 import type { ProductViewModel } from '$lib/server/db/prisma/models/product';
 import type { PageServerLoad } from './$types';
 import { fail } from '@sveltejs/kit';

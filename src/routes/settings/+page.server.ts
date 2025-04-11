@@ -6,7 +6,7 @@ import {
 import { fail, redirect } from "@sveltejs/kit";
 import { checkEmailAvailability, verifyEmailInput } from "$lib/server/auth/email";
 import { verifyPasswordHash, verifyPasswordStrength } from "$lib/server/auth/password";
-import { userRepo } from "$lib/server/repositories/user";
+import { userRepo } from "$lib/server/db/db_drizzle/repositories/user";
 import {
     createSession,
     generateSessionToken,

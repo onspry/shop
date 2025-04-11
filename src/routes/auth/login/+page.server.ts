@@ -5,7 +5,7 @@ import { loginSchema } from '$lib/schemas/auth';
 import type { PageServerLoad, Actions } from "./$types";
 import { verifyPasswordHash } from "$lib/server/auth/password";
 import { createSession, generateSessionToken, setSessionTokenCookie } from "$lib/server/auth/session";
-import { userRepo } from "$lib/server/repositories/user";
+import { userRepo } from "$lib/server/db/db_drizzle/repositories/user";
 import { cartRepository } from "$lib/server/db/prisma/repositories/cart-repository";
 
 export const load: PageServerLoad = async ({ locals, url }) => {

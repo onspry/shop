@@ -1,45 +1,94 @@
 import { PrismaClient, type Order, type OrderItem, type OrderAddress, type OrderStatusHistory, type PaymentTransaction, type Refund, OrderStatus, PaymentStatus, TransactionType } from '@prisma/client';
 import { randomUUID } from 'crypto';
-import type { CreateOrderViewModel } from '$lib/server/db/prisma/models/order';
-import { isValidOrderItem } from '$lib/server/db/prisma/models/order';
+import type { CreateOrderViewModel, OrderViewModel, OrderItemViewModel } from '$lib/server/db/prisma/models/order';
+import type { CartItemViewModel } from '$lib/server/db/prisma/models/cart';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
 
-interface OrderViewModel {
-    id: string;
-    status: OrderStatus;
-    total: number;
-    subtotal: number;
-    taxAmount: number;
-    shippingAmount: number;
-    discountAmount?: number;
-    currency: string;
-    shippingMethod: string;
-    paymentMethod: string;
-    createdAt: string;
-    items: Array<{
-        id: string;
-        productId: string;
-        variantId?: string;
-        quantity: number;
-        unitPrice: number;
-        totalPrice: number;
-        name: string;
-        variantName: string;
-    }>;
-    shippingAddress: {
-        firstName: string;
-        lastName: string;
-        address1: string;
-        address2?: string;
-        city: string;
-        state: string;
-        postalCode: string;
-        country: string;
-        phone?: string;
-        email: string;
-    };
+// Using OrderViewModel from models/order.ts
+
+/**
+ * Validates an order item - strict validation with no fallbacks
+ */
+export function isValidOrderItem(item: OrderItemViewModel): boolean {
+    // Log the validation check
+    console.log('Validating order item:', item);
+
+    // Strict validation for all required fields
+    const isValid = Boolean(
+        // Product ID must be valid
+        item.productId &&
+        typeof item.productId === 'string' &&
+        item.productId.trim() !== '' &&
+        // Variant ID must be valid
+        item.variantId &&
+        typeof item.variantId === 'string' &&
+        item.variantId.trim() !== '' &&
+        // Product name must be valid
+        item.productName &&
+        typeof item.productName === 'string' &&
+        item.productName.trim() !== '' &&
+        // Variant name must be valid
+        item.variantName &&
+        typeof item.variantName === 'string' &&
+        item.variantName.trim() !== '' &&
+        // Quantity must be positive
+        item.quantity > 0 &&
+        // Price must be non-negative
+        item.price >= 0
+    );
+
+    if (!isValid) {
+        console.error('Invalid order item:', item);
+        // Log specific validation failures to help diagnose issues
+        if (!item.productId || typeof item.productId !== 'string' || item.productId.trim() === '') {
+            console.error('Invalid product ID');
+        }
+        if (!item.variantId || typeof item.variantId !== 'string' || item.variantId.trim() === '') {
+            console.error('Invalid variant ID');
+        }
+        if (!item.productName || typeof item.productName !== 'string' || item.productName.trim() === '') {
+            console.error('Invalid product name');
+        }
+        if (!item.variantName || typeof item.variantName !== 'string' || item.variantName.trim() === '') {
+            console.error('Invalid variant name');
+        }
+        if (!(item.quantity > 0)) {
+            console.error('Invalid quantity');
+        }
+        if (!(item.price >= 0)) {
+            console.error('Invalid price');
+        }
+    }
+
+    console.log('Item valid:', isValid);
+    return isValid;
+}
+
+/**
+ * Maps cart item data to order item view model using the normalized structure
+ */
+export function mapCartItemToOrderItem(cartItem: CartItemViewModel): OrderItemViewModel {
+    console.log('Mapping cart item to order item:', cartItem);
+
+    // Get product information from the variant
+    const productId = cartItem.variant.product?.id || cartItem.variant.productId;
+    const productName = cartItem.variant.product?.name || cartItem.variant.name;
+
+    return {
+        // Get product ID from the variant's product reference
+        productId: productId,
+        // The variant ID is the key field that must match a valid ID in the product_variant table
+        variantId: cartItem.variant.id,
+        quantity: cartItem.quantity,
+        price: cartItem.price,
+        unitPrice: cartItem.price, // Same as price, needed for compatibility
+        // Get product name from the variant's product reference
+        productName: productName,
+        // Get variant name directly from the variant
+        variantName: cartItem.variant.name
+    }
 }
 
 interface OrderQueryResult extends Order {
@@ -225,7 +274,7 @@ export class OrderRepository {
 
         return {
             id: orderData.id,
-            status: orderData.status as OrderStatus,
+            status: orderData.status,
             total: orderData.total,
             subtotal: orderData.subtotal,
             taxAmount: 0,
@@ -446,7 +495,7 @@ export class OrderRepository {
      * @param orderId - The order ID
      * @returns Array of status history entries
      */
-    async getOrderStatusHistory(orderId: string): Promise<Array<{ status: OrderStatus; note?: string; createdAt: string }>> {
+    async getOrderStatusHistory(orderId: string): Promise<Array<{ status: OrderStatus | string; note?: string; createdAt: string }>> {
         try {
             const history = await prisma.orderStatusHistory.findMany({
                 where: { orderId },
@@ -456,7 +505,7 @@ export class OrderRepository {
             });
 
             return history.map(item => ({
-                status: item.status as OrderStatus,
+                status: item.status,
                 note: item.note ?? undefined,
                 createdAt: item.createdAt.toISOString()
             }));
@@ -471,8 +520,8 @@ export class OrderRepository {
      * @param email - The email address
      * @returns Array of order view models
      */
-    async getOrdersByEmail(): Promise<OrderViewModel[]> {
-        console.warn('getOrdersByEmail is not implemented in the Prisma version');
+    async getOrdersByEmail(email: string): Promise<OrderViewModel[]> {
+        console.warn(`getOrdersByEmail is not implemented in the Prisma version for email: ${email}`);
         return [];
     }
 
@@ -584,3 +633,6 @@ export class OrderRepository {
         }
     }
 }
+
+// Export an instance of the repository
+export const orderRepository = new OrderRepository();

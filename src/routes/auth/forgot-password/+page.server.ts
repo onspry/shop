@@ -1,4 +1,4 @@
-import { userRepo } from "$lib/server/repositories/user";
+import { userRepo } from "$lib/server/db/db_drizzle/repositories/user";
 import {
     createPasswordResetSession,
     invalidateUserPasswordResetSessions,
