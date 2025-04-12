@@ -1,22 +1,17 @@
-import { eq, and } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import type { RequestEvent } from "@sveltejs/kit";
 import { generateRandomOTP } from "./utils";
-import { db } from '$lib/server/db_drizzle/schema';
-import { emailVerificationRequest } from '$lib/server/db_drizzle/schema/email-verification-request';
+import { prisma } from '$lib/server/db/prisma';
+import type { EmailVerificationRequest } from '@prisma/client';
 import { sendEmail } from '$lib/server/email/send-email';
 
-export async function getVerificationRequest(id: string, userId: string) {
-    return await db
-        .select()
-        .from(emailVerificationRequest)
-        .where(
-            and(
-                eq(emailVerificationRequest.id, id),
-                eq(emailVerificationRequest.userId, userId)
-            )
-        )
-        .get();
+export async function getVerificationRequest(id: string, userId: string): Promise<EmailVerificationRequest | null> {
+    return await prisma.emailVerificationRequest.findFirst({
+        where: {
+            id: id,
+            userId: userId
+        }
+    });
 }
 
 export async function createVerificationRequest(data: {
@@ -25,18 +20,21 @@ export async function createVerificationRequest(data: {
     email: string;
     code: string;
     expiresAt: Date;
-}) {
-    return await db.insert(emailVerificationRequest).values(data).run();
+}): Promise<EmailVerificationRequest> {
+    return await prisma.emailVerificationRequest.create({
+        data: data
+    });
 }
 
-export async function deleteVerificationRequest(id: string) {
-    return await db
-        .delete(emailVerificationRequest)
-        .where(eq(emailVerificationRequest.id, id))
-        .run();
+export async function deleteVerificationRequest(id: string): Promise<EmailVerificationRequest> {
+    return await prisma.emailVerificationRequest.delete({
+        where: {
+            id: id
+        }
+    });
 }
 
-export async function createEmailVerificationRequest(userId: string, email: string) {
+export async function createEmailVerificationRequest(userId: string, email: string): Promise<EmailVerificationRequest> {
     if (!email) {
         throw new Error('Email is required for verification request');
     }
@@ -63,10 +61,11 @@ export async function createEmailVerificationRequest(userId: string, email: stri
 }
 
 export async function deleteUserEmailVerificationRequest(userId: string): Promise<void> {
-    await db
-        .delete(emailVerificationRequest)
-        .where(eq(emailVerificationRequest.userId, userId))
-        .run();
+    await prisma.emailVerificationRequest.deleteMany({
+        where: {
+            userId: userId
+        }
+    });
 }
 
 export async function sendVerificationEmail(email: string, code: string): Promise<void> {
@@ -118,12 +117,4 @@ export async function getUserEmailVerificationRequestFromRequest(event: RequestE
         return null;
     }
     return request;
-}
-
-export interface EmailVerificationRequest {
-    id: string;
-    userId: string;
-    code: string;
-    email: string;
-    expiresAt: Date;
 }
