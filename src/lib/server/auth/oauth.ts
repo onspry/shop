@@ -1,5 +1,8 @@
 import { GitHub } from "arctic";
-import { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } from "$env/static/private";
+import { env } from '$env/dynamic/private';
 
-// TODO: Update redirect URI
-export const github = new GitHub(GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, "http://localhost:5173/auth/callback/github/");
+export const github = new GitHub(
+    env.GITHUB_CLIENT_ID,      // IDE shows type: string
+    env.GITHUB_CLIENT_SECRET,  // IDE shows type: string
+    env.GITHUB_REDIRECT_URI    // IDE shows type: string
+);

@@ -129,7 +129,6 @@ model PasswordResetSession {
   code             String
   expiresAt        DateTime @map("expires_at")
   emailVerified    Boolean  @default(false) @map("email_verified")
-  twoFactorVerified Boolean @default(false) @map("two_factor_verified")
 
   // Relations
   user             User     @relation(fields: [userId], references: [id])

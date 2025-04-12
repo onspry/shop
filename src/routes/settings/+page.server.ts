@@ -40,13 +40,6 @@ async function updatePasswordAction(event: RequestEvent) {
             }
         });
     }
-    if (event.locals.user.registered2FA && !event.locals.session.twoFactorVerified) {
-        return fail(403, {
-            password: {
-                message: "Forbidden"
-            }
-        });
-    }
 
     const formData = await event.request.formData();
     const password = formData.get("password");

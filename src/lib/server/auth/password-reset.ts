@@ -1,11 +1,8 @@
-import { eq } from 'drizzle-orm';
 import { encodeHexLowerCase } from "@oslojs/encoding";
 import { sha256 } from "@oslojs/crypto/sha2";
 import type { RequestEvent } from "@sveltejs/kit";
-
-import { db, type User } from '$lib/server/db_drizzle/schema';
-import { passwordResetSession } from '$lib/server/db_drizzle/schema/password-reset-session';
-import { user as userTable } from '$lib/server/db_drizzle/schema/user';
+import { prisma } from '$lib/server/db/prisma';
+import type { User } from '@prisma/client';
 
 import { generateRandomOTP } from "./utils";
 import { sendVerificationEmail } from './email-verification';
@@ -14,27 +11,32 @@ import { sendVerificationEmail } from './email-verification';
 // Cookie name constant to ensure consistency
 export const PASSWORD_RESET_COOKIE_NAME = "password_reset_session";
 
-export function createPasswordResetSession(token: string, userId: string, email: string): PasswordResetSession {
+export async function createPasswordResetSession(token: string, userId: string, email: string): Promise<PasswordResetSession> {
     const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
-    const session: PasswordResetSession = {
-        id: sessionId,
-        userId,
-        email,
-        expiresAt: new Date(Date.now() + 1000 * 60 * 10),
-        code: generateRandomOTP(),
-        emailVerified: false,
-        twoFactorVerified: false
-    };
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 10); // 10 minutes
+    const code = generateRandomOTP();
 
     try {
-        db.insert(passwordResetSession).values({
-            id: session.id,
-            userId: session.userId,
-            email: session.email,
-            code: session.code,
-            expiresAt: session.expiresAt,
-            email_verified: session.emailVerified,
-        }).run();
+        const prismaSession = await prisma.passwordResetSession.create({
+            data: {
+                id: sessionId,
+                userId: userId,
+                email: email,
+                code: code,
+                expiresAt: expiresAt,
+                emailVerified: false
+            }
+        });
+
+        // Convert to our interface format
+        const session: PasswordResetSession = {
+            id: prismaSession.id,
+            userId: prismaSession.userId,
+            email: prismaSession.email,
+            code: prismaSession.code,
+            expiresAt: prismaSession.expiresAt,
+            emailVerified: prismaSession.emailVerified
+        };
 
         return session;
     } catch (error) {
@@ -48,56 +50,53 @@ export async function validatePasswordResetSessionToken(token: string): Promise<
         const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
         console.log("[Password Reset] Validating session token for ID:", sessionId);
 
-        const [result] = await db
-            .select({
-                session: passwordResetSession,
-                user: userTable
-            })
-            .from(passwordResetSession)
-            .innerJoin(userTable, eq(passwordResetSession.userId, userTable.id))
-            .where(eq(passwordResetSession.id, sessionId));
+        const prismaSession = await prisma.passwordResetSession.findUnique({
+            where: { id: sessionId },
+            include: { user: true }
+        });
 
-        if (!result) {
+        if (!prismaSession) {
             console.log("[Password Reset] No session found for token");
             return { session: null, user: null };
         }
 
-        const { session: dbSession, user: dbUser } = result;
+        // Check if session is expired
+        if (Date.now() >= prismaSession.expiresAt.getTime()) {
+            console.log("[Password Reset] Session expired");
+            await prisma.passwordResetSession.delete({
+                where: { id: sessionId }
+            });
+            return { session: null, user: null };
+        }
 
+        // Convert to our interface format
         const session: PasswordResetSession = {
-            id: dbSession.id,
-            userId: dbSession.userId,
-            email: dbSession.email,
-            code: dbSession.code,
-            expiresAt: dbSession.expiresAt,
-            emailVerified: dbSession.email_verified,
-            twoFactorVerified: dbSession.twoFactorVerified
+            id: prismaSession.id,
+            userId: prismaSession.userId,
+            email: prismaSession.email,
+            code: prismaSession.code,
+            expiresAt: prismaSession.expiresAt,
+            emailVerified: prismaSession.emailVerified
         };
 
+        const dbUser = prismaSession.user;
         const user: User = {
             id: dbUser.id,
             email: dbUser.email,
-            firstname: dbUser.firstname,
-            lastname: dbUser.lastname,
+            firstName: dbUser.firstName,
+            lastName: dbUser.lastName,
             image: dbUser.image,
             emailVerified: dbUser.emailVerified,
             isAdmin: dbUser.isAdmin,
-            provider: 'credentials',
-            providerId: dbUser.id,
-            passwordHash: '',
-            stripeCustomerId: `email_${dbUser.id}`,
-            status: 'active',
-            lastLoginAt: new Date(),
-            createdAt: new Date(),
-            updatedAt: new Date()
+            provider: dbUser.provider,
+            providerId: dbUser.providerId,
+            passwordHash: dbUser.passwordHash || '',
+            stripeCustomerId: dbUser.stripeCustomerId || `email_${dbUser.id}`,
+            status: dbUser.status,
+            lastLoginAt: dbUser.lastLoginAt || new Date(),
+            createdAt: dbUser.createdAt,
+            updatedAt: dbUser.updatedAt
         };
-
-        if (Date.now() >= session.expiresAt.getTime()) {
-            console.log("[Password Reset] Session expired");
-            await db.delete(passwordResetSession)
-                .where(eq(passwordResetSession.id, session.id));
-            return { session: null, user: null };
-        }
 
         console.log("[Password Reset] Valid session found for email:", session.email);
         return { session, user };
@@ -108,14 +107,16 @@ export async function validatePasswordResetSessionToken(token: string): Promise<
 }
 
 export async function setPasswordResetSessionAsEmailVerified(sessionId: string): Promise<void> {
-    await db.update(passwordResetSession)
-        .set({ email_verified: true })
-        .where(eq(passwordResetSession.id, sessionId));
+    await prisma.passwordResetSession.update({
+        where: { id: sessionId },
+        data: { emailVerified: true }
+    });
 }
 
 export async function invalidateUserPasswordResetSessions(userId: string): Promise<void> {
-    await db.delete(passwordResetSession)
-        .where(eq(passwordResetSession.userId, userId));
+    await prisma.passwordResetSession.deleteMany({
+        where: { userId: userId }
+    });
 }
 
 export async function validatePasswordResetSessionRequest(event: RequestEvent): Promise<PasswordResetSessionValidationResult> {
@@ -166,6 +167,9 @@ export async function sendPasswordResetEmail(email: string, code: string): Promi
     }
 }
 
+/**
+ * Interface for password reset session
+ */
 export interface PasswordResetSession {
     id: string;
     userId: string;
@@ -173,9 +177,11 @@ export interface PasswordResetSession {
     expiresAt: Date;
     code: string;
     emailVerified: boolean;
-    twoFactorVerified: boolean;
 }
 
+/**
+ * Result of validating a password reset session
+ */
 export type PasswordResetSessionValidationResult =
     | { session: PasswordResetSession; user: User }
     | { session: null; user: null };
