@@ -35,12 +35,12 @@
 	import { countries, addressStructures } from '$lib/config/address-structures';
 	import { checkoutStore } from '$lib/stores/checkout';
 	import { cart } from '$lib/stores/cart';
-	import type { OrderResponseData } from '$lib/types/order';
 	import { cartActions } from '$lib/stores/cart';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button';
 	import * as Form from '$lib/components/ui/form';
+	import type { OrderResponseData } from '$lib/models/checkout';
 
 	// Page data props
 	const { data } = $props<{ data: PageData }>();
