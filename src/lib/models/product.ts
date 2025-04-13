@@ -1,6 +1,3 @@
-import type { ProductImageViewModel } from './product-image-view-model';
-import type { ProductVariantViewModel } from './product-variant-view-model';
-
 // Base ViewModel for product display
 export interface ProductViewModel {
     id: string;
@@ -23,6 +20,7 @@ export interface ProductImageViewModel {
     url: string;
     alt: string;
     position: number;
+    productId: string;
 }
 
 // ViewModel for product variants with stock status

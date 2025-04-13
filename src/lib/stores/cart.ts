@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store';
 import { invalidateAll } from '$app/navigation';
-import type { CartViewModel } from '$lib/server/db/prisma/models/cart';
+import type { CartViewModel } from '$lib/models/cart';
 
 // Initial empty cart state
 const initialCart: CartViewModel = {

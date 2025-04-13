@@ -8,7 +8,7 @@ import {
     setEmailVerificationRequestCookie
 } from "$lib/server/auth/email-verification";
 //import { invalidateUserPasswordResetSessions } from "$lib/server/auth/password-reset";
-import { userRepository } from "$lib/server/db/prisma/repositories/user-repository";
+import { userRepository } from "$lib/repositories/user-repository";
 import { rateLimit } from "$lib/server/auth/rate-limit";
 import { validateVerificationCode } from "$lib/server/auth/validation";
 

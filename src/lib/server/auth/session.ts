@@ -1,7 +1,7 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import { sha256 } from '@oslojs/crypto/sha2';
 import { encodeBase64url, encodeHexLowerCase } from '@oslojs/encoding';
-import { prisma } from '$lib/server/db/prisma';
+import { prisma } from '$lib/server/db';
 import type { Session, User } from '@prisma/client';
 import type { Cookies } from '@sveltejs/kit';
 

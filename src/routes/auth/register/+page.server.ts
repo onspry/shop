@@ -3,7 +3,7 @@ import { superValidate, message } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { registerSchema } from '$lib/schemas/auth';
 import { randomUUID } from 'crypto';
-import { userRepository } from "$lib/server/db/prisma/repositories/user-repository";
+import { userRepository } from "$lib/repositories/user-repository";
 import { hashPassword } from '$lib/server/auth/password';
 import { createSession, generateSessionToken, setSessionTokenCookie } from '$lib/server/auth/session';
 import {
@@ -11,9 +11,9 @@ import {
     sendVerificationEmail,
     setEmailVerificationRequestCookie
 } from "$lib/server/auth/email-verification";
-import { Providers } from "$lib/constants";
 
 import type { Actions, PageServerLoad } from "./$types";
+import { Provider } from '$lib/models/user';
 
 export const load: PageServerLoad = async ({ locals }) => {
     // Redirect if user is already logged in
@@ -62,7 +62,7 @@ export const actions: Actions = {
             const id = randomUUID();
             const user = await userRepository.createUser({
                 id: id,
-                provider: Providers.email, // Use the Provider enum from Prisma
+                provider: Provider.EMAIL, // Use the Provider enum from Prisma
                 providerId: id,
                 email: email,
                 image: null,

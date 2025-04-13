@@ -1,4 +1,4 @@
-import { userRepository } from "$lib/server/db/prisma/repositories/user-repository";
+import { userRepository } from "$lib/repositories/user-repository";
 import {
     createPasswordResetSession,
     invalidateUserPasswordResetSessions,

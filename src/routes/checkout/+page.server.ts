@@ -5,10 +5,10 @@ import type { PageServerLoad } from './$types';
 import { emailSchema } from '$lib/schemas/auth';
 import { shippingSchema } from '$lib/schemas/shipping';
 import { paymentSchema } from '$lib/schemas/payment';
-import { OrderRepository, isValidOrderItem, mapCartItemToOrderItem } from '$lib/server/db/prisma/repositories/order-repository';
-import type { CreateOrderViewModel, OrderItemViewModel } from '$lib/server/db/prisma/models/order';
-import { cartRepository } from '$lib/server/db/prisma/repositories/cart-repository';
-import type { CartItemViewModel } from '$lib/server/db/prisma/models/cart';
+import { OrderRepository, isValidOrderItem, mapCartItemToOrderItem } from '$lib/repositories/order-repository';
+import type { CreateOrderViewModel, OrderItemViewModel } from '$lib/models/order'; // Import the correct type
+import { cartRepository } from '$lib/repositories/cart-repository';
+import type { CartItemViewModel } from '$lib/models/cart';
 
 
 // Helper function to validate and transform cart items for the client

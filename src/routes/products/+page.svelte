@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { CatalogueViewModel } from '$lib/server/db/prisma/models/product/catalogue-view-model'
 	import ProductCard from '$lib/components/product-card.svelte';
-	import type { ProductViewModel } from '$lib/server/db/prisma/models/product/product-view-model';
 	import * as Carousel from '$lib/components/ui/carousel/index.js';
+	import type { CatalogueViewModel } from '$lib/models/catalogue';
+	import type { ProductViewModel } from '$lib/models/product';
 	import Autoplay from 'embla-carousel-autoplay';
 	import type { AutoplayType } from 'embla-carousel-autoplay';
 	import { onMount } from 'svelte';

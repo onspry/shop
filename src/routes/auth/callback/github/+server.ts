@@ -3,9 +3,9 @@ import { github } from "$lib/server/auth/oauth";
 import { randomUUID } from 'crypto';
 import type { RequestEvent } from "@sveltejs/kit";
 import type { OAuth2Tokens } from "arctic";
-import { Providers } from "$lib/constants";
-import { cartRepository } from "$lib/server/db/prisma/repositories/cart-repository";
-import { userRepository } from "$lib/server/db/prisma/repositories/user-repository";
+import { cartRepository } from "$lib/repositories/cart-repository";
+import { userRepository } from "$lib/repositories/user-repository";
+import { Provider } from "$lib/models/user";
 
 export async function GET(event: RequestEvent): Promise<Response> {
     // Get the stored redirect URL from the cookie
@@ -66,7 +66,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
     }
 
     // First check for existing user by provider ID
-    const existingUser = await userRepository.getUserByProviderAndProviderId(Providers.github, githubUserId.toString());
+    const existingUser = await userRepository.getUserByProviderAndProviderId(Provider.GITHUB, githubUserId.toString());
     if (existingUser) {
         // Set auth session token
         const sessionToken = generateSessionToken();
@@ -127,7 +127,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
     // Create new user
     const newUser = await userRepository.createUser({
         providerId: githubUser.id.toString(),
-        provider: Providers.github,
+        provider: Provider.GITHUB,
         id: githubUserId.toString(),
         email: githubUser.email,
         firstName: githubUser.name ? githubUser.name.split(' ')[0] : githubUser.login,

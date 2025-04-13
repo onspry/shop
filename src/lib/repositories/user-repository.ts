@@ -1,12 +1,12 @@
-import { PrismaClient, UserStatus, Provider, type User } from '@prisma/client';
-import type { UserViewModel, UserDetailViewModel, UserAuthViewModel } from '../models/user';
+import { PrismaClient, type User } from '@prisma/client';
+import type { UserViewModel, UserDetailViewModel, UserAuthViewModel, Provider, UserStatus } from '../models/user';
 import { hashPassword } from '$lib/server/auth/password';
 
 // Helper functions to map between Prisma models and view models
 function mapToUserViewModel(user: User): UserViewModel {
   return {
     id: user.id,
-    provider: user.provider.toString(), // Convert enum to string for the view model
+    provider: user.provider as Provider, // Convert enum to string for the view model
     providerId: user.providerId,
     email: user.email,
     firstName: user.firstName,

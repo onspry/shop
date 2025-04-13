@@ -8,11 +8,9 @@
 		Card,
 		CardContent,
 		CardDescription,
-		CardFooter,
 		CardHeader,
 		CardTitle
 	} from '$lib/components/ui/card';
-	import { Separator } from '$lib/components/ui/separator';
 
 	export let form: ActionData;
 </script>

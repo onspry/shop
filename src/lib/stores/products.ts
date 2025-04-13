@@ -1,12 +1,11 @@
-import type { ProductViewModel, ProductVariantViewModel } from '$lib/server/db/prisma/models/product';
-import type { ProductImage } from '@prisma/client';
+import type { ProductViewModel, ProductVariantViewModel, ProductImageViewModel } from '$lib/models/product';
 import { writable, derived } from 'svelte/store';
 
 // Create writable store with persistent tracking
 const store = writable({
     products: [] as ProductViewModel[],
     variants: [] as ProductVariantViewModel[],
-    images: [] as ProductImage[],
+    images: [] as ProductImageViewModel[],
     loadedKeyboards: new Set<string>(), // Track which keyboards we've loaded accessories for
     selectedProduct: null as ProductViewModel | null,
     loading: false,

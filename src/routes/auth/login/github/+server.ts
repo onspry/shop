@@ -1,6 +1,5 @@
 import { github } from "$lib/server/auth/oauth";
 import { generateState } from "arctic";
-
 import type { RequestEvent } from "./$types";
 
 export function GET(event: RequestEvent): Response {

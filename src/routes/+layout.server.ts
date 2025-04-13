@@ -1,6 +1,6 @@
 import type { LayoutServerLoad } from './$types';
 import { randomUUID } from 'crypto';
-import { cartRepository } from '$lib/server/db/prisma/repositories/cart-repository';
+import { cartRepository } from '$lib/repositories/cart-repository';
 
 /**
  * Layout server load function

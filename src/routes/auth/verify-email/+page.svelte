@@ -13,7 +13,6 @@
 		CardHeader,
 		CardTitle
 	} from '$lib/components/ui/card';
-	import type { SubmitFunction } from '@sveltejs/kit';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 

@@ -86,8 +86,8 @@ Use this information to:
 
 ### Repository Structure
 
-- All database access should be through repositories in src/lib/server/db/prisma/repositories/.
-- Repositories should return viewmodels (DTOs) to decouple database schema from UI.
+- All database access should be through repositories in src/lib/repositories/.
+- Repositories should return viewmodels (DTOs) from src/lib/models/ to decouple database schema from UI.
 - Implement proper error handling and validation within repositories.
 - Group related operations within specific repositories (e.g., ProductRepository, CartRepository).
 - Ensure repositories expose consistent, well-typed methods for data operations.
@@ -230,7 +230,7 @@ export async function getProductWithVariants(productId: string) {
 ### Repository Pattern Example
 
 ```typescript
-// src/lib/server/db/prisma/repositories/product-repository.ts
+// src/lib/repositories/product-repository.ts
 import { PrismaClient } from '@prisma/client';
 import type { ProductViewModel, ProductDetailViewModel } from "$lib/types";
 
@@ -300,7 +300,7 @@ export async function getProductById(id: string): Promise<ProductDetailViewModel
 ```typescript
 // src/routes/products/[id]/+page.server.ts
 import { error } from '@sveltejs/kit';
-import { getProductById } from '$lib/server/db/prisma/repositories/product-repository';
+import { getProductById } from '$lib/repositories/product-repository';
 
 export async function load({ params }) {
   const product = await getProductById(params.id);

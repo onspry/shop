@@ -15,7 +15,7 @@ import {
 import { superValidate, message } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { passwordUpdateSchema } from '$lib/schemas/auth';
-import { userRepository } from "$lib/server/db/prisma/repositories/user-repository";
+import { userRepository } from "$lib/repositories/user-repository";
 
 import type { Actions, PageServerLoad } from "./$types";
 

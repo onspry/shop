@@ -1,7 +1,7 @@
 import { encodeHexLowerCase } from "@oslojs/encoding";
 import { sha256 } from "@oslojs/crypto/sha2";
 import type { RequestEvent } from "@sveltejs/kit";
-import { prisma } from '$lib/server/db/prisma';
+import { prisma } from '$lib/server/db';
 import type { User } from '@prisma/client';
 
 import { generateRandomOTP } from "./utils";

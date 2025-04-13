@@ -1,4 +1,3 @@
-// This is your updated Prisma schema file with alignments to match the Drizzle schema
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
@@ -11,74 +10,17 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// Enum definitions
-enum Provider {
-  email
-  google
-  github
-  microsoft
-  facebook
-}
-
-enum UserStatus {
-  active
-  inactive
-  suspended
-}
-
-enum CartStatus {
-  active
-  merged
-  converted_to_order
-  abandoned
-}
-
-enum OrderStatus {
-  pending_payment // Changed from 'pending' to match Drizzle
-  payment_failed
-  processing
-  shipped
-  delivered
-  cancelled
-  refunded
-}
-
-enum PaymentStatus {
-  pending
-  succeeded
-  failed
-  refunded
-}
-
-enum RefundStatus {
-  pending
-  processing
-  completed
-  failed
-}
-
-enum AddressType {
-  shipping
-  billing
-}
-
-enum TransactionType {
-  order
-  manual_adjustment
-  return
-}
-
 // User Models
 model User {
   id                String    @id @default(uuid())
-  provider          Provider
+  provider          String
   providerId        String    @map("provider_id")
   email             String    @unique
   image             String?
   firstName         String    @map("first_name")
   lastName          String    @map("last_name")
   passwordHash      String?   @map("password_hash")
-  status            UserStatus @default(active)
+  status            String    @default("active")
   emailVerified     Boolean   @default(false) @map("email_verified")
   isAdmin           Boolean   @default(false) @map("is_admin")
   stripeCustomerId  String?   @map("stripe_customer_id")
@@ -200,7 +142,7 @@ model Cart {
   id               String    @id @default(uuid())
   userId           String?   @map("user_id")
   sessionId        String    @map("session_id")
-  status           CartStatus @default(active)
+  status           String    @default("active")
   email            String?   // Added to match Drizzle
   firstName        String?   @map("first_name") // Added to match Drizzle
   lastName         String?   @map("last_name") // Added to match Drizzle
@@ -268,7 +210,7 @@ model Order {
   id                    String    @id @default(uuid())
   userId                String?   @map("user_id")
   cartId                String    @map("cart_id")
-  status                OrderStatus @default(pending_payment)
+  status                String    @default("pending_payment")
   email                 String
   firstName             String    @map("first_name")
   lastName              String    @map("last_name")
@@ -322,7 +264,7 @@ model OrderItem {
 model OrderAddress {
   id               String    @id @default(uuid())
   orderId          String    @map("order_id")
-  type             AddressType
+  type             String    // 'shipping' or 'billing'
   firstName        String    @map("first_name")
   lastName         String    @map("last_name")
   company          String?
@@ -346,7 +288,7 @@ model OrderAddress {
 model OrderStatusHistory {
   id               String    @id @default(uuid())
   orderId          String    @map("order_id")
-  status           OrderStatus
+  status           String
   note             String?
   createdAt        DateTime  @default(now()) @map("created_at")
 
@@ -361,7 +303,7 @@ model OrderStatusHistory {
 model PaymentTransaction {
   id                   String    @id @default(uuid())
   orderId              String    @map("order_id")
-  status               PaymentStatus @default(pending)
+  status               String    @default("pending")
   amount               Int       // Stored in cents
   currency             String    @default("USD") // Added to match Drizzle
   stripePaymentIntentId String   @map("stripe_payment_intent_id") // Changed from transactionId to match Drizzle
@@ -386,7 +328,7 @@ model Refund {
   amount           Int       // Stored in cents
   reason           String
   note             String?   // Added to match Drizzle
-  status           RefundStatus @default(pending)
+  status           String    @default("pending")
   stripeRefundId   String?   @map("stripe_refund_id") // Added to match Drizzle
   errorMessage     String?   @map("error_message") // Added to match Drizzle
   refundId         String?   @map("refund_id") // Added to match Drizzle
@@ -407,7 +349,7 @@ model InventoryTransaction {
   id               String    @id @default(uuid())
   variantId        String    @map("variant_id") // This corresponds to productVariantId in Drizzle
   quantity         Int
-  type             TransactionType
+  type             String    // 'order', 'manual_adjustment', or 'return'
   note             String?
   createdAt        DateTime  @default(now()) @map("created_at")
   orderId          String?   @map("order_id")

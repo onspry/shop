@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import type { RequestEvent } from "@sveltejs/kit";
 import { generateRandomOTP } from "./utils";
-import { prisma } from '$lib/server/db/prisma';
+import { prisma } from '$lib/server/db';
 import type { EmailVerificationRequest } from '@prisma/client';
 import { sendEmail } from '$lib/server/email/send-email';
 

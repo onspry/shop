@@ -1,7 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types';
-import { cartRepository } from '$lib/server/db/prisma/repositories/cart-repository';
+import { cartRepository } from '$lib/repositories/cart-repository';
 
 export const load: PageServerLoad = async ({ cookies, locals }) => {
     // Get session or user ID

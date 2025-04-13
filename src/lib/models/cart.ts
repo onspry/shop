@@ -66,3 +66,10 @@ export interface CartSummaryViewModel {
     total: number;
     itemCount: number;
 }
+
+export enum CartStatus {
+    ACTIVE = 'active',
+    MERGED = 'merged',
+    CONVERTED_TO_ORDER = 'converted_to_order',
+    ABANDONED = 'abandoned'
+}

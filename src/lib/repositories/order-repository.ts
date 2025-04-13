@@ -1,7 +1,7 @@
-import { PrismaClient, type Order, type OrderItem, type OrderAddress, type OrderStatusHistory, type PaymentTransaction, type Refund, OrderStatus, PaymentStatus, TransactionType } from '@prisma/client';
+import { PrismaClient, OrderStatus, PaymentStatus, TransactionType, type Order, type OrderItem, type OrderStatusHistory, type OrderAddress, type PaymentTransaction, type Refund } from '@prisma/client';
 import { randomUUID } from 'crypto';
-import type { CreateOrderViewModel, OrderViewModel, OrderItemViewModel } from '$lib/server/db/prisma/models/order';
-import type { CartItemViewModel } from '$lib/server/db/prisma/models/cart';
+import type { CreateOrderViewModel, OrderViewModel, OrderItemViewModel } from '$lib/models/order';
+import type { CartItemViewModel } from '$lib/models/cart';
 import { formatOrderNumber } from '$lib/utils/order';
 
 // Initialize Prisma client

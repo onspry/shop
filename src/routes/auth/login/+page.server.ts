@@ -5,8 +5,8 @@ import { loginSchema } from '$lib/schemas/auth';
 import type { PageServerLoad, Actions } from "./$types";
 import { verifyPasswordHash } from "$lib/server/auth/password";
 import { createSession, generateSessionToken, setSessionTokenCookie } from "$lib/server/auth/session";
-import { userRepository } from "$lib/server/db/prisma/repositories/user-repository";
-import { cartRepository } from "$lib/server/db/prisma/repositories/cart-repository";
+import { userRepository } from "$lib/repositories/user-repository";
+import { cartRepository } from "$lib/repositories/cart-repository";
 
 export const load: PageServerLoad = async ({ locals, url }) => {
     if (locals.session !== null && locals.user !== null) {

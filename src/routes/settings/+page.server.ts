@@ -6,7 +6,7 @@ import {
 import { fail, redirect } from "@sveltejs/kit";
 import { checkEmailAvailability, verifyEmailInput } from "$lib/server/auth/email";
 import { verifyPasswordHash, verifyPasswordStrength } from "$lib/server/auth/password";
-import { userRepository } from "$lib/server/db/prisma/repositories/user-repository";
+import { userRepository } from "$lib/repositories/user-repository";
 import {
     createSession,
     generateSessionToken,

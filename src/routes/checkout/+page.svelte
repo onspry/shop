@@ -35,7 +35,7 @@
 	import { countries, addressStructures } from '$lib/config/address-structures';
 	import { checkoutStore } from '$lib/stores/checkout';
 	import { cart } from '$lib/stores/cart';
-	import type { OrderResponseData, OrderItemType } from '$lib/types/order';
+	import type { OrderResponseData } from '$lib/types/order';
 	import { cartActions } from '$lib/stores/cart';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';

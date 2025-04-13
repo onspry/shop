@@ -1,9 +1,9 @@
-import type { User } from '@prisma/client';
+import type { UserViewModel } from '$lib/models/user';
 import { writable } from 'svelte/store';
 
 // Create a store with loading state
 interface AuthState {
-    user: User | null;
+    user: UserViewModel | null;
     isLoading: boolean;
     isInitialized: boolean;
 }
@@ -18,12 +18,12 @@ const authStore = writable<AuthState>(initialState);
 
 // Create a derived store that only exposes the user
 const userStore = {
-    subscribe: (callback: (value: User | null) => void) => {
+    subscribe: (callback: (value: UserViewModel | null) => void) => {
         return authStore.subscribe(state => callback(state.user));
     }
 };
 
-export function setUser(user: User | null) {
+export function setUser(user: UserViewModel | null) {
     authStore.update(state => ({
         ...state,
         user,
@@ -33,7 +33,7 @@ export function setUser(user: User | null) {
 }
 
 export function getUser() {
-    let currentUser: User | null = null;
+    let currentUser: UserViewModel | null = null;
     authStore.subscribe(state => {
         currentUser = state.user;
     })();

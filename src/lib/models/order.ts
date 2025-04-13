@@ -1,8 +1,32 @@
-/**
- * Order-related view models for type-safe data handling
- */
+export const OrderStatus = {
+    PENDING_PAYMENT: 'pending_payment',
+    PAYMENT_FAILED: 'payment_failed',
+    PROCESSING: 'processing',
+    SHIPPED: 'shipped',
+    DELIVERED: 'delivered',
+    CANCELLED: 'cancelled',
+    REFUNDED: 'refunded'
+} as const;
 
-import { OrderStatus } from '@prisma/client';
+export type OrderStatus = typeof OrderStatus[keyof typeof OrderStatus];
+
+export const PaymentStatus = {
+    PENDING: 'pending',
+    SUCCEEDED: 'succeeded',
+    FAILED: 'failed',
+    REFUNDED: 'refunded'
+} as const;
+
+export type PaymentStatus = typeof PaymentStatus[keyof typeof PaymentStatus];
+
+export const RefundStatus = {
+    PENDING: 'pending',
+    PROCESSING: 'processing',
+    COMPLETED: 'completed',
+    FAILED: 'failed'
+} as const;
+
+export type RefundStatus = typeof RefundStatus[keyof typeof RefundStatus];
 
 /**
  * Represents an item in an order

@@ -1,6 +1,6 @@
 import { PrismaClient, type Cart, type CartItem, type ProductVariant, type ProductImage, type Product, CartStatus } from '@prisma/client';
 import { randomUUID } from 'crypto';
-import type { CartViewModel, CartSummaryViewModel } from '$lib/server/db/prisma/models/cart';
+import type { CartViewModel, CartSummaryViewModel } from '$lib/models/cart';
 import { toProductVariantViewModel } from './product-repository';
 import { formatPrice } from '$lib/utils/price';
 

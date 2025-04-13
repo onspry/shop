@@ -1,4 +1,4 @@
-import { prisma } from '$lib/server/db/prisma';
+import { prisma } from '$lib/server/db';
 
 /**
  * Verifies that an email input is valid
