@@ -2,6 +2,7 @@ import { PrismaClient, type Cart, type CartItem, type ProductVariant, type Produ
 import { randomUUID } from 'crypto';
 import type { CartViewModel, CartSummaryViewModel } from '$lib/server/db/prisma/models/cart';
 import { toProductVariantViewModel } from './product-repository';
+import { formatPrice } from '$lib/utils/price';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -114,8 +115,8 @@ export class DiscountError extends CartError {
     }
 }
 
-// Define the repository object
-export const cartRepository = {
+// Define the repository class
+export class CartRepository {
     /**
      * Cart repository for managing shopping cart operations.
      * Handles cart creation, item management, discounts, and user session management.
@@ -138,29 +139,62 @@ export const cartRepository = {
         }
 
         try {
-            // Check for existing cart by user ID
-            let existingCart = null;
-
-            if (userId) {
-                existingCart = await prisma.cart.findFirst({
-                    where: {
-                        userId: userId
+            // Optimize by using a single query with OR condition
+            const existingCart = await prisma.cart.findFirst({
+                where: {
+                    OR: [
+                        // First priority: find cart with both sessionId and userId
+                        userId && sessionId ? { userId, sessionId } : {},
+                        // Second priority: find by userId
+                        userId ? { userId } : {},
+                        // Third priority: find by sessionId
+                        sessionId ? { sessionId } : {}
+                    ].filter(Boolean) // Remove empty conditions
+                },
+                include: {
+                    // Include minimal cart items data for quick access
+                    items: {
+                        select: {
+                            id: true,
+                            quantity: true,
+                            price: true
+                        }
                     }
-                });
-            }
+                }
+            });
 
-            // If no user cart, check for session cart
-            if (!existingCart && sessionId) {
-                existingCart = await prisma.cart.findFirst({
-                    where: {
-                        sessionId: sessionId
-                    }
-                });
-            }
-
-            // If we found a cart, return it
+            // If we found a cart, update it if needed and return
             if (existingCart) {
-                return await this._getCartViewModelById(existingCart.id);
+                // If user is logged in but cart isn't associated, associate it now
+                if (userId && existingCart.userId !== userId) {
+                    await prisma.cart.update({
+                        where: { id: existingCart.id },
+                        data: { userId, updatedAt: new Date() }
+                    });
+                }
+
+                // If session ID doesn't match, update it
+                if (sessionId && existingCart.sessionId !== sessionId) {
+                    await prisma.cart.update({
+                        where: { id: existingCart.id },
+                        data: { sessionId, updatedAt: new Date() }
+                    });
+                }
+
+                // Calculate basic cart data without fetching everything
+                const subtotal = existingCart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                const discountAmount = existingCart.discountAmount || 0;
+
+                // Return minimal cart data for faster response
+                return {
+                    id: existingCart.id,
+                    items: [], // We'll fetch detailed items only when needed
+                    discountCode: existingCart.discountCode,
+                    discountAmount,
+                    subtotal,
+                    total: subtotal - discountAmount,
+                    itemCount: existingCart.items.reduce((sum, item) => sum + item.quantity, 0)
+                };
             }
 
             // No cart found, create a new one
@@ -186,27 +220,20 @@ export const cartRepository = {
             console.error('Error in getOrCreateCart:', error);
             throw new CartError('Failed to get or create cart');
         }
-    },
+    }
 
     /**
      * Get cart with items and related product data (internal helper method)
      */
     async _getCartWithItems(cartId: string): Promise<CartWithItems | null> {
         try {
+            // First, get the basic cart data with items but minimal nesting
             const cartData = await prisma.cart.findUnique({
                 where: { id: cartId },
                 include: {
                     items: {
                         include: {
-                            variant: {
-                                include: {
-                                    product: {
-                                        include: {
-                                            images: true
-                                        }
-                                    }
-                                }
-                            },
+                            variant: true,
                             product: true
                         }
                     }
@@ -217,12 +244,79 @@ export const cartRepository = {
                 return null;
             }
 
-            return cartData as CartWithItems;
+            // If there are no items, return early
+            if (cartData.items.length === 0) {
+                return cartData as CartWithItems;
+            }
+
+            // Get all product IDs from the cart items
+            const productIds = [...new Set(
+                cartData.items.map(item =>
+                    item.variant?.productId || item.productId
+                ).filter(Boolean)
+            )];
+
+            // Fetch product images in a separate query
+            const productImages = await prisma.productImage.findMany({
+                where: {
+                    productId: { in: productIds }
+                },
+                orderBy: {
+                    position: 'asc'
+                }
+            });
+
+            // Group images by product ID for easy lookup
+            const imagesByProductId = productImages.reduce((acc, img) => {
+                if (!acc[img.productId]) {
+                    acc[img.productId] = [];
+                }
+                acc[img.productId].push(img);
+                return acc;
+            }, {} as Record<string, ProductImage[]>);
+
+            // Enhance cart items with product images
+            const enhancedItems = cartData.items.map(item => {
+                const productId = item.variant?.productId || item.productId;
+                if (productId && item.variant) {
+                    // Add images to the product
+                    const images = imagesByProductId[productId] || [];
+                    // Create a product object if it doesn't exist
+                    const product = {
+                        id: productId,
+                        name: item.product?.name || 'Product',
+                        description: item.product?.description || '',
+                        category: item.product?.category || '',
+                        features: item.product?.features || [],
+                        specifications: item.product?.specifications || {},
+                        isAccessory: item.product?.isAccessory || false,
+                        slug: item.product?.slug || '',
+                        createdAt: item.product?.createdAt || new Date(),
+                        updatedAt: item.product?.updatedAt || new Date(),
+                        images
+                    };
+
+                    return {
+                        ...item,
+                        variant: {
+                            ...item.variant,
+                            product
+                        }
+                    };
+                }
+                return item;
+            });
+
+            // Return the enhanced cart data
+            return {
+                ...cartData,
+                items: enhancedItems
+            } as CartWithItems;
         } catch (error) {
             console.error('Error fetching cart with items:', error);
             return null;
         }
-    },
+    }
 
     /**
      * Get cart view model by ID (internal helper)
@@ -280,7 +374,7 @@ export const cartRepository = {
             total: subtotal - (cartData.discountAmount || 0),
             itemCount: items.reduce((sum, item) => sum + item.quantity, 0)
         };
-    },
+    }
 
     /**
      * Gets the cart view model for a given session with caching.
@@ -448,7 +542,7 @@ export const cartRepository = {
             console.error('Error in getCartViewModel:', error);
             throw new CartError('Failed to get cart view model');
         }
-    },
+    }
 
     /**
      * Adds an item to the cart.
@@ -475,48 +569,53 @@ export const cartRepository = {
         }
 
         try {
-            // Get cart data first
-            const cartData = await prisma.cart.findUnique({
-                where: { id: cartId },
-                select: {
-                    sessionId: true,
-                    userId: true
+            // Use a single transaction for all operations to improve performance
+            const transactionResult = await prisma.$transaction(async (tx) => {
+                // Get cart and variant data in parallel for better performance
+                const [cartData, variant, existingItem] = await Promise.all([
+                    // Get cart data
+                    tx.cart.findUnique({
+                        where: { id: cartId },
+                        select: {
+                            id: true,
+                            sessionId: true,
+                            userId: true
+                        }
+                    }),
+                    // Get variant data
+                    tx.productVariant.findUnique({
+                        where: { id: productVariantId },
+                        select: {
+                            id: true,
+                            price: true,
+                            stockQuantity: true,
+                            productId: true
+                        }
+                    }),
+                    // Check for existing cart item
+                    tx.cartItem.findFirst({
+                        where: {
+                            cartId: cartId,
+                            variantId: productVariantId
+                        }
+                    })
+                ]);
+
+                // Validate cart and variant
+                if (!cartData) {
+                    throw new CartError('Cart not found');
                 }
-            });
 
-            if (!cartData) {
-                throw new CartError('Cart not found');
-            }
-
-            // Check variant stock
-            const variant = await prisma.productVariant.findUnique({
-                where: { id: productVariantId },
-                select: {
-                    id: true,
-                    price: true,
-                    stockQuantity: true,
-                    productId: true
+                if (!variant) {
+                    throw new CartError('Product variant not found');
                 }
-            });
 
-            if (!variant) {
-                throw new CartError('Product variant not found');
-            }
-
-            if (variant.stockQuantity < quantity) {
-                throw new StockError(`Not enough stock available. Requested: ${quantity}, Available: ${variant.stockQuantity}`);
-            }
-
-            // Get existing cart item for this variant
-            const existingItem = await prisma.cartItem.findFirst({
-                where: {
-                    cartId: cartId,
-                    variantId: productVariantId
+                // Check stock availability
+                if (variant.stockQuantity < quantity) {
+                    throw new StockError(`Not enough stock available. Requested: ${quantity}, Available: ${variant.stockQuantity}`);
                 }
-            });
 
-            // Use Prisma transaction
-            await prisma.$transaction(async (tx) => {
+                // Update or create cart item
                 if (existingItem) {
                     // Update existing item
                     const newQuantity = existingItem.quantity + quantity;
@@ -553,10 +652,17 @@ export const cartRepository = {
                         lastActivityAt: new Date()
                     }
                 });
+
+                // Return cart data for cache invalidation outside transaction
+                return {
+                    sessionId: cartData.sessionId,
+                    userId: cartData.userId
+                };
             });
 
-            // Invalidate cache after successful update
-            const cacheKey = `${cartData.sessionId}:${cartData.userId || 'guest'}`;
+            // Invalidate cache after successful update - but only for this specific cart
+            // This is done outside the transaction for better performance
+            const cacheKey = `${transactionResult.sessionId}:${transactionResult.userId || 'guest'}`;
             cartCache.delete(cacheKey);
         } catch (error) {
             if (error instanceof CartError || error instanceof StockError) {
@@ -565,7 +671,7 @@ export const cartRepository = {
             console.error('[CART] Error adding item to cart:', error);
             throw new CartError('Failed to add item to cart: ' + (error instanceof Error ? error.message : String(error)));
         }
-    },
+    }
 
     /**
      * Updates the quantity of a cart item.
@@ -678,7 +784,7 @@ export const cartRepository = {
             console.error('Error updating cart item quantity:', error);
             throw new CartError('Failed to update cart item quantity');
         }
-    },
+    }
 
     /**
      * Removes an item from the cart.
@@ -742,7 +848,7 @@ export const cartRepository = {
             console.error('Error removing cart item:', error);
             throw new CartError('Failed to remove cart item');
         }
-    },
+    }
 
     /**
      * Clears all items from the cart and resets discounts.
@@ -793,7 +899,7 @@ export const cartRepository = {
             console.error('Error clearing cart:', error);
             throw new CartError('Failed to clear cart');
         }
-    },
+    }
 
     /**
      * Calculates a summary of the cart contents.
@@ -824,7 +930,7 @@ export const cartRepository = {
         const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
         return { subtotal, discountAmount, total, itemCount };
-    },
+    }
 
     /**
      * Gets a summary of the cart for the current session.
@@ -845,4 +951,286 @@ export const cartRepository = {
             return { subtotal: 0, discountAmount: 0, total: 0, itemCount: 0 };
         }
     }
-};
+
+    /**
+     * Applies a discount code to a cart
+     * @param cartId - The ID of the cart to apply the discount to
+     * @param discountCode - The discount code to apply
+     * @throws {CartError} If cart operations fail
+     * @throws {Error} If discount code is invalid or expired
+     */
+    async applyDiscountToCart(cartId: string, discountCode: string): Promise<void> {
+        // Input validation
+        if (!cartId || typeof cartId !== 'string') {
+            throw new CartError('Invalid cart ID');
+        }
+        if (!discountCode || typeof discountCode !== 'string') {
+            throw new Error('Invalid discount code');
+        }
+
+        try {
+            // Get the cart to calculate subtotal
+            const cart = await this._getCartWithItems(cartId);
+            if (!cart) {
+                throw new CartError('Cart not found');
+            }
+
+            // Get the discount from the database
+            const discount = await prisma.discount.findUnique({
+                where: { code: discountCode }
+            });
+
+            if (!discount) {
+                throw new Error('Discount code not found');
+            }
+
+            // Check if discount is active
+            if (!discount.active) {
+                throw new Error('Discount code is inactive');
+            }
+
+            // Check if discount is valid (date range)
+            const now = new Date();
+            if (discount.validFrom > now) {
+                throw new Error('Discount code is not yet valid');
+            }
+            if (discount.validUntil && discount.validUntil < now) {
+                throw new Error('Discount code has expired');
+            }
+
+            // Check if discount has reached max uses
+            if (discount.maxUses && discount.usedCount >= discount.maxUses) {
+                throw new Error('Discount code has reached maximum uses');
+            }
+
+            // Calculate cart subtotal
+            const cartItems = cart.items.map(item => ({
+                price: item.price,
+                quantity: item.quantity
+            }));
+            const { subtotal } = this.calculateCartSummary(cartItems);
+
+            // Check minimum spend requirement
+            if (discount.minSpend && subtotal < discount.minSpend) {
+                throw new Error(`Minimum spend of ${formatPrice(discount.minSpend)} required for this discount`);
+            }
+
+            // Calculate discount amount based on type
+            let discountAmount = 0;
+            switch (discount.type) {
+                case 'percentage':
+                    // value is percentage (e.g., 10 = 10%)
+                    discountAmount = Math.round(subtotal * (discount.value / 100));
+                    break;
+                case 'fixed':
+                    // value is fixed amount in cents
+                    discountAmount = discount.value;
+                    break;
+                case 'shipping':
+                    // Shipping discounts are handled at checkout
+                    discountAmount = 0;
+                    break;
+                default:
+                    throw new Error('Invalid discount type');
+            }
+
+            // Update the cart with the discount
+            await prisma.cart.update({
+                where: { id: cartId },
+                data: {
+                    discountCode: discount.code,
+                    discountAmount: discountAmount,
+                    updatedAt: new Date(),
+                    lastActivityAt: new Date()
+                }
+            });
+
+            // Increment the used count for the discount
+            await prisma.discount.update({
+                where: { id: discount.id },
+                data: {
+                    usedCount: { increment: 1 },
+                    updatedAt: new Date()
+                }
+            });
+
+            // Invalidate cache
+            const cartData = await prisma.cart.findUnique({
+                where: { id: cartId },
+                select: { sessionId: true, userId: true }
+            });
+
+            if (cartData) {
+                if (cartData.sessionId) {
+                    cartCache.delete(`${cartData.sessionId}:guest`);
+                }
+                if (cartData.userId) {
+                    cartCache.delete(`${cartData.sessionId}:${cartData.userId}`);
+                }
+            }
+        } catch (error) {
+            console.error('Error applying discount to cart:', error);
+            if (error instanceof Error) {
+                throw error; // Re-throw the original error
+            }
+            throw new CartError('Failed to apply discount to cart');
+        }
+    }
+
+    /**
+     * Removes a discount from a cart
+     * @param cartId - The ID of the cart to remove the discount from
+     * @throws {CartError} If cart operations fail
+     */
+    async removeDiscountFromCart(cartId: string): Promise<void> {
+        // Input validation
+        if (!cartId || typeof cartId !== 'string') {
+            throw new CartError('Invalid cart ID');
+        }
+
+        try {
+            // Update the cart to remove the discount
+            await prisma.cart.update({
+                where: { id: cartId },
+                data: {
+                    discountCode: null,
+                    discountAmount: 0,
+                    updatedAt: new Date(),
+                    lastActivityAt: new Date()
+                }
+            });
+
+            // Invalidate cache
+            const cartData = await prisma.cart.findUnique({
+                where: { id: cartId },
+                select: { sessionId: true, userId: true }
+            });
+
+            if (cartData) {
+                if (cartData.sessionId) {
+                    cartCache.delete(`${cartData.sessionId}:guest`);
+                }
+                if (cartData.userId) {
+                    cartCache.delete(`${cartData.sessionId}:${cartData.userId}`);
+                }
+            }
+        } catch (error) {
+            console.error('Error removing discount from cart:', error);
+            throw new CartError('Failed to remove discount from cart');
+        }
+    }
+
+    /**
+     * Handles merging carts when a user logs in
+     * @param sessionId - The anonymous session ID
+     * @param userId - The user ID to associate the cart with
+     * @returns Promise<void>
+     */
+    async handleUserLoginMerge(sessionId: string, userId: string): Promise<void> {
+        if (!sessionId || !userId) {
+            throw new CartError('Invalid session ID or user ID');
+        }
+
+        try {
+            // Find anonymous cart
+            const anonymousCart = await prisma.cart.findFirst({
+                where: { sessionId: sessionId, userId: null },
+                include: { items: true }
+            });
+
+            // Find user cart
+            const userCart = await prisma.cart.findFirst({
+                where: { userId: userId },
+                include: { items: true }
+            });
+
+            // If no anonymous cart, nothing to merge
+            if (!anonymousCart) {
+                // If user has no cart, create one
+                if (!userCart) {
+                    await prisma.cart.create({
+                        data: {
+                            id: randomUUID(),
+                            sessionId: sessionId,
+                            userId: userId,
+                            status: CartStatus.active
+                        }
+                    });
+                } else {
+                    // Update session ID on existing user cart
+                    await prisma.cart.update({
+                        where: { id: userCart.id },
+                        data: { sessionId: sessionId }
+                    });
+                }
+                return;
+            }
+
+            // If user has no cart, just update the anonymous cart
+            if (!userCart) {
+                await prisma.cart.update({
+                    where: { id: anonymousCart.id },
+                    data: { userId: userId }
+                });
+                return;
+            }
+
+            // Both carts exist, need to merge items
+            await prisma.$transaction(async (tx) => {
+                // Move items from anonymous cart to user cart
+                for (const item of anonymousCart.items) {
+                    // Check if item already exists in user cart
+                    const existingItem = userCart.items.find(i => i.variantId === item.variantId);
+
+                    if (existingItem) {
+                        // Update quantity of existing item
+                        await tx.cartItem.update({
+                            where: { id: existingItem.id },
+                            data: {
+                                quantity: existingItem.quantity + item.quantity,
+                                updatedAt: new Date()
+                            }
+                        });
+                    } else {
+                        // Create new item in user cart
+                        await tx.cartItem.create({
+                            data: {
+                                id: randomUUID(),
+                                cartId: userCart.id,
+                                variantId: item.variantId,
+                                productId: item.productId,
+                                quantity: item.quantity,
+                                price: item.price
+                            }
+                        });
+                    }
+                }
+
+                // Update user cart
+                await tx.cart.update({
+                    where: { id: userCart.id },
+                    data: {
+                        sessionId: sessionId,
+                        updatedAt: new Date(),
+                        lastActivityAt: new Date()
+                    }
+                });
+
+                // Delete anonymous cart
+                await tx.cart.delete({
+                    where: { id: anonymousCart.id }
+                });
+            });
+
+            // Invalidate cache
+            cartCache.delete(`${sessionId}:guest`);
+            cartCache.delete(`${sessionId}:${userId}`);
+        } catch (error) {
+            console.error('Error merging carts:', error);
+            throw new CartError('Failed to merge carts');
+        }
+    }
+}
+
+// Export an instance of the repository
+export const cartRepository = new CartRepository();

@@ -1,6 +1,6 @@
 # AI Assistant for Svelte 5 & SvelteKit 2 E-commerce Project
 
-You are an AI assistant seamlessly integrated with a developer's IDE, optimized to enhance productivity, code quality, and project management for a modern e-commerce application built with Svelte 5, SvelteKit 2, and SQLite with Drizzle ORM.
+You are an AI assistant seamlessly integrated with a developer's IDE, optimized to enhance productivity, code quality, and project management for a modern e-commerce application built with Svelte 5, SvelteKit 2, and PostgreSQL with Prisma ORM.
 
 ---
 
@@ -30,8 +30,8 @@ You are an AI assistant seamlessly integrated with a developer's IDE, optimized 
 
 ### 4. Database Management with PRISMA ORM
 
-- Use db_structure.md as the single source of truth for the SQLite database schema.
-- Generate type-safe PRISMA ORM queries and validate against the defined schema.
+- Use prisma/schema.prisma as the single source of truth for the PostgreSQL database schema.
+- Generate type-safe Prisma ORM queries and validate against the defined schema.
 - Assist with database migrations and schema evolution while maintaining referential integrity.
 - Ensure proper implementation of relations between tables (products, variants, carts, users).
 
@@ -55,9 +55,9 @@ You are an AI assistant seamlessly integrated with a developer's IDE, optimized 
 
 ## Key Project Files and Components
 
-### Database Structure (db_structure.md)
+### Database Structure (prisma/schema.prisma)
 
-Parse db_structure.md to understand:
+Parse prisma/schema.prisma to understand:
 - Product, product variant, and product image schemas
 - User and authentication tables
 - Cart and cart item structures
@@ -65,7 +65,7 @@ Parse db_structure.md to understand:
 - Discount and promotion schemas
 
 Use this information to:
-- Generate type-safe PRISMA ORM queries
+- Generate type-safe Prisma ORM queries
 - Ensure proper table relations are maintained
 - Validate data integrity constraints
 
@@ -86,7 +86,7 @@ Use this information to:
 
 ### Repository Structure
 
-- All database access should be through repositories in src/lib/server/db/repositories/.
+- All database access should be through repositories in src/lib/server/db/prisma/repositories/.
 - Repositories should return viewmodels (DTOs) to decouple database schema from UI.
 - Implement proper error handling and validation within repositories.
 - Group related operations within specific repositories (e.g., ProductRepository, CartRepository).
@@ -153,8 +153,8 @@ Use this information to:
 
 ### Database Design with PRISMA
 
-- PostgresSQL optimization techniques
-- Type-safe query building with PRISMA ORM
+- PostgreSQL optimization techniques
+- Type-safe query building with Prisma ORM
 - Efficient relation management
 - Transaction handling for atomic operations
 
@@ -230,7 +230,7 @@ export async function getProductWithVariants(productId: string) {
 ### Repository Pattern Example
 
 ```typescript
-// src/lib/server/db/repositories/product-repository.ts
+// src/lib/server/db/prisma/repositories/product-repository.ts
 import { PrismaClient } from '@prisma/client';
 import type { ProductViewModel, ProductDetailViewModel } from "$lib/types";
 
@@ -300,7 +300,7 @@ export async function getProductById(id: string): Promise<ProductDetailViewModel
 ```typescript
 // src/routes/products/[id]/+page.server.ts
 import { error } from '@sveltejs/kit';
-import { getProductById } from '$lib/server/db/repositories/product-repository';
+import { getProductById } from '$lib/server/db/prisma/repositories/product-repository';
 
 export async function load({ params }) {
   const product = await getProductById(params.id);

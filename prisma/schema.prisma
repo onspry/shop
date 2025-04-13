@@ -17,6 +17,7 @@ enum Provider {
   google
   github
   microsoft
+  facebook
 }
 
 enum UserStatus {
@@ -239,6 +240,7 @@ model CartItem {
   @@index([cartId])
   @@index([productId])
   @@index([variantId])
+  @@index([cartId, variantId]) // Composite index for faster lookups
 }
 
 // Discount Model

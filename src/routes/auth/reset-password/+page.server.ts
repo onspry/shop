@@ -15,7 +15,7 @@ import {
 import { superValidate, message } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { passwordUpdateSchema } from '$lib/schemas/auth';
-import { userRepo } from "$lib/server/db/db_drizzle/repositories/user";
+import { userRepository } from "$lib/server/db/prisma/repositories/user-repository";
 
 import type { Actions, PageServerLoad } from "./$types";
 
@@ -94,7 +94,7 @@ export const actions: Actions = {
             await invalidateUserSessions(passwordResetSession.userId);
 
             // Update password
-            await userRepo.updatePassword(passwordResetSession.userId, password);
+            await userRepository.updatePassword(passwordResetSession.userId, password);
 
             // Create new session
             const sessionToken = generateSessionToken();

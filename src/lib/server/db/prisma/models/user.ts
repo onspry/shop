@@ -14,8 +14,21 @@ export interface UserViewModel {
 export interface UserDetailViewModel extends UserViewModel {
     provider: string;
     providerId: string;
+    passwordHash?: string | null;
     stripeCustomerId?: string | null;
     lastLoginAt?: Date | null;
     createdAt: Date;
     updatedAt: Date;
-} 
+}
+
+// ViewModel for user authentication information
+export interface UserAuthViewModel {
+    id: string;
+    email: string;
+    passwordHash?: string | null;
+    provider: string;
+    providerId: string;
+    emailVerified: boolean;
+    status: string;
+    lastLoginAt?: Date | null;
+}

@@ -5,7 +5,7 @@ import type { PageServerLoad } from './$types';
 import { emailSchema } from '$lib/schemas/auth';
 import { shippingSchema } from '$lib/schemas/shipping';
 import { paymentSchema } from '$lib/schemas/payment';
-import { OrderRepository } from '$lib/server/db/db_drizzle/repositories/order';
+import { OrderRepository } from '$lib/server/db/prisma/repositories/order-repository';
 import type { CreateOrderViewModel, OrderItemViewModel } from '$lib/server/db/prisma/models/order';
 import { cartRepository } from '$lib/server/db/prisma/repositories/cart-repository';
 

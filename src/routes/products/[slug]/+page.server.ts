@@ -1,4 +1,4 @@
-import { productRepo } from '$lib/server/db/db_drizzle/repositories/product';
+import { productRepository } from '$lib/server/db/prisma/repositories/product-repository';
 import type { ProductViewModel } from '$lib/server/db/prisma/models/product';
 import type { PageServerLoad } from './$types';
 import { fail } from '@sveltejs/kit';
@@ -6,14 +6,16 @@ import type { Actions } from './$types';
 import { cartRepository } from '$lib/server/db/prisma/repositories/cart-repository';
 
 export const load: PageServerLoad = async ({ params, url }) => {
-    const result = await productRepo.getProduct(params.slug);
+    const result = await productRepository.getProduct(params.slug);
 
     // If this is a keyboard, fetch compatible switches and keycaps
     let switches: ProductViewModel[] = [];
     let keycaps: ProductViewModel[] = [];
     if (result.product.category === 'KEYBOARD') {
-        switches = await productRepo.getProductsByCategory('SWITCH');
-        keycaps = await productRepo.getProductsByCategory('KEYCAP');
+        const switchesResult = await productRepository.getProductsByCategory('SWITCH');
+        switches = switchesResult.products;
+        const keycapsResult = await productRepository.getProductsByCategory('KEYCAP');
+        keycaps = keycapsResult.products;
     }
 
     return {
@@ -87,4 +89,4 @@ export const actions: Actions = {
             return fail(500, { message: errorMessage });
         }
     }
-}; 
+};

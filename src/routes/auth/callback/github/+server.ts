@@ -1,11 +1,11 @@
 import { generateSessionToken, createSession } from "$lib/server/auth/session";
-import { userRepo } from "$lib/server/db/db_drizzle/repositories/user";
 import { github } from "$lib/server/auth/oauth";
 import { randomUUID } from 'crypto';
 import type { RequestEvent } from "@sveltejs/kit";
 import type { OAuth2Tokens } from "arctic";
-import { Providers } from "$lib/server/db_drizzle/schema";
+import { Providers } from "$lib/constants";
 import { cartRepository } from "$lib/server/db/prisma/repositories/cart-repository";
+import { userRepository } from "$lib/server/db/prisma/repositories/user-repository";
 
 export async function GET(event: RequestEvent): Promise<Response> {
     // Get the stored redirect URL from the cookie
@@ -66,7 +66,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
     }
 
     // First check for existing user by provider ID
-    const existingUser = await userRepo.getByProviderId(Providers.GITHUB, githubUserId.toString());
+    const existingUser = await userRepository.getUserByProviderAndProviderId(Providers.github, githubUserId.toString());
     if (existingUser) {
         // Set auth session token
         const sessionToken = generateSessionToken();
@@ -106,7 +106,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
     }
 
     // If no user found by provider ID, check by email
-    const existingUserByEmail = await userRepo.getByEmail(githubUser.email);
+    const existingUserByEmail = await userRepository.getUserByEmail(githubUser.email);
     if (existingUserByEmail) {
         // Redirect with more detailed error information
         const searchParams = new URLSearchParams({
@@ -125,23 +125,15 @@ export async function GET(event: RequestEvent): Promise<Response> {
     }
 
     // Create new user
-    const newUser = await userRepo.create({
-        id: randomUUID(),
-        provider: Providers.GITHUB,
-        providerId: githubUserId.toString(),
-        email: githubUser.email,
-        firstname: githubUser.name ? githubUser.name.split(' ')[0] : githubUser.login,
-        lastname: githubUser.name ? githubUser.name.split(' ').slice(1).join(' ') : '',
-        image: githubUser.avatar_url,
-        status: 'active',
-        emailVerified: true,
-        passwordHash: null,
-        isAdmin: false,
-        stripeCustomerId: null,
-        lastLoginAt: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date()
-    });
+    const newUser = await userRepository.createUser({
+        Providers.github,
+        githubUserId.toString(),
+        githubUser.email,
+        githubUser.name ? githubUser.name.split(' ')[0] : githubUser.login,
+        githubUser.name ? githubUser.name.split(' ').slice(1).join(' ') : '',
+        githubUser.avatar_url
+    }
+    );
 
     // Set auth session token
     const sessionToken = generateSessionToken();

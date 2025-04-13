@@ -6,7 +6,7 @@ import {
 import { fail, redirect } from "@sveltejs/kit";
 import { checkEmailAvailability, verifyEmailInput } from "$lib/server/auth/email";
 import { verifyPasswordHash, verifyPasswordStrength } from "$lib/server/auth/password";
-import { userRepo } from "$lib/server/db/db_drizzle/repositories/user";
+import { userRepository } from "$lib/server/db/prisma/repositories/user-repository";
 import {
     createSession,
     generateSessionToken,
@@ -60,7 +60,7 @@ async function updatePasswordAction(event: RequestEvent) {
         });
     }
 
-    const passwordHash = await userRepo.getPasswordHash(event.locals.user.id);
+    const passwordHash = await userRepository.getPasswordHash(event.locals.user.id);
     if (!passwordHash) {
         return fail(400, {
             password: {
@@ -77,7 +77,7 @@ async function updatePasswordAction(event: RequestEvent) {
         });
     }
     invalidateUserSessions(event.locals.user.id);
-    await userRepo.updatePassword(event.locals.user.id, newPassword);
+    await userRepository.updatePassword(event.locals.user.id, newPassword);
 
     const sessionToken = generateSessionToken();
     const session = await createSession(sessionToken, event.locals.user.id);

@@ -1,11 +1,11 @@
 import type { PageServerLoad } from './$types';
-import { productRepo } from '$lib/server/db/db_drizzle/repositories/product';
+import { productRepository } from '$lib/server/db/prisma/repositories/product-repository';
 
 export const load: PageServerLoad = async ({ url }) => {
     const page = parseInt(url.searchParams.get('page') || '1', 10);
     const pageSize = parseInt(url.searchParams.get('size') || '12', 10);
 
-    const catalogue = await productRepo.getCatalogue(page, pageSize);
+    const catalogue = await productRepository.getCatalogue(page, pageSize);
 
     return {
         catalogue

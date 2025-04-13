@@ -1,5 +1,5 @@
 import type { ProductViewModel, ProductVariantViewModel } from '$lib/server/db/prisma/models/product';
-import type { ProductImage } from '$lib/server/db_drizzle/schema/product_image';
+import type { ProductImage } from '@prisma/client';
 import { writable, derived } from 'svelte/store';
 
 // Create writable store with persistent tracking

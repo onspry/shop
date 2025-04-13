@@ -5,7 +5,7 @@ import { loginSchema } from '$lib/schemas/auth';
 import type { PageServerLoad, Actions } from "./$types";
 import { verifyPasswordHash } from "$lib/server/auth/password";
 import { createSession, generateSessionToken, setSessionTokenCookie } from "$lib/server/auth/session";
-import { userRepo } from "$lib/server/db/db_drizzle/repositories/user";
+import { userRepository } from "$lib/server/db/prisma/repositories/user-repository";
 import { cartRepository } from "$lib/server/db/prisma/repositories/cart-repository";
 
 export const load: PageServerLoad = async ({ locals, url }) => {
@@ -46,7 +46,7 @@ export const actions: Actions = {
 
         const { email, password } = form.data;
 
-        const user = await userRepo.getByEmail(email);
+        const user = await userRepository.getUserByEmail(email);
         if (!user) {
             const errorForm = await superValidate(
                 { ...form.data, password: '' }, // Clear password for security
@@ -60,7 +60,7 @@ export const actions: Actions = {
             );
         }
 
-        const passwordHash = await userRepo.getPasswordHash(user.id);
+        const passwordHash = await userRepository.getPasswordHash(user.id);
         if (!passwordHash) {
             const errorForm = await superValidate(
                 { ...form.data, password: '' }, // Clear password for security

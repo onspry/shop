@@ -1,4 +1,4 @@
-import { userRepo } from "$lib/server/db/db_drizzle/repositories/user";
+import { userRepository } from "$lib/server/db/prisma/repositories/user-repository";
 import {
     createPasswordResetSession,
     invalidateUserPasswordResetSessions,
@@ -35,7 +35,7 @@ export const actions: Actions = {
 
         const { email } = form.data;
 
-        const user = await userRepo.getByEmail(email);
+        const user = await userRepository.getUserByEmail(email);
         if (!user) {
             console.log("[Forgot Password] User not found:", email);
             return message(form, "Account not found", { status: 400 });
@@ -68,6 +68,6 @@ export const actions: Actions = {
 
         // Redirect outside the try/catch block
         console.log("[Forgot Password] Redirecting to verify email");
-        redirect(303, "/auth/reset-password/verify-email");
+        throw redirect(303, "/auth/reset-password/verify-email");
     }
 };

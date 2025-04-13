@@ -8,7 +8,7 @@ import {
     setEmailVerificationRequestCookie
 } from "$lib/server/auth/email-verification";
 //import { invalidateUserPasswordResetSessions } from "$lib/server/auth/password-reset";
-import { userRepo } from "$lib/server/db/db_drizzle/repositories/user";
+import { userRepository } from "$lib/server/db/prisma/repositories/user-repository";
 import { rateLimit } from "$lib/server/auth/rate-limit";
 import { validateVerificationCode } from "$lib/server/auth/validation";
 
@@ -113,7 +113,7 @@ export const actions: Actions = {
         // Success - update user and clean up
         await Promise.all([
             deleteUserEmailVerificationRequest(event.locals.user.id),
-            userRepo.updateEmailAndSetVerified(event.locals.user.id, verificationRequest.email)
+            userRepository.updateEmailAndSetVerified(event.locals.user.id, verificationRequest.email)
         ]);
 
         deleteEmailVerificationRequestCookie(event);

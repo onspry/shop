@@ -3,7 +3,7 @@ import { superValidate, message } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { registerSchema } from '$lib/schemas/auth';
 import { randomUUID } from 'crypto';
-import { userRepo } from '$lib/server/db/db_drizzle/repositories/user';
+import { userRepository } from "$lib/server/db/prisma/repositories/user-repository";
 import { hashPassword } from '$lib/server/auth/password';
 import { createSession, generateSessionToken, setSessionTokenCookie } from '$lib/server/auth/session';
 import {
@@ -44,7 +44,7 @@ export const actions: Actions = {
         const { firstName, lastName, email, password } = form.data;
 
         // Check if email is already taken
-        if (await userRepo.isEmailTaken(email)) {
+        if (await userRepository.isEmailTaken(email)) {
             const errorForm = await superValidate(
                 { ...form.data, password: '' }, // Clear password for security
                 zod(registerSchema)
@@ -59,14 +59,14 @@ export const actions: Actions = {
 
         try {
             const id = randomUUID();
-            const user = await userRepo.create({
+            const user = await userRepository.createUser({
                 id: id,
                 provider: 'credentials',
                 providerId: id,
                 email: email,
                 image: null,
-                firstname: firstName,
-                lastname: lastName,
+                firstName: firstName,
+                lastName: lastName,
                 passwordHash: await hashPassword(password),
                 emailVerified: false,
                 isAdmin: false,
