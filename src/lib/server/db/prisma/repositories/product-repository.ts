@@ -1,10 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import type { Product, ProductVariant, ProductImage } from '@prisma/client';
-import type {
-    ProductViewModel,
-    ProductVariantViewModel
-} from '../models/product/index';
-import type { CatalogueViewModel, ProductGroup } from '../models/product/catalogue-view-model';
+import type { ProductViewModel, ProductVariantViewModel } from '../models/product';
+import type { CatalogueViewModel, ProductGroup } from '../models/catalogue';
 
 const prisma = new PrismaClient();
 

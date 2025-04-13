@@ -105,7 +105,7 @@
 							<div class="flex justify-between items-start">
 								<div>
 									<CardTitle class="text-lg">
-										{m.orders_order_number({ number: order.id })}
+										{m.orders_order_number({ number: order.orderNumber })}
 									</CardTitle>
 									<p class="text-sm text-muted-foreground">
 										{m.orders_placed_on({ date: new Date(order.createdAt).toLocaleDateString() })}

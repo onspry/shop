@@ -1,5 +1,4 @@
 import { PrismaClient, UserStatus, Provider, type User } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
 import type { UserViewModel, UserDetailViewModel, UserAuthViewModel } from '../models/user';
 import { hashPassword } from '$lib/server/auth/password';
 
@@ -7,6 +6,8 @@ import { hashPassword } from '$lib/server/auth/password';
 function mapToUserViewModel(user: User): UserViewModel {
   return {
     id: user.id,
+    provider: user.provider.toString(), // Convert enum to string for the view model
+    providerId: user.providerId,
     email: user.email,
     firstName: user.firstName,
     lastName: user.lastName,
@@ -20,25 +21,10 @@ function mapToUserViewModel(user: User): UserViewModel {
 function mapToUserDetailViewModel(user: User): UserDetailViewModel {
   return {
     ...mapToUserViewModel(user),
-    provider: user.provider,
-    providerId: user.providerId,
     stripeCustomerId: user.stripeCustomerId,
     lastLoginAt: user.lastLoginAt,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt
-  };
-}
-
-function mapToUserAuthViewModel(user: User): UserAuthViewModel {
-  return {
-    id: user.id,
-    email: user.email,
-    passwordHash: user.passwordHash,
-    provider: user.provider,
-    providerId: user.providerId,
-    emailVerified: user.emailVerified,
-    status: user.status,
-    lastLoginAt: user.lastLoginAt
   };
 }
 
@@ -118,11 +104,11 @@ export const userRepository = {
     }
   },
 
-  async createUser(newUser: UserDetailViewModel): Promise<UserDetailViewModel> {
+  async createUser(newUser: UserAuthViewModel): Promise<UserDetailViewModel> {
     try {
       const user = await prisma.user.create({
         data: {
-          id: uuidv4(),
+          id: newUser.id,
           provider: newUser.provider as Provider,
           providerId: newUser.providerId,
           email: newUser.email,
@@ -131,8 +117,9 @@ export const userRepository = {
           image: newUser.image,
           passwordHash: newUser.passwordHash,
           emailVerified: newUser.emailVerified,
-          isAdmin: newUser.isAdmin,
-          lastLoginAt: new Date()
+          isAdmin: false,
+          lastLoginAt: new Date(),
+          status: 'active' as UserStatus // Set initial status to active
         }
       });
 
@@ -173,18 +160,15 @@ export const userRepository = {
     }
   },
 
-  async updateLastLogin(id: string): Promise<void> {
+  async updateLastLogin(userId: string): Promise<void> {
     try {
       await prisma.user.update({
-        where: { id },
-        data: {
-          lastLoginAt: new Date(),
-          updatedAt: new Date()
-        }
+        where: { id: userId },
+        data: { lastLoginAt: new Date() }
       });
     } catch (error) {
       console.error('Failed to update last login:', error);
-      throw new Error('Failed to update last login time');
+      throw new Error('Failed to update last login timestamp');
     }
   },
 
@@ -203,24 +187,6 @@ export const userRepository = {
     } catch (error) {
       console.error('Failed to get password hash:', error);
       throw new Error('Failed to retrieve password hash');
-    }
-  },
-
-  /**
-   * Gets user authentication information
-   * @param id - The user ID
-   * @returns User authentication information or null if not found
-   */
-  async getUserAuthInfo(id: string): Promise<UserAuthViewModel | null> {
-    try {
-      const user = await prisma.user.findUnique({
-        where: { id }
-      });
-      if (!user) return null;
-      return mapToUserAuthViewModel(user);
-    } catch (error) {
-      console.error('Failed to get user authentication info:', error);
-      throw new Error('Failed to retrieve user authentication information');
     }
   },
 

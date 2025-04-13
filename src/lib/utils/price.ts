@@ -45,20 +45,3 @@ export function toDollars(price: number): number {
 export function calculateTotal(prices: number[]): number {
     return prices.reduce((sum, price) => sum + price, 0);
 }
-
-/**
- * Formats a price range (min and max prices)
- * @param minPrice - Minimum price in cents
- * @param maxPrice - Maximum price in cents
- * @param locale - Locale for formatting (defaults to 'en-US')
- * @param currency - Currency code (defaults to 'USD')
- * @returns Formatted price range string
- */
-export function formatPriceRange(
-    minPrice: number,
-    maxPrice: number,
-    locale: string = 'en-US',
-    currency: string = 'USD'
-): string {
-    return `${formatPrice(minPrice, locale, currency)} - ${formatPrice(maxPrice, locale, currency)}`;
-} 

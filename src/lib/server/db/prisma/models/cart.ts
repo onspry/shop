@@ -1,4 +1,4 @@
-import type { ProductVariantViewModel } from './product';
+import type { ProductVariantViewModel } from "./product";
 
 export interface CartItemCompositeViewModel {
     variantId: string;

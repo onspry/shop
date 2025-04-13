@@ -4,10 +4,13 @@ import { OrderRepository } from '$lib/server/db/prisma/repositories/order-reposi
 
 export const load: PageServerLoad = async ({ params, locals }) => {
     const { orderId } = params;
+    console.log('Loading order confirmation page for order ID:', orderId);
 
     try {
         const orderRepo = new OrderRepository();
+        console.log('Fetching order with ID:', orderId);
         const order = await orderRepo.getOrderById(orderId);
+        console.log('Order found:', order ? 'Yes' : 'No');
 
         if (!order) {
             throw error(404, {

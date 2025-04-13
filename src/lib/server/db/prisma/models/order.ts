@@ -67,6 +67,7 @@ export interface CreateOrderViewModel {
  */
 export interface OrderViewModel {
     id: string;
+    orderNumber: string; // Formatted order number for display
     status: OrderStatus | string;
     total: number;
     subtotal: number;

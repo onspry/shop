@@ -177,7 +177,15 @@
 
 					{#if $message}
 						<div class="text-sm text-destructive">
-							{$message}
+							{#if typeof $message === 'string'}
+								{$message}
+							{:else if typeof $message === 'object'}
+								{#each Object.entries($message) as [field, error]}
+									<p>{error}</p>
+								{/each}
+							{:else}
+								An error occurred during login
+							{/if}
 						</div>
 					{/if}
 

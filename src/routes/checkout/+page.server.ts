@@ -5,10 +5,21 @@ import type { PageServerLoad } from './$types';
 import { emailSchema } from '$lib/schemas/auth';
 import { shippingSchema } from '$lib/schemas/shipping';
 import { paymentSchema } from '$lib/schemas/payment';
-import { OrderRepository } from '$lib/server/db/prisma/repositories/order-repository';
+import { OrderRepository, isValidOrderItem, mapCartItemToOrderItem } from '$lib/server/db/prisma/repositories/order-repository';
 import type { CreateOrderViewModel, OrderItemViewModel } from '$lib/server/db/prisma/models/order';
 import { cartRepository } from '$lib/server/db/prisma/repositories/cart-repository';
+import type { CartItemViewModel } from '$lib/server/db/prisma/models/cart';
 
+
+// Helper function to validate and transform cart items for the client
+function validateAndTransformCartItems(cart: { items: CartItemViewModel[] }) {
+    console.log('Validating cart items:', cart.items.length);
+    const mappedItems = cart.items.map(item => mapCartItemToOrderItem(item));
+    console.log('Mapped items:', mappedItems.length);
+    const validItems = mappedItems.filter(item => isValidOrderItem(item));
+    console.log('Valid items:', validItems.length);
+    return validItems;
+}
 
 export const load: PageServerLoad = async ({ cookies, locals }) => {
     // Get session or user ID
@@ -29,6 +40,9 @@ export const load: PageServerLoad = async ({ cookies, locals }) => {
             throw redirect(303, '/cart');
         }
 
+        // Validate and transform cart items for the client
+        const validOrderItems = validateAndTransformCartItems(cartData);
+
         // Create forms for non-authenticated users
         const emailForm = await superValidate(zod(emailSchema));
         const shippingForm = await superValidate(zod(shippingSchema));
@@ -36,6 +50,7 @@ export const load: PageServerLoad = async ({ cookies, locals }) => {
 
         return {
             cart: cartData,
+            validOrderItems,
             emailForm,
             shippingForm,
             paymentForm
@@ -51,6 +66,7 @@ export const actions = {
         const formData = await request.formData();
 
         try {
+            console.log('Processing order submission...');
             // Extract order data from form
             const email = formData.get('email')?.toString();
             const firstName = formData.get('firstName')?.toString();
@@ -58,7 +74,7 @@ export const actions = {
             const addressLine1 = formData.get('addressLine1')?.toString();
             const addressLine2 = formData.get('addressLine2')?.toString();
             const city = formData.get('city')?.toString();
-            const state = formData.get('state')?.toString();
+            const state = formData.get('state')?.toString() || ''; // Default to empty string if not provided
             const postalCode = formData.get('postalCode')?.toString();
             const country = formData.get('country')?.toString();
             const shippingMethod = formData.get('shippingMethod')?.toString();
@@ -69,13 +85,33 @@ export const actions = {
             const discountAmount = parseFloat(formData.get('discountAmount')?.toString() || '0');
             const itemsJson = formData.get('items')?.toString();
 
-            // Validate required fields
-            if (!email || !firstName || !lastName || !addressLine1 || !city || !state || !postalCode || !country || !shippingMethod || !itemsJson) {
+            // Log form data for debugging
+            console.log('Form data received:', {
+                email, firstName, lastName, addressLine1, city, state, postalCode, country,
+                shippingMethod, shippingCost, cartId, subtotal, taxAmount, discountAmount,
+                itemsJson: itemsJson ? `${itemsJson.substring(0, 100)}...` : undefined
+            });
+
+            // Validate required fields - note that state might be optional for some countries
+            if (!email || !firstName || !lastName || !addressLine1 || !city || !postalCode || !country || !shippingMethod || !itemsJson) {
+                console.error('Missing required data:', { email, firstName, lastName, addressLine1, city, postalCode, country, shippingMethod, itemsJson: !!itemsJson });
                 return { success: false, error: 'Missing required data' };
             }
 
+            // State is already handled with a default empty string
+
             // Parse items with proper typing
-            const items = JSON.parse(itemsJson) as OrderItemViewModel[];
+            let items: OrderItemViewModel[] = [];
+            try {
+                items = JSON.parse(itemsJson) as OrderItemViewModel[];
+                // Validate that we have at least one valid item
+                if (!items || items.length === 0) {
+                    return { success: false, error: 'No valid items in cart' };
+                }
+            } catch (e) {
+                console.error('Error parsing items JSON:', e);
+                return { success: false, error: 'Invalid items data' };
+            }
 
             // Create order data with proper typing
             const orderData: CreateOrderViewModel = {
@@ -112,15 +148,22 @@ export const actions = {
             const orderRepository = new OrderRepository();
             const order = await orderRepository.createOrder(orderData);
 
+            // Log the created order
+            console.log('Created order:', order);
+            console.log('Order ID:', order.id);
+
             // Clear cart after successful order creation
             await cartRepository.clearCart(cartId);
 
             // Return just the order data
             // SvelteKit will automatically wrap it in a response object
-            return {
+            const response = {
                 success: true,
                 orderId: order.id
             };
+
+            console.log('Returning response:', response);
+            return response;
         } catch (error) {
             console.error('Error creating order:', error);
             // Provide a more descriptive error message

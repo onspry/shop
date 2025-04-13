@@ -2,6 +2,7 @@ import { PrismaClient, type Order, type OrderItem, type OrderAddress, type Order
 import { randomUUID } from 'crypto';
 import type { CreateOrderViewModel, OrderViewModel, OrderItemViewModel } from '$lib/server/db/prisma/models/order';
 import type { CartItemViewModel } from '$lib/server/db/prisma/models/cart';
+import { formatOrderNumber } from '$lib/utils/order';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -13,7 +14,7 @@ const prisma = new PrismaClient();
  */
 export function isValidOrderItem(item: OrderItemViewModel): boolean {
     // Log the validation check
-    console.log('Validating order item:', item);
+    console.log('Validating order item:', JSON.stringify(item, null, 2));
 
     // Strict validation for all required fields
     const isValid = Boolean(
@@ -128,9 +129,13 @@ export class OrderRepository {
             throw new Error('Shipping name is required');
         }
         if (!data.shipping.address.address1 || !data.shipping.address.city ||
-            !data.shipping.address.state || !data.shipping.address.postalCode ||
-            !data.shipping.address.country) {
+            !data.shipping.address.postalCode || !data.shipping.address.country) {
             throw new Error('Complete shipping address is required');
+        }
+
+        // Ensure state is at least an empty string
+        if (data.shipping.address.state === undefined) {
+            data.shipping.address.state = '';
         }
     }
 
@@ -144,7 +149,9 @@ export class OrderRepository {
         this.validate(data);
 
         const orderId = randomUUID();
+        console.log('Generated new order ID:', orderId);
         const totalAmount = data.subtotal + data.taxAmount + data.shipping.amount - (data.discountAmount || 0);
+        console.log('Calculated total amount:', totalAmount);
 
         try {
             // Use Prisma transaction
@@ -242,20 +249,26 @@ export class OrderRepository {
                 }
             });
 
+            console.log('Transaction completed successfully, fetching order view model');
             const orderViewModel = await this.getOrderById(orderId);
             if (!orderViewModel) {
+                console.error('Failed to get order view model after creation');
                 throw new Error('Failed to create order');
             }
+            console.log('Order view model retrieved successfully');
 
             // Get the full Order record from the database
+            console.log('Fetching full order record from database');
             const createdOrder = await prisma.order.findUnique({
                 where: { id: orderId }
             });
 
             if (!createdOrder) {
+                console.error('Failed to retrieve created order from database');
                 throw new Error('Failed to retrieve created order');
             }
 
+            console.log('Created order retrieved successfully, ID:', createdOrder.id);
             return createdOrder;
         } catch (error) {
             console.error('Error creating order:', error);
@@ -274,6 +287,7 @@ export class OrderRepository {
 
         return {
             id: orderData.id,
+            orderNumber: formatOrderNumber(orderData.id, orderData.createdAt),
             status: orderData.status,
             total: orderData.total,
             subtotal: orderData.subtotal,
@@ -316,6 +330,7 @@ export class OrderRepository {
      */
     async getOrderById(id: string): Promise<OrderViewModel | null> {
         try {
+            console.log('Repository: Getting order by ID:', id);
             const result = await prisma.order.findUnique({
                 where: { id },
                 include: {
@@ -328,10 +343,24 @@ export class OrderRepository {
                 }
             }) as OrderQueryResult | null;
 
-            if (!result) return null;
-            if (!result.items?.length || !result.addresses?.length) return null;
+            console.log('Repository: Order query result:', result ? 'Found' : 'Not found');
 
-            return this.mapToViewModel(result);
+            if (!result) {
+                console.log('Repository: Order not found in database');
+                return null;
+            }
+
+            if (!result.items?.length || !result.addresses?.length) {
+                console.log('Repository: Order found but missing items or addresses');
+                return null;
+            }
+
+            const viewModel = this.mapToViewModel(result);
+            console.log('Repository: Mapped order to view model:', viewModel ? 'Success' : 'Failed');
+            console.log('Repository: Order ID in view model:', viewModel?.id);
+            console.log('Repository: Order number in view model:', viewModel?.orderNumber);
+
+            return viewModel;
         } catch (error) {
             console.error(`Error getting order ${id}:`, error);
             return null;

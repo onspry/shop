@@ -35,8 +35,7 @@
 	import { countries, addressStructures } from '$lib/config/address-structures';
 	import { checkoutStore } from '$lib/stores/checkout';
 	import { cart } from '$lib/stores/cart';
-	import { isValidOrderItem, mapCartItemToOrderItem } from '$lib/server/db/prisma/repositories/order-repository';
-	import type { OrderResponseData } from '$lib/server/db/prisma/models/checkout';
+	import type { OrderResponseData, OrderItemType } from '$lib/types/order';
 	import { cartActions } from '$lib/stores/cart';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
@@ -363,20 +362,25 @@
 
 		// Return the enhance callback
 		return async ({ result, update }: { result: any; update: () => void }) => {
-			// Log the server response
+			// Log the server response in detail
 			console.log('Server response:', result);
+			console.log('Response type:', result.type);
+			console.log('Response data:', result.data);
 
 			// Handle the result
 			if (result.type === 'success') {
 				// Get the order data directly from the response
 				const orderData = result.data as OrderResponseData;
 				console.log('Order data:', orderData);
+				console.log('Order success:', orderData.success);
+				console.log('Order ID:', orderData.orderId);
 
 				// Get the order ID
 				const orderId = orderData.orderId;
 
 				// Check if we have a valid order ID
 				if (!orderId) {
+					console.error('No order ID in response:', orderData);
 					toast.dismiss(processingToast);
 					toast.error('No order ID returned from server');
 					return;
@@ -396,8 +400,12 @@
 				// Reset checkout store
 				checkoutStore.reset();
 
+				// Prepare the URL for redirection
+				const confirmationUrl = `/orders/confirmation/${orderId}`;
+				console.log('Redirecting to:', confirmationUrl);
+
 				// Redirect immediately to the order confirmation page
-				goto(`/orders/confirmation/${orderId}`);
+				goto(confirmationUrl);
 			} else {
 				// Handle error
 				toast.dismiss(processingToast);
@@ -441,8 +449,11 @@
 		}
 	}
 
-	// Simplify handleCountryChange - Postal code revalidation moved here
+	// Handle country change with proper field reset
 	async function handleCountryChange(value: string) {
+		// Store the previous country for comparison
+		const previousCountry = $shippingForm.country;
+
 		// Update shipping form country
 		$shippingForm.country = value;
 
@@ -452,8 +463,20 @@
 			country: value
 		};
 
-		// Revalidate postal code with new country rules
-		await validateShipping('postalCode');
+		// If the country has changed, reset the postal code field
+		// This prevents validation errors when switching countries
+		if (previousCountry !== value) {
+			// Clear the postal code value
+			$shippingForm.postalCode = '';
+
+			// Update the store
+			checkoutStore.updateShippingConfig({
+				postalCode: ''
+			});
+
+			// Clear any existing postal code validation errors
+			$shippingErrors.postalCode = undefined;
+		}
 	}
 </script>
 
@@ -837,9 +860,15 @@
 											{...props}
 											bind:value={$shippingForm.postalCode}
 											onblur={async () => {
-												await validateShipping('postalCode');
+												// Only validate if there's a value
+												if ($shippingForm.postalCode && $shippingForm.postalCode.trim() !== '') {
+													await validateShipping('postalCode');
+												}
 											}}
 											oninput={() => {
+												// Clear validation errors when user starts typing
+												$shippingErrors.postalCode = undefined;
+
 												checkoutStore.updateShippingConfig({
 													postalCode: $shippingForm.postalCode
 												});
@@ -1479,11 +1508,26 @@
 							<input type="hidden" name="cartId" value={$cart.id || 'guest-cart'} />
 
 							<!-- Cart items -->
-							{#if $cart.items}
+							{#if data.validOrderItems && data.validOrderItems.length > 0}
 								<input
 									type="hidden"
 									name="items"
-									value={JSON.stringify($cart.items.map(item => mapCartItemToOrderItem(item)).filter(item => isValidOrderItem(item)))}
+									value={JSON.stringify(data.validOrderItems)}
+								/>
+							{:else}
+								<!-- Fallback for when validOrderItems is not available -->
+								<input
+									type="hidden"
+									name="items"
+									value={JSON.stringify($cart.items.map(item => ({
+										productId: item.variant.product?.id || '',
+										variantId: item.variant.id,
+										quantity: item.quantity,
+										price: item.price,
+										unitPrice: item.price,
+										productName: item.variant.product?.name || item.variant.name,
+										variantName: item.variant.name
+									})))}
 								/>
 							{/if}
 						{/if}
@@ -1492,6 +1536,21 @@
 							type="submit"
 							class="w-full relative overflow-hidden group transition-all duration-300 hover:shadow-lg"
 							size="lg"
+							onclick={async (e) => {
+								// Validate postal code before submission
+								if ($shippingForm.postalCode && $shippingForm.postalCode.trim() !== '') {
+									const isValid = await validateShipping('postalCode');
+									if (!isValid) {
+										// Prevent form submission if postal code is invalid
+										e.preventDefault();
+										// Scroll to the postal code field
+										const postalCodeField = document.querySelector('[name="postalCode"]');
+										if (postalCodeField) {
+											postalCodeField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+										}
+									}
+								}
+							}}
 							disabled={!checkout.emailValidated ||
 								!checkout.shippingValidated ||
 								!checkout.paymentValidated}

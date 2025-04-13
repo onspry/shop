@@ -1,4 +1,4 @@
-import type { ProductViewModel } from './product-view-model';
+import type { ProductViewModel } from './product';
 
 export interface ProductGroup {
     category: string;

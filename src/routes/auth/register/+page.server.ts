@@ -11,6 +11,7 @@ import {
     sendVerificationEmail,
     setEmailVerificationRequestCookie
 } from "$lib/server/auth/email-verification";
+import { Providers } from "$lib/constants";
 
 import type { Actions, PageServerLoad } from "./$types";
 
@@ -61,7 +62,7 @@ export const actions: Actions = {
             const id = randomUUID();
             const user = await userRepository.createUser({
                 id: id,
-                provider: 'credentials',
+                provider: Providers.email, // Use the Provider enum from Prisma
                 providerId: id,
                 email: email,
                 image: null,
@@ -70,11 +71,7 @@ export const actions: Actions = {
                 passwordHash: await hashPassword(password),
                 emailVerified: false,
                 isAdmin: false,
-                stripeCustomerId: `e_${id}`,
                 status: 'active',
-                lastLoginAt: new Date(),
-                createdAt: new Date(),
-                updatedAt: new Date()
             });
 
             const emailVerificationRequest = await createEmailVerificationRequest(user.id, user.email);

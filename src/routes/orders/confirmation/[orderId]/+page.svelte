@@ -32,7 +32,7 @@
 		</div>
 		<h1 class="text-3xl font-bold mb-2">{m.order_confirmation_thank_you()}</h1>
 		<p class="text-xl text-muted-foreground">
-			{m.order_confirmation_number({ number: order.id })}
+			{m.order_confirmation_number({ number: order.orderNumber })}
 		</p>
 		<p class="text-muted-foreground mt-2">
 			{m.order_confirmation_email_sent()}

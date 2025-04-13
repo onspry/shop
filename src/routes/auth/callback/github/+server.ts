@@ -126,12 +126,16 @@ export async function GET(event: RequestEvent): Promise<Response> {
 
     // Create new user
     const newUser = await userRepository.createUser({
-        Providers.github,
-        githubUserId.toString(),
-        githubUser.email,
-        githubUser.name ? githubUser.name.split(' ')[0] : githubUser.login,
-        githubUser.name ? githubUser.name.split(' ').slice(1).join(' ') : '',
-        githubUser.avatar_url
+        providerId: githubUser.id.toString(),
+        provider: Providers.github,
+        id: githubUserId.toString(),
+        email: githubUser.email,
+        firstName: githubUser.name ? githubUser.name.split(' ')[0] : githubUser.login,
+        lastName: githubUser.name ? githubUser.name.split(' ').slice(1).join(' ') : '',
+        image: githubUser.avatar_url,
+        emailVerified: false,
+        status: "active",
+        isAdmin: false
     }
     );
 
