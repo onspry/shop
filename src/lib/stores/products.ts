@@ -221,7 +221,7 @@ export function isKeyboardLoaded(keyboardId: string) {
 }
 
 // Image-related functions
-export function setImages(newImages: ProductImage[]) {
+export function setImages(newImages: ProductImageViewModel[]) {
     store.update(state => ({
         ...state,
         images: newImages
@@ -229,7 +229,7 @@ export function setImages(newImages: ProductImage[]) {
 }
 
 export function getProductImages(productId: string) {
-    let result: ProductImage[] = [];
+    let result: ProductImageViewModel[] = [];
     store.subscribe(state => {
         result = state.images.filter(img => img.productId === productId);
     })();

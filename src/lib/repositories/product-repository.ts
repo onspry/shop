@@ -63,7 +63,8 @@ function toProductViewModel(product: Product & {
             id: img.id,
             url: img.url,
             alt: img.alt,
-            position: img.position
+            position: img.position,
+            productId: img.productId
         })),
         variants: product.variants.map(toProductVariantViewModel),
         isAccessory: product.isAccessory,
