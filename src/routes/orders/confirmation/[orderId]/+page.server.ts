@@ -1,4 +1,4 @@
-import { error } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { OrderRepository } from '$lib/repositories/order-repository';
 
@@ -20,10 +20,16 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
         // Check if user is logged in and if the order belongs to them
         const user = locals.user;
+
+        // If no user is logged in, redirect to the simple confirmation page
+        if (!user) {
+            throw redirect(303, '/orders/confirmation/simple');
+        }
+
+        // If the order doesn't belong to the logged-in user, redirect to orders page
         if (user && order.shippingAddress.email !== user.email) {
-            // For security, we could verify ownership here
-            // For now, we'll just log it but still return the order
-            console.warn(`User ${user.email} accessing order for ${order.shippingAddress.email}`);
+            console.warn(`User ${user.email} attempting to access order for ${order.shippingAddress.email}`);
+            throw redirect(303, '/orders');
         }
 
         return {

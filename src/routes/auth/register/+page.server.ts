@@ -81,21 +81,24 @@ export const actions: Actions = {
             const sessionToken = generateSessionToken();
             const session = await createSession(sessionToken, user.id);
             setSessionTokenCookie(event.cookies, sessionToken, session.expiresAt);
-
-            throw redirect(302, "/auth/verify-email");
         } catch (error) {
+            // At this point, we know it's a real error
+            // The redirect is returned from the function, not thrown, so it won't be caught here
+
+            // Log the actual error for debugging
             console.error('Registration error:', error);
 
-            const errorForm = await superValidate(
-                { ...form.data, password: '' }, // Clear password for security
-                zod(registerSchema)
-            );
+            // We're using the original form to avoid reading the request body again
+            // But we should clear the password for security in the logs
+            console.log('Form data (without password):', { ...form.data, password: '[REDACTED]' });
 
+            // Return a user-friendly error message
             return message(
-                errorForm,
+                form, // Use the original form to avoid reading the request body again
                 'An error occurred during registration. Please try again.',
                 { status: 500 }
             );
         }
+        return redirect(302, "/auth/verify-email");
     }
 };

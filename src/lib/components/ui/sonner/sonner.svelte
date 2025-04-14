@@ -13,8 +13,7 @@
 			toast:
 				'group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg',
 			description: 'group-[.toast]:text-muted-foreground',
-			actionButton:
-				'group-[.toast]:bg-primary group-[.toast]:text-primary-foreground group-[.toast]:hover:bg-primary/90',
+			actionButton: 'group-[.toast]:bg-primary-foreground group-[.toast]:text-primary',
 			cancelButton: 'group-[.toast]:bg-muted group-[.toast]:text-muted-foreground',
 			success:
 				'group-[.toaster]:bg-primary group-[.toaster]:text-primary-foreground group-[.toaster]:border-primary',
@@ -22,7 +21,8 @@
 			info: 'group-[.toaster]:border-primary/50',
 			warning: 'group-[.toaster]:border-orange-500',
 			loading: 'group-[.toaster]:border-muted'
-		}
+		},
+
 	}}
 	{...restProps}
 />

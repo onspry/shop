@@ -135,13 +135,23 @@
 			{:else}
 				<form
 					method="POST"
-					action={`?/email${redirectTo !== '/' ? `&redirect=${encodeURIComponent(redirectTo)}` : ''}`}
+					action={redirectTo !== '/' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}
 					class="space-y-4"
 					use:enhance
 				>
-					<!-- Hidden input to preserve the redirect parameter -->
-					<input type="hidden" name="redirectTo" value={data.redirectTo} />
-
+					{#if $message}
+					<div class="text-sm text-destructive">
+						{#if typeof $message === 'string'}
+							{$message}
+						{:else if typeof $message === 'object'}
+							{#each Object.entries($message) as [field, error]}
+								<p>{error}</p>
+							{/each}
+						{:else}
+							An error occurred during login
+						{/if}
+					</div>
+					{/if}
 					<div class="grid gap-2">
 						<Label for="email">{m.checkout_email()}</Label>
 						<Input
@@ -173,21 +183,7 @@
 						{#if $errors.password}
 							<p class="text-sm text-destructive">{$errors.password}</p>
 						{/if}
-					</div>
-
-					{#if $message}
-						<div class="text-sm text-destructive">
-							{#if typeof $message === 'string'}
-								{$message}
-							{:else if typeof $message === 'object'}
-								{#each Object.entries($message) as [field, error]}
-									<p>{error}</p>
-								{/each}
-							{:else}
-								An error occurred during login
-							{/if}
-						</div>
-					{/if}
+					</div>				
 
 					<div class="text-sm">
 						<a href="/auth/forgot-password" class="text-muted-foreground hover:text-primary">

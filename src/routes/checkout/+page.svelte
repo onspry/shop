@@ -36,6 +36,7 @@
 	import { checkoutStore } from '$lib/stores/checkout';
 	import { cart } from '$lib/stores/cart';
 	import { cartActions } from '$lib/stores/cart';
+	import { userStore } from '$lib/stores/auth';
 
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
@@ -398,23 +399,18 @@
 		// This prevents validation errors when switching countries
 		if (previousCountry !== value) {
 			// Clear the postal code value
-			$shippingForm.postalCode = '';
+			// $shippingForm.postalCode = '';
 
 			// Update the store
-			checkoutStore.updateShippingConfig({
-				postalCode: ''
-			});
+			// checkoutStore.updateShippingConfig({
+			// 	postalCode: ''
+			// });
 
 			// Clear any existing postal code validation errors
-			$shippingErrors.postalCode = undefined;
+			// $shippingErrors.postalCode = undefined;
 
-			// Focus the postal code field to guide the user
-			const postalCodeField = document.querySelector('[name="postalCode"]') as HTMLInputElement;
-			if (postalCodeField) {
-				setTimeout(() => {
-					postalCodeField.focus();
-				}, 100);
-			}
+			// Don't focus or validate the postal code field on country change
+			// Let the user interact with it when they're ready
 		}
 	}
 </script>
@@ -799,8 +795,10 @@
 											{...props}
 											bind:value={$shippingForm.postalCode}
 											onblur={async () => {
-												// Always validate on blur
-												await validateShipping('postalCode');
+												// Only validate when the user explicitly interacts with the field
+												if (document.activeElement !== document.querySelector('[name="country"]')) {
+													await validateShipping('postalCode');
+												}
 											}}
 											oninput={() => {
 												// Clear validation errors when user starts typing
@@ -1432,8 +1430,18 @@
 										// Reset checkout store
 										checkoutStore.reset();
 
-										// Redirect to confirmation page
-										window.location.href = `/orders/confirmation/${orderId}`;
+										// Check if user is logged in
+										const user = $userStore;
+
+										if (user) {
+											// For logged-in users, redirect to the full order confirmation page
+											// This page is protected and will verify the user has access to this order
+											window.location.href = `/orders/confirmation/${orderId}`;
+										} else {
+											// For guest users, redirect to the simple confirmation page
+											// This doesn't expose the order ID in the URL
+											window.location.href = '/orders/confirmation/simple';
+										}
 									}
 								} else if (result.type === 'failure' && result.data) {
 									// Show error message for failure

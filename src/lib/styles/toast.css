@@ -1,4 +1,4 @@
-/* Custom toast styles */
+/* Toast Styles - Consolidated */
 
 /* Make success toast use primary color */
 [data-sonner-toast][data-type="success"] {
@@ -13,22 +13,29 @@
   color: hsl(var(--primary-foreground)) !important;
 }
 
-/* Style action buttons for all toasts */
-[data-sonner-toast] [data-button] {
-  background-color: hsl(var(--primary-foreground));
-  color: hsl(var(--primary));
-  font-weight: 500;
-  border-radius: 0.25rem;
-  transition: background-color 0.2s ease-in-out;
-}
-
-[data-sonner-toast] [data-button]:hover {
-  background-color: hsl(var(--primary-foreground) / 0.9);
-}
-
 /* Hide close button on all toasts */
 [data-sonner-toast] [data-close-button] {
   display: none !important;
+}
+
+/* Target ALL buttons and links in toasts - this is the key fix */
+[data-sonner-toast] button:not([data-close-button]),
+[data-sonner-toast] a,
+.toast-action {
+  background-color: hsl(var(--primary-foreground)) !important;
+  color: hsl(var(--primary)) !important;
+  font-weight: 500 !important;
+  border-radius: 0.25rem !important;
+  border: none !important;
+  box-shadow: none !important;
+  transition: background-color 0.2s ease-in-out !important;
+}
+
+/* Hover state for buttons */
+[data-sonner-toast] button:not([data-close-button]):hover,
+[data-sonner-toast] a:hover,
+.toast-action:hover {
+  background-color: hsl(var(--primary-foreground) / 0.9) !important;
 }
 
 /* Toaster positioning */
@@ -36,4 +43,4 @@
   --offset: 1.5rem;
   right: var(--offset) !important;
   top: calc(var(--header-height) + var(--offset)) !important;
-} 
+}

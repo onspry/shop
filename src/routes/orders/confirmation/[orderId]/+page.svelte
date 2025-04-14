@@ -4,7 +4,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { formatPrice } from '$lib/utils/price';
-	import { formatDateTime, formatEstimatedDelivery, formatCreditCardNumber } from '$lib/utils/date';
+	import { formatDateTime, formatEstimatedDelivery } from '$lib/utils/date';
 	import { CheckCircle, Package, Truck, ShoppingBag, ArrowRight, CreditCard } from 'lucide-svelte';
 	import * as m from '$lib/paraglide/messages';
 
@@ -15,12 +15,6 @@
 	// Calculate estimated delivery date (7 days from order date)
 	const estimatedDelivery = formatEstimatedDelivery(order.createdAt, 7);
 
-	// Determine payment method display
-	const paymentMethod = {
-		cardType: order.paymentMethod.includes('stripe') ? m.checkout_card_ending() : order.paymentMethod,
-		// In a real implementation, we would extract the last 4 digits from the payment method
-		lastFour: '1234' // Simulating last 4 digits for display
-	};
 
 </script>
 
@@ -181,25 +175,6 @@
 				</CardContent>
 			</Card>
 
-			<!-- Payment Information -->
-			<Card>
-				<CardHeader>
-					<CardTitle class="flex items-center gap-2">
-						<CreditCard class="h-5 w-5" />
-						{m.order_payment_information()}
-					</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<div class="space-y-2">
-						<p>
-							{paymentMethod.cardType} {formatCreditCardNumber(paymentMethod.lastFour)}
-						</p>
-						<p class="text-sm text-muted-foreground">
-							{m.order_billed_to_shipping()}
-						</p>
-					</div>
-				</CardContent>
-			</Card>
 		</div>
 	</div>
 
