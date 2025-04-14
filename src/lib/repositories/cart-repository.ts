@@ -1,6 +1,6 @@
-import { PrismaClient, type Cart, type CartItem, type ProductVariant, type ProductImage, type Product, CartStatus } from '@prisma/client';
+import { PrismaClient, type Cart, type CartItem, type ProductVariant, type ProductImage, type Product } from '@prisma/client';
 import { randomUUID } from 'crypto';
-import type { CartViewModel, CartSummaryViewModel } from '$lib/models/cart';
+import { type CartViewModel, type CartSummaryViewModel, CartStatus } from '$lib/models/cart';
 import { toProductVariantViewModel } from './product-repository';
 import { formatPrice } from '$lib/utils/price';
 
@@ -203,7 +203,7 @@ export class CartRepository {
                     id: randomUUID(),
                     sessionId: sessionId,
                     userId: userId,
-                    status: CartStatus.active
+                    status: CartStatus.ACTIVE // Using enum for type safety
                 }
             });
 
@@ -1153,7 +1153,7 @@ export class CartRepository {
                             id: randomUUID(),
                             sessionId: sessionId,
                             userId: userId,
-                            status: CartStatus.active
+                            status: CartStatus.ACTIVE // Using enum for type safety
                         }
                     });
                 } else {

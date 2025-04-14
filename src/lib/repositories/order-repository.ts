@@ -1,4 +1,6 @@
-import { PrismaClient, OrderStatus, PaymentStatus, TransactionType, type Order, type OrderItem, type OrderStatusHistory, type OrderAddress, type PaymentTransaction, type Refund } from '@prisma/client';
+import { PrismaClient, type Order, type OrderItem, type OrderStatusHistory, type OrderAddress, type PaymentTransaction, type Refund } from '@prisma/client';
+import { TransactionType } from '$lib/models/inventory';
+import { OrderStatus, PaymentStatus } from '$lib/models/order';
 import { randomUUID } from 'crypto';
 import type { CreateOrderViewModel, OrderViewModel, OrderItemViewModel } from '$lib/models/order';
 import type { CartItemViewModel } from '$lib/models/cart';
@@ -162,7 +164,7 @@ export class OrderRepository {
                         id: orderId,
                         userId: data.userId,
                         cartId: data.cartId,
-                        status: OrderStatus.pending_payment,
+                        status: OrderStatus.PENDING_PAYMENT,
                         email: data.shipping.address.email,
                         firstName: data.shipping.address.firstName,
                         lastName: data.shipping.address.lastName,
@@ -227,7 +229,7 @@ export class OrderRepository {
                     data: {
                         id: randomUUID(),
                         orderId,
-                        status: OrderStatus.pending_payment,
+                        status: OrderStatus.PENDING_PAYMENT,
                         note: 'Order created'
                     }
                 });
@@ -240,7 +242,7 @@ export class OrderRepository {
                                 id: randomUUID(),
                                 variantId: item.variantId,
                                 orderId,
-                                type: TransactionType.order,
+                                type: TransactionType.ORDER,
                                 quantity: -item.quantity,
                                 note: `Order ${orderId}`
                             }
@@ -414,7 +416,7 @@ export class OrderRepository {
         amount: number,
         paymentMethod: string,
         paymentIntentId?: string,
-        status: PaymentStatus = 'pending'
+        status: PaymentStatus = PaymentStatus.PENDING
     ): Promise<void> {
         try {
             await prisma.paymentTransaction.create({

@@ -30,17 +30,18 @@
 	} from 'lucide-svelte';
 	import type { PageData } from './$types';
 	import { browser } from '$app/environment';
-	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
+
 	import { countries, addressStructures } from '$lib/config/address-structures';
 	import { checkoutStore } from '$lib/stores/checkout';
 	import { cart } from '$lib/stores/cart';
 	import { cartActions } from '$lib/stores/cart';
+
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button';
 	import * as Form from '$lib/components/ui/form';
-	import type { OrderResponseData } from '$lib/models/checkout';
+
 
 	// Page data props
 	const { data } = $props<{ data: PageData }>();
@@ -254,12 +255,9 @@
 		}
 	});
 
-	// Add function to show validation feedback using toast
-	function showValidationFeedback(message: string) {
-		toast.error(message, {
-			duration: 3000
-		});
-	}
+
+
+
 
 	// Shipping methods data
 	const shippingMethods = [
@@ -355,73 +353,6 @@
 		}
 	});
 
-	// Handle form submission with enhance
-	function handleOrderSubmit({ }: { formData: FormData; cancel: () => void }) {
-		// Show processing indicator
-		const processingToast = toast.loading('Processing your order...', { duration: 10000 });
-
-		// Return the enhance callback
-		return async ({ result, update }: { result: any; update: () => void }) => {
-			// Log the server response in detail
-			console.log('Server response:', result);
-			console.log('Response type:', result.type);
-			console.log('Response data:', result.data);
-
-			// Handle the result
-			if (result.type === 'success') {
-				// Get the order data directly from the response
-				const orderData = result.data as OrderResponseData;
-				console.log('Order data:', orderData);
-				console.log('Order success:', orderData.success);
-				console.log('Order ID:', orderData.orderId);
-
-				// Get the order ID
-				const orderId = orderData.orderId;
-
-				// Check if we have a valid order ID
-				if (!orderId) {
-					console.error('No order ID in response:', orderData);
-					toast.dismiss(processingToast);
-					toast.error('No order ID returned from server');
-					return;
-				}
-
-				// Clear the processing toast
-				toast.dismiss(processingToast);
-
-				// Show brief success message
-				toast.success('Order placed successfully!', { duration: 3000 });
-
-				// Clear cart data and cookies
-				if (typeof cartActions !== 'undefined' && cartActions.clearCart) {
-					cartActions.clearCart();
-				}
-
-				// Reset checkout store
-				checkoutStore.reset();
-
-				// Prepare the URL for redirection
-				const confirmationUrl = `/orders/confirmation/${orderId}`;
-				console.log('Redirecting to:', confirmationUrl);
-
-				// Redirect immediately to the order confirmation page
-				goto(confirmationUrl);
-			} else {
-				// Handle error
-				toast.dismiss(processingToast);
-
-				// Get error data from the response
-				const errorData = result.data as OrderResponseData;
-				console.log('Error data:', errorData);
-
-				// Show error message
-				toast.error(errorData.error || errorData.message || 'Failed to place order');
-
-				// Update the form with validation errors
-				update();
-			}
-		};
-	}
 
 	// Functions to navigate between steps
 	async function goToNextStep() {
@@ -476,6 +407,14 @@
 
 			// Clear any existing postal code validation errors
 			$shippingErrors.postalCode = undefined;
+
+			// Focus the postal code field to guide the user
+			const postalCodeField = document.querySelector('[name="postalCode"]') as HTMLInputElement;
+			if (postalCodeField) {
+				setTimeout(() => {
+					postalCodeField.focus();
+				}, 100);
+			}
 		}
 	}
 </script>
@@ -860,10 +799,8 @@
 											{...props}
 											bind:value={$shippingForm.postalCode}
 											onblur={async () => {
-												// Only validate if there's a value
-												if ($shippingForm.postalCode && $shippingForm.postalCode.trim() !== '') {
-													await validateShipping('postalCode');
-												}
+												// Always validate on blur
+												await validateShipping('postalCode');
 											}}
 											oninput={() => {
 												// Clear validation errors when user starts typing
@@ -1474,7 +1411,40 @@
 					{/if}
 
 					<!-- Order Form -->
-					<form id="order-form" method="POST" action="?/placeOrder" use:enhance={handleOrderSubmit} class="pt-6 border-t">
+					<form id="order-form" method="POST" action="?/placeOrder" class="pt-6 border-t" use:enhance={async ({ cancel }) => {
+							// Show processing toast
+							const processingToast = toast.loading('Processing your order...');
+
+							return ({ result }) => {
+								// Dismiss the processing toast
+								toast.dismiss(processingToast);
+
+								console.log('Form submission result:', result);
+
+								if (result.type === 'success') {
+									const orderId = result.data?.orderId;
+									console.log('Order ID from result:', orderId);
+
+									if (orderId) {
+										// Show success message
+										toast.success('Order placed successfully!');
+
+										// Reset checkout store
+										checkoutStore.reset();
+
+										// Redirect to confirmation page
+										window.location.href = `/orders/confirmation/${orderId}`;
+									}
+								} else if (result.type === 'failure' && result.data) {
+									// Show error message for failure
+									const errorMessage = typeof result.data.message === 'string' ? result.data.message : 'Failed to place order';
+									toast.error(errorMessage);
+								} else {
+									// Show generic error message
+									toast.error('An error occurred while processing your order');
+								}
+							};
+						}}>
 						<!-- Hidden fields for order data -->
 						{#if $emailForm.email}
 							<input type="hidden" name="email" value={$emailForm.email} />
@@ -1536,24 +1506,7 @@
 							type="submit"
 							class="w-full relative overflow-hidden group transition-all duration-300 hover:shadow-lg"
 							size="lg"
-							onclick={async (e) => {
-								// Validate postal code before submission
-								if ($shippingForm.postalCode && $shippingForm.postalCode.trim() !== '') {
-									const isValid = await validateShipping('postalCode');
-									if (!isValid) {
-										// Prevent form submission if postal code is invalid
-										e.preventDefault();
-										// Scroll to the postal code field
-										const postalCodeField = document.querySelector('[name="postalCode"]');
-										if (postalCodeField) {
-											postalCodeField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-										}
-									}
-								}
-							}}
-							disabled={!checkout.emailValidated ||
-								!checkout.shippingValidated ||
-								!checkout.paymentValidated}
+							disabled={!checkout.emailValidated || !checkout.shippingValidated || !checkout.paymentValidated}
 						>
 							{m.checkout_place_order()}
 						</Button>

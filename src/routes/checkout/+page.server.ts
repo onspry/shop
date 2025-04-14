@@ -62,8 +62,14 @@ export const load: PageServerLoad = async ({ cookies, locals }) => {
 };
 
 export const actions = {
-    placeOrder: async ({ request, locals }) => {
+    placeOrder: async ({ request, locals, cookies }) => {
+        console.log('placeOrder action started');
         const formData = await request.formData();
+
+        // Get session ID for debugging
+        const sessionId = cookies.get('cart-session') || '';
+        console.log('Session ID:', sessionId);
+        console.log('User ID:', locals.user?.id);
 
         try {
             console.log('Processing order submission...');
@@ -96,6 +102,36 @@ export const actions = {
             if (!email || !firstName || !lastName || !addressLine1 || !city || !postalCode || !country || !shippingMethod || !itemsJson) {
                 console.error('Missing required data:', { email, firstName, lastName, addressLine1, city, postalCode, country, shippingMethod, itemsJson: !!itemsJson });
                 return { success: false, error: 'Missing required data' };
+            }
+
+            // Validate postal code against country-specific pattern
+            try {
+                // Import the shipping schema creator
+                const { createShippingSchema } = await import('$lib/schemas/shipping');
+
+                // Create a schema for the selected country
+                const countrySchema = createShippingSchema(country);
+
+                // Parse and validate just the postal code
+                const result = countrySchema.safeParse({
+                    firstName, lastName, addressLine1, city, postalCode, country, shippingMethod
+                });
+
+                // If validation fails, check if it's because of the postal code
+                if (!result.success) {
+                    const formattedErrors = result.error.format();
+                    if (formattedErrors.postalCode?._errors?.length) {
+                        return {
+                            success: false,
+                            error: 'Invalid postal code',
+                            message: formattedErrors.postalCode._errors[0]
+                        };
+                    }
+                }
+            } catch (error) {
+                console.error('Error validating postal code:', error);
+                // Continue with order creation even if validation fails
+                // This is a fallback in case the validation code itself has an error
             }
 
             // State is already handled with a default empty string
@@ -145,25 +181,31 @@ export const actions = {
             };
 
             // Create order
-            const orderRepository = new OrderRepository();
-            const order = await orderRepository.createOrder(orderData);
+            try {
+                console.log('Creating order with repository...');
+                const orderRepository = new OrderRepository();
+                const order = await orderRepository.createOrder(orderData);
 
-            // Log the created order
-            console.log('Created order:', order);
-            console.log('Order ID:', order.id);
+                // Log the created order
+                console.log('Created order:', order);
+                console.log('Order ID:', order.id);
 
-            // Clear cart after successful order creation
-            await cartRepository.clearCart(cartId);
+                // Clear cart after successful order creation
+                console.log('Clearing cart...');
+                await cartRepository.clearCart(cartId);
 
-            // Return just the order data
-            // SvelteKit will automatically wrap it in a response object
-            const response = {
-                success: true,
-                orderId: order.id
-            };
-
-            console.log('Returning response:', response);
-            return response;
+                // Store the order ID for redirection after the try/catch block
+                const orderId = order.id;
+                return { success: true, orderId };
+            } catch (orderError) {
+                console.error('Error in order creation:', orderError);
+                return {
+                    success: false,
+                    orderId: '',
+                    error: orderError instanceof Error ? orderError.message : 'Error creating order',
+                    message: 'There was a problem processing your order. Please try again.'
+                };
+            }
         } catch (error) {
             console.error('Error creating order:', error);
             // Provide a more descriptive error message
