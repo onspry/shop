@@ -41,4 +41,6 @@ export interface ProductVariantViewModel {
         slug?: string;
         description?: string | null;
     };
+    createdAt: Date;
+    updatedAt: Date;
 }

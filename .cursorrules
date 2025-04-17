@@ -21,6 +21,87 @@ You are an AI assistant seamlessly integrated with a developer's IDE, optimized 
 
 ### 3. Multilingual Support with Paraglide
 
+---
+
+## 4. Testing Framework and Usage Rules
+
+### 4.1. Test Framework
+
+- **Primary Test Runner:**  
+  Use [Vitest](https://vitest.dev/) as the default test runner for all unit, integration, and component tests.
+- **Component Testing:**  
+  Use `@testing-library/svelte` for Svelte component tests, and run these tests in a `jsdom` environment.
+- **Mocking:**  
+  Use `vi.fn()` and `vi.spyOn()` for all mocking and spying needs. Do not use legacy Jest APIs.
+- **Test File Naming:**  
+  Test files must be named with `.test.ts` or `.spec.ts` suffix and placed alongside the code under test or in a `__tests__` directory.
+
+### 4.2. Centralized Test Utilities & Mocks
+
+- **Framework/Browser Polyfills:**  
+  All framework or browser-specific polyfills (e.g., `window.matchMedia`, SvelteKit internals needed for jsdom) must be defined in `vitest-setup-client.ts` at the project root.  
+  These are only for making the test runner environment compatible with your app/framework.
+
+- **Business Logic & Global Mocks:**  
+  All project-wide or business logic mocks (e.g., `createMockPrisma`, global Prisma mocking, API client mocks) must be defined in `test/setupTests.ts`.  
+  This file is for global test setup and mocks that apply to all tests.
+
+- **Test-Specific Utilities:**  
+  Any test-specific types or helpers (like `CartRepositoryTestable`) should be defined directly in the test file that uses them, unless they are reused across multiple test files.
+
+- **Usage:**  
+  Import framework polyfills only if you need to extend them.  
+  Import business logic mocks from `test/setupTests.ts` if you need to use or extend them in your test files.
+
+- **No Redefinition:**  
+  Do not redefine global mocks or polyfills in individual test files. Always import from the appropriate central file.
+
+### 4.3. Test Structure and Best Practices
+
+- **Setup:**  
+  Use `beforeEach` to reset mocks and set up test state.  
+  Assign central mocks and repository test doubles in this block.
+- **Isolation:**  
+  Each test must be independent; do not rely on state from previous tests.
+- **Assertions:**  
+  Use `expect()` from Vitest for all assertions.
+- **Coverage:**  
+  Strive for 100% coverage on business logic and critical e-commerce flows (cart, checkout, product selection, etc.).
+
+### 4.4. Running Tests
+
+- **Default Command:**  
+  Run all tests using:
+  ```sh
+  npx vitest run --environment jsdom
+  ```
+- **Watch Mode:**  
+  For development, use:
+  ```sh
+  npx vitest
+  ```
+- **Component Tests:**  
+  Ensure Svelte component tests specify or inherit the `jsdom` environment.
+
+### 4.5. Test Data and Fixtures
+
+- **Test Data:**  
+  Store reusable test data in `test-utils.ts` or a `fixtures/` directory.
+- **No Hardcoding:**  
+  Do not hardcode IDs or sensitive information in test files.
+
+### 4.6. Linting and Formatting
+
+- **Linting:**  
+  All test files must pass `eslint` and `prettier` checks before merging.
+- **Rule Enforcement:**  
+  Any deviation from these rules must be documented and justified in the test file header.
+
+---
+
+**Rule:**  
+> All contributors must follow these testing framework and usage guidelines to ensure maintainability, consistency, and reliability across the codebase.
+
 - Ensure all user-visible text is properly internationalized using Paraglide.
 - Help manage translations in the en.json master file and maintain translation keys.
 - Support implementation of language switching and language-specific content.

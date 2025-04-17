@@ -547,52 +547,6 @@ export class OrderRepository {
     }
 
     /**
-     * Gets all orders for an email address
-     * @param email - The email address
-     * @returns Array of order view models
-     */
-    async getOrdersByEmail(email: string): Promise<OrderViewModel[]> {
-        console.warn(`getOrdersByEmail is not implemented in the Prisma version for email: ${email}`);
-        return [];
-    }
-
-    /**
-     * Gets all orders within a date range
-     * @param startDate - The start date
-     * @param endDate - The end date
-     * @returns Array of order view models
-     */
-    async getOrdersByDateRange(startDate: Date, endDate: Date): Promise<OrderViewModel[]> {
-        try {
-            const results = await prisma.order.findMany({
-                where: {
-                    createdAt: {
-                        gte: startDate,
-                        lte: endDate
-                    }
-                },
-                include: {
-                    items: true,
-                    addresses: {
-                        where: {
-                            type: 'shipping'
-                        }
-                    }
-                },
-                orderBy: {
-                    createdAt: 'desc'
-                }
-            }) as OrderQueryResult[];
-
-            const orders = results.map(result => this.mapToViewModel(result));
-            return orders.filter((order): order is OrderViewModel => order !== null);
-        } catch (error) {
-            console.error(`Error getting orders between ${startDate} and ${endDate}:`, error);
-            return [];
-        }
-    }
-
-    /**
      * Gets all orders with a specific status
      * @param status - The order status
      * @returns Array of order view models
@@ -639,27 +593,6 @@ export class OrderRepository {
             return transactions;
         } catch (error) {
             console.error(`Error getting payment transactions for order ${orderId}:`, error);
-            return [];
-        }
-    }
-
-    /**
-     * Gets all refunds for an order
-     * @param orderId - The order ID
-     * @returns Array of refunds
-     */
-    async getOrderRefunds(orderId: string): Promise<Refund[]> {
-        try {
-            const orderRefunds = await prisma.refund.findMany({
-                where: { orderId },
-                orderBy: {
-                    createdAt: 'desc'
-                }
-            });
-
-            return orderRefunds;
-        } catch (error) {
-            console.error(`Error getting refunds for order ${orderId}:`, error);
             return [];
         }
     }

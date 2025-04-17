@@ -7,63 +7,6 @@ import { formatPrice } from '$lib/utils/price';
 // Initialize Prisma client
 const prisma = new PrismaClient();
 
-// Cache configuration
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-const MAX_CACHE_SIZE = 1000;
-
-// Simple in-memory cache implementation
-class CartCache {
-    private cache: Map<string, { data: CartViewModel; timestamp: number }> = new Map();
-
-    set(key: string, data: CartViewModel): void {
-        if (this.cache.size >= MAX_CACHE_SIZE) {
-            this.evictOldest();
-        }
-        this.cache.set(key, {
-            data,
-            timestamp: Date.now()
-        });
-    }
-
-    get(key: string): CartViewModel | null {
-        const entry = this.cache.get(key);
-        if (!entry) return null;
-
-        if (Date.now() - entry.timestamp > CACHE_TTL) {
-            this.cache.delete(key);
-            return null;
-        }
-
-        return entry.data;
-    }
-
-    delete(key: string): void {
-        this.cache.delete(key);
-    }
-
-    clear(): void {
-        this.cache.clear();
-    }
-
-    private evictOldest(): void {
-        let oldestKey: string | null = null;
-        let oldestTimestamp = Infinity;
-
-        for (const [key, value] of this.cache.entries()) {
-            if (value.timestamp < oldestTimestamp) {
-                oldestTimestamp = value.timestamp;
-                oldestKey = key;
-            }
-        }
-
-        if (oldestKey) {
-            this.cache.delete(oldestKey);
-        }
-    }
-}
-
-const cartCache = new CartCache();
-
 // Define type for cart with items to avoid 'any'
 export type CartWithItems = Cart & {
     items: Array<CartItem & {
@@ -94,10 +37,10 @@ export class CartError extends Error {
     }
 }
 
-export class CartNotFoundError extends CartError {
-    constructor(cartId: string) {
-        super(`Cart not found: ${cartId}`);
-        this.name = 'CartNotFoundError';
+export class VariantError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'VariantError';
     }
 }
 
@@ -353,9 +296,9 @@ export class CartRepository {
                     ...variantViewModel,
                     product: {
                         id: item.variant.productId,
-                        name: item.variant.name,
-                        slug: '',
-                        description: null
+                        name: item.variant.product?.name || '',
+                        slug: item.variant.product?.slug || '',
+                        description: item.variant.product?.description || null
                     }
                 },
                 imageUrl: firstImage?.url || '',
@@ -377,29 +320,19 @@ export class CartRepository {
     }
 
     /**
-     * Gets the cart view model for a given session with caching.
+     * Gets the cart view model for a given session.
      * @param sessionId - The session ID to identify the cart
      * @param userId - Optional user ID to associate with the cart
-     * @param forceRefresh - Whether to bypass cache and force a fresh fetch
      * @returns Promise<CartViewModel> - The cart view model
      * @throws {CartError} If cart operations fail
      */
-    async getCartViewModel(sessionId: string, userId?: string | null, forceRefresh: boolean = false): Promise<CartViewModel> {
+    async getCartViewModel(sessionId: string, userId?: string | null): Promise<CartViewModel> {
         // Input validation
         if (typeof sessionId !== 'string') {
             throw new CartError('Invalid session ID type');
         }
         if (userId && typeof userId !== 'string') {
             throw new CartError('Invalid user ID');
-        }
-
-        // Try to get from cache first
-        const cacheKey = `${sessionId}:${userId || 'guest'}`;
-        if (!forceRefresh) {
-            const cachedCart = cartCache.get(cacheKey);
-            if (cachedCart) {
-                return cachedCart;
-            }
         }
 
         try {
@@ -418,7 +351,7 @@ export class CartRepository {
                     }
                 });
 
-                if (duplicateCarts.length > 1) {
+                if (duplicateCarts && duplicateCarts.length > 1) {
                     // Find the cart with items or keep the first one
                     let cartToKeep = duplicateCarts[0];
                     for (const dupCart of duplicateCarts) {
@@ -535,8 +468,6 @@ export class CartRepository {
             // No cart found, create a new one
             const result = await this.getOrCreateCart(sessionId, userId);
 
-            // Cache the result before returning
-            cartCache.set(cacheKey, result);
             return result;
         } catch (error) {
             console.error('Error in getCartViewModel:', error);
@@ -570,7 +501,7 @@ export class CartRepository {
 
         try {
             // Use a single transaction for all operations to improve performance
-            const transactionResult = await prisma.$transaction(async (tx) => {
+            await prisma.$transaction(async (tx) => {
                 // Get cart and variant data in parallel for better performance
                 const [cartData, variant, existingItem] = await Promise.all([
                     // Get cart data
@@ -607,7 +538,7 @@ export class CartRepository {
                 }
 
                 if (!variant) {
-                    throw new CartError('Product variant not found');
+                    throw new VariantError('Product variant not found');
                 }
 
                 // Check stock availability
@@ -653,19 +584,13 @@ export class CartRepository {
                     }
                 });
 
-                // Return cart data for cache invalidation outside transaction
                 return {
                     sessionId: cartData.sessionId,
                     userId: cartData.userId
                 };
             });
-
-            // Invalidate cache after successful update - but only for this specific cart
-            // This is done outside the transaction for better performance
-            const cacheKey = `${transactionResult.sessionId}:${transactionResult.userId || 'guest'}`;
-            cartCache.delete(cacheKey);
         } catch (error) {
-            if (error instanceof CartError || error instanceof StockError) {
+            if (error instanceof CartError || error instanceof VariantError || error instanceof StockError) {
                 throw error;
             }
             console.error('[CART] Error adding item to cart:', error);
@@ -691,6 +616,9 @@ export class CartRepository {
         }
         if (typeof quantity !== 'number') {
             throw new CartError('Invalid quantity');
+        }
+        if (quantity < 1) {
+            throw new CartError('Quantity must be at least 1');
         }
 
         try {
@@ -747,7 +675,7 @@ export class CartRepository {
                 });
 
                 if (!variant) {
-                    throw new CartError('Product variant not found');
+                    throw new VariantError('Product variant not found');
                 }
 
                 if (variant.stockQuantity < quantity) {
@@ -773,10 +701,6 @@ export class CartRepository {
                     });
                 });
             }
-
-            // Invalidate cache after successful update
-            const cacheKey = `${cartData.sessionId}:${cartData.userId || 'guest'}`;
-            cartCache.delete(cacheKey);
         } catch (error) {
             if (error instanceof CartError || error instanceof StockError) {
                 throw error;
@@ -836,10 +760,6 @@ export class CartRepository {
                         lastActivityAt: new Date()
                     }
                 });
-
-                // Invalidate cache after successful removal
-                const cacheKey = `${cartData.sessionId}:${cartData.userId || 'guest'}`;
-                cartCache.delete(cacheKey);
             });
         } catch (error) {
             if (error instanceof CartError) {
@@ -890,10 +810,6 @@ export class CartRepository {
                         lastActivityAt: new Date()
                     }
                 });
-
-                // Invalidate cache after successful clear
-                const cacheKey = `${cartData.sessionId}:${cartData.userId || 'guest'}`;
-                cartCache.delete(cacheKey);
             });
         } catch (error) {
             console.error('Error clearing cart:', error);
@@ -1053,21 +969,6 @@ export class CartRepository {
                     updatedAt: new Date()
                 }
             });
-
-            // Invalidate cache
-            const cartData = await prisma.cart.findUnique({
-                where: { id: cartId },
-                select: { sessionId: true, userId: true }
-            });
-
-            if (cartData) {
-                if (cartData.sessionId) {
-                    cartCache.delete(`${cartData.sessionId}:guest`);
-                }
-                if (cartData.userId) {
-                    cartCache.delete(`${cartData.sessionId}:${cartData.userId}`);
-                }
-            }
         } catch (error) {
             console.error('Error applying discount to cart:', error);
             if (error instanceof Error) {
@@ -1099,21 +1000,6 @@ export class CartRepository {
                     lastActivityAt: new Date()
                 }
             });
-
-            // Invalidate cache
-            const cartData = await prisma.cart.findUnique({
-                where: { id: cartId },
-                select: { sessionId: true, userId: true }
-            });
-
-            if (cartData) {
-                if (cartData.sessionId) {
-                    cartCache.delete(`${cartData.sessionId}:guest`);
-                }
-                if (cartData.userId) {
-                    cartCache.delete(`${cartData.sessionId}:${cartData.userId}`);
-                }
-            }
         } catch (error) {
             console.error('Error removing discount from cart:', error);
             throw new CartError('Failed to remove discount from cart');
@@ -1135,7 +1021,14 @@ export class CartRepository {
             // Find anonymous cart
             const anonymousCart = await prisma.cart.findFirst({
                 where: { sessionId: sessionId, userId: null },
-                include: { items: true }
+                select: {
+                    id: true,
+                    items: true,
+                    discountCode: true,
+                    discountAmount: true,
+                    sessionId: true,
+                    userId: true
+                }
             });
 
             // Find user cart
@@ -1200,7 +1093,7 @@ export class CartRepository {
                                 variantId: item.variantId,
                                 productId: item.productId,
                                 quantity: item.quantity,
-                                price: item.price
+                                price: item.price,
                             }
                         });
                     }
@@ -1222,9 +1115,13 @@ export class CartRepository {
                 });
             });
 
-            // Invalidate cache
-            cartCache.delete(`${sessionId}:guest`);
-            cartCache.delete(`${sessionId}:${userId}`);
+            // Preserve discount from anonymous cart if it exists
+            if (anonymousCart?.discountCode) {
+                const discountCode = anonymousCart.discountCode;
+
+                // Apply discount to user's cart
+                await this.applyDiscountToCart(userCart.id, discountCode);
+            }
         } catch (error) {
             console.error('Error merging carts:', error);
             throw new CartError('Failed to merge carts');

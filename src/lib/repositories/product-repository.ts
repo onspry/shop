@@ -43,7 +43,9 @@ export function toProductVariantViewModel(variant: ProductVariant): ProductVaria
         stock_quantity: variant.stockQuantity,
         attributes: variant.attributes as Record<string, unknown>,
         stockStatus: getStockStatus(variant.stockQuantity),
-        productId: variant.productId
+        productId: variant.productId,
+        createdAt: variant.createdAt,
+        updatedAt: variant.updatedAt
     };
 }
 

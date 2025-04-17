@@ -267,7 +267,6 @@ model OrderAddress {
   type             String    // 'shipping' or 'billing'
   firstName        String    @map("first_name")
   lastName         String    @map("last_name")
-  company          String?
   address1         String
   address2         String?
   city             String
