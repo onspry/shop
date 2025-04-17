@@ -1,21 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CartRepository, type CartWithItems } from '../cart-repository';
 import { StockError, CartError, VariantError } from '$lib/errors/shop-errors';
-import type { CartViewModel } from '$lib/models/cart';
 import { CartStatus } from '$lib/models/cart';
 import { mockPrismaInstance } from '../../../../test/setupTests';
 import { randomUUID } from 'crypto';
-
-// Create a mock cart for testing
-const mockCart: CartViewModel = {
-  id: '11111111-1111-1111-1111-111111111111',
-  items: [],
-  discountCode: null,
-  discountAmount: 0,
-  subtotal: 0,
-  total: 0,
-  itemCount: 0
-};
+import type { Cart, CartItem, ProductVariant } from '@prisma/client';
 
 describe('CartRepository', () => {
   let cartRepository: CartRepository;
@@ -35,8 +24,41 @@ describe('CartRepository', () => {
     mockPrismaInstance.cartItem.delete?.mockReset?.(); // if exists
 
     mockPrismaInstance.$transaction.mockReset();
-
   });
+
+  // Helper function to generate a valid cart for testing
+  function getValidCart(): Cart & { items: CartItem[] } {
+    return {
+      id: '11111111-1111-1111-1111-111111111111',
+      sessionId: '33333333-3333-3333-3333-333333333333',
+      userId: '22222222-2222-2222-2222-222222222222',
+      status: CartStatus.ACTIVE,
+      email: null,
+      firstName: null,
+      lastName: null,
+      discountCode: null,
+      discountAmount: 0,
+      lastActivityAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      items: []
+    };
+  }
+
+  // Helper function to generate a product variant
+  function getValidProductVariant(): ProductVariant {
+    return {
+      id: '55555555-5555-5555-5555-555555555555',
+      productId: '66666666-6666-6666-6666-666666666666',
+      sku: 'TEST-SKU-001',
+      name: 'Test Variant',
+      price: 1000,
+      stockQuantity: 10,
+      attributes: { color: 'red', size: 'M' },
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
 
   describe('getOrCreateCart', () => {
     it('should return an existing cart if found', async () => {
@@ -44,12 +66,9 @@ describe('CartRepository', () => {
       const sessionId = '33333333-3333-3333-3333-333333333333';
       const userId = '22222222-2222-2222-2222-222222222222';
       const prismaCart = {
-        id: '11111111-1111-1111-1111-111111111111',
+        ...getValidCart(),
         userId,
         sessionId,
-        status: CartStatus.ACTIVE,
-        discountCode: null,
-        discountAmount: 0,
         items: []
       };
 
@@ -142,16 +161,13 @@ describe('CartRepository', () => {
       const quantity = 2;
 
       const mockCartData = {
-        id: cartId,
-        sessionId: '33333333-3333-3333-3333-333333333333',
-        userId: '11111111-1111-1111-1111-111111111111'
+        ...getValidCart(),
+        id: cartId
       };
 
       const mockVariantData = {
-        id: variantId,
-        productId: '55555555-5555-5555-5555-555555555555',
-        price: 1000,
-        stockQuantity: 10
+        ...getValidProductVariant(),
+        id: variantId
       };
 
       // Setup transaction mock with proper context
@@ -222,10 +238,8 @@ describe('CartRepository', () => {
 
       // Mock cart exists
       mockPrismaInstance.cart.findUnique.mockResolvedValue({
-        id: cartId,
-        sessionId: '33333333-3333-3333-3333-333333333333',
-        userId: '11111111-1111-1111-1111-111111111111',
-        status: CartStatus.ACTIVE
+        ...getValidCart(),
+        id: cartId
       });
 
       // Mock transaction with variant not found
@@ -264,10 +278,8 @@ describe('CartRepository', () => {
 
       // Mock cart exists
       mockPrismaInstance.cart.findUnique.mockResolvedValue({
-        id: cartId,
-        sessionId: '33333333-3333-3333-3333-333333333333',
-        userId: '11111111-1111-1111-1111-111111111111',
-        status: CartStatus.ACTIVE
+        ...getValidCart(),
+        id: cartId
       });
 
       // Mock transaction with existing item
@@ -322,10 +334,8 @@ describe('CartRepository', () => {
 
       // Mock cart exists
       mockPrismaInstance.cart.findUnique.mockResolvedValue({
-        id: cartId,
-        sessionId: '33333333-3333-3333-3333-333333333333',
-        userId: '11111111-1111-1111-1111-111111111111',
-        status: CartStatus.ACTIVE
+        ...getValidCart(),
+        id: cartId
       });
 
       // Mock transaction with no existing item
@@ -375,11 +385,8 @@ describe('CartRepository', () => {
 
       // Mock cart data
       mockPrismaInstance.cart.findUnique.mockResolvedValue({
-        ...mockCart,
-        id: cartId,
-        sessionId: '33333333-3333-3333-3333-333333333333',
-        userId: '11111111-1111-1111-1111-111111111111',
-        status: CartStatus.ACTIVE
+        ...getValidCart(),
+        id: cartId
       });
 
       // Mock transaction
@@ -387,10 +394,8 @@ describe('CartRepository', () => {
         const tx = {
           cart: {
             findUnique: vi.fn().mockResolvedValue({
-              ...mockCart,
-              id: cartId,
-              sessionId: '33333333-3333-3333-3333-333333333333',
-              userId: '11111111-1111-1111-1111-111111111111'
+              ...getValidCart(),
+              id: cartId
             })
           },
           cartItem: {
@@ -398,10 +403,8 @@ describe('CartRepository', () => {
           },
           productVariant: {
             findUnique: vi.fn().mockResolvedValue({
-              ...mockCart,
+              ...getValidProductVariant(),
               id: variantId,
-              productId: '55555555-5555-5555-5555-555555555555',
-              price: 1000,
               stockQuantity: 10 // Only 10 in stock
             })
           }
@@ -422,15 +425,13 @@ describe('CartRepository', () => {
       const quantity = 15; // More than available stock
 
       const mockCartData = {
-        id: cartId,
-        sessionId: '33333333-3333-3333-3333-333333333333',
-        userId: '11111111-1111-1111-1111-111111111111'
+        ...getValidCart(),
+        id: cartId
       };
 
       const mockVariantData = {
+        ...getValidProductVariant(),
         id: variantId,
-        productId: '55555555-5555-5555-5555-555555555555',
-        price: 1000,
         stockQuantity: 10 // Less than requested quantity
       };
 
@@ -467,16 +468,13 @@ describe('CartRepository', () => {
       const existingItemId = '66666666-6666-6666-6666-666666666666';
 
       const mockCartData = {
-        id: cartId,
-        sessionId: '33333333-3333-3333-3333-333333333333',
-        userId: '11111111-1111-1111-1111-111111111111'
+        ...getValidCart(),
+        id: cartId
       };
 
       const mockVariantData = {
-        id: variantId,
-        productId: '55555555-5555-5555-5555-555555555555',
-        price: 1000,
-        stockQuantity: 10
+        ...getValidProductVariant(),
+        id: variantId
       };
 
       const mockExistingItem = {

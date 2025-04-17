@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { isValidOrderItem, OrderRepository, mapCartItemToOrderItem } from '../order-repository'; // Adjust import if OrderRepository not present
 import { OrderStatus, type CreateOrderViewModel, type OrderItemViewModel } from '$lib/models/order';
+import { TransactionType } from '$lib/models/inventory';
 import { mockPrismaInstance } from '../../../../test/setupTests';
 import type { CartItemViewModel } from '$lib/models/cart';
 import type { Order, OrderItem, OrderAddress } from '@prisma/client';
@@ -51,6 +52,58 @@ function getValidOrderInput() {
 
 
 describe('OrderRepository', () => {
+  // Helper function to generate a valid order result from the database
+  function getValidOrderResult(id = 'order-1'): Order & { items: OrderItem[]; addresses: OrderAddress[] } {
+    return {
+      id,
+      userId: 'user-1',
+      cartId: 'cart-1',
+      status: OrderStatus.PROCESSING,
+      email: 'test@example.com',
+      firstName: 'John',
+      lastName: 'Doe',
+      subtotal: 100,
+      discountCode: 'SAVE10',
+      discountAmount: 10,
+      total: 95, // subtotal - discount + shipping
+      createdAt: new Date('2024-01-01T10:00:00Z'),
+      updatedAt: new Date('2024-01-01T10:05:00Z'),
+      stripePaymentIntentId: 'pi_123456',
+      stripeClientSecret: 'secret_123456',
+      items: [
+        {
+          id: 'item-1',
+          orderId: id,
+          productId: 'product-1',
+          variantId: 'variant-1',
+          quantity: 2,
+          price: 50,
+          name: 'Test Product',
+          variantName: 'Test Variant',
+          createdAt: new Date('2024-01-01T10:00:00Z'),
+          updatedAt: new Date('2024-01-01T10:00:00Z')
+        }
+      ],
+      addresses: [
+        {
+          id: 'address-1',
+          orderId: id,
+          type: 'shipping',
+          firstName: 'John',
+          lastName: 'Doe',
+          address1: '123 Main St',
+          address2: 'Apt 4B',
+          city: 'New York',
+          state: 'NY',
+          postalCode: '10001',
+          country: 'US',
+          phone: '555-123-4567',
+          createdAt: new Date('2024-01-01T10:00:00Z'),
+          updatedAt: new Date('2024-01-01T10:00:00Z')
+        }
+      ]
+    };
+  }
   beforeEach(() => {
     vi.clearAllMocks();
     orderRepository = new OrderRepository(); // Remove if not needed
@@ -231,6 +284,7 @@ describe('OrderRepository', () => {
       mockPrismaInstance.$transaction.mockImplementation(async (cb: (prisma: unknown) => unknown) => cb(mockPrismaInstance));
       mockPrismaInstance.order.create.mockResolvedValue(createdOrder);
       mockPrismaInstance.order.findUnique.mockResolvedValue(createdOrder);
+      mockPrismaInstance.inventoryTransaction.create = vi.fn().mockResolvedValue({ id: 'inv-1' });
     });
 
     it('creates an order and returns the created order', async () => {
@@ -321,6 +375,121 @@ describe('OrderRepository', () => {
       expect(result).toMatchObject({ id: 'order-1', status: 'pending', total: 115 });
     });
 
+    it('creates inventory transactions for each order item', async () => {
+      // Arrange
+      const orderInput: CreateOrderViewModel = {
+        ...getValidOrderInput(),
+        items: [
+          {
+            productId: "11111111-1111-1111-1111-111111111111",
+            variantId: "22222222-2222-2222-2222-222222222222",
+            productName: "Product 1",
+            variantName: "Variant 1",
+            quantity: 2,
+            price: 50,
+            unitPrice: 50,
+          },
+          {
+            productId: "33333333-3333-3333-3333-333333333333",
+            variantId: "44444444-4444-4444-4444-444444444444",
+            productName: "Product 2",
+            variantName: "Variant 2",
+            quantity: 1,
+            price: 100,
+            unitPrice: 100,
+          }
+        ]
+      };
+
+      // Mock the transaction implementation to capture the inventory transaction calls
+      const inventoryTransactionCreateSpy = vi.fn().mockResolvedValue({ id: 'inv-tx-1' });
+      mockPrismaInstance.$transaction.mockImplementation(async (callback) => {
+        const tx = {
+          order: { create: vi.fn().mockResolvedValue({ id: 'order-1' }) },
+          orderItem: { createMany: vi.fn().mockResolvedValue({ count: 2 }) },
+          orderAddress: { create: vi.fn().mockResolvedValue({ id: 'addr-1' }) },
+          orderStatusHistory: { create: vi.fn().mockResolvedValue({ id: 'hist-1' }) },
+          inventoryTransaction: { create: inventoryTransactionCreateSpy }
+        };
+        return callback(tx);
+      });
+
+      vi.spyOn(orderRepository, 'getOrderById').mockResolvedValue({
+        id: 'order-1',
+        orderNumber: 'ORDER-1',
+        status: OrderStatus.PENDING_PAYMENT,
+        total: 200,
+        subtotal: 200,
+        taxAmount: 0,
+        shippingAmount: 0,
+        currency: 'USD',
+        shippingMethod: 'standard',
+        paymentMethod: 'credit_card',
+        createdAt: new Date().toISOString(),
+        items: [
+          {
+            id: 'item-1',
+            productId: "11111111-1111-1111-1111-111111111111",
+            variantId: "22222222-2222-2222-2222-222222222222",
+            quantity: 2,
+            unitPrice: 50,
+            totalPrice: 100,
+            name: 'Product 1',
+            variantName: 'Variant 1'
+          },
+          {
+            id: 'item-2',
+            productId: "33333333-3333-3333-3333-333333333333",
+            variantId: "44444444-4444-4444-4444-444444444444",
+            quantity: 1,
+            unitPrice: 100,
+            totalPrice: 100,
+            name: 'Product 2',
+            variantName: 'Variant 2'
+          }
+        ],
+        shippingAddress: {
+          firstName: 'John',
+          lastName: 'Doe',
+          address1: '123 St',
+          city: 'City',
+          state: 'State',
+          postalCode: '12345',
+          country: 'Country',
+          email: 'test@example.com'
+        }
+      });
+
+      // Act
+      await orderRepository.createOrder(orderInput);
+
+      // Assert
+      // Should be called twice, once for each item
+      expect(inventoryTransactionCreateSpy).toHaveBeenCalledTimes(2);
+
+      // First call should be for the first item
+      expect(inventoryTransactionCreateSpy).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          variantId: "22222222-2222-2222-2222-222222222222",
+          orderId: expect.any(String),
+          type: TransactionType.ORDER,
+          quantity: -2, // Negative because it's reducing inventory
+          note: expect.stringContaining('Order')
+        })
+      });
+
+      // Second call should be for the second item
+      expect(inventoryTransactionCreateSpy).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          variantId: "44444444-4444-4444-4444-444444444444",
+          orderId: expect.any(String),
+          type: TransactionType.ORDER,
+          quantity: -1, // Negative because it's reducing inventory
+          note: expect.stringContaining('Order')
+        })
+      });
+    });
+
     // Add inside describe('createOrder', ...) after the happy-path test:
     it('throws if items is empty', async () => {
       const orderInput = {
@@ -397,6 +566,28 @@ describe('OrderRepository', () => {
     it('throws if order retrieval after creation fails', async () => {
       mockPrismaInstance.order.findUnique.mockResolvedValueOnce(null);
       await expect(orderRepository.createOrder(getValidOrderInput() as unknown as CreateOrderViewModel)).rejects.toThrow('Failed to create order');
+    });
+
+    it('handles inventory transaction failures', async () => {
+      // Arrange
+      const orderInput = getValidOrderInput() as unknown as CreateOrderViewModel;
+
+      // Mock the transaction implementation to simulate inventory transaction failure
+      mockPrismaInstance.$transaction.mockImplementation(async (callback) => {
+        const tx = {
+          order: { create: vi.fn().mockResolvedValue({ id: 'order-1' }) },
+          orderItem: { createMany: vi.fn().mockResolvedValue({ count: 1 }) },
+          orderAddress: { create: vi.fn().mockResolvedValue({ id: 'addr-1' }) },
+          orderStatusHistory: { create: vi.fn().mockResolvedValue({ id: 'hist-1' }) },
+          inventoryTransaction: {
+            create: vi.fn().mockRejectedValue(new Error('Inventory update failed'))
+          }
+        };
+        return callback(tx);
+      });
+
+      // Act & Assert
+      await expect(orderRepository.createOrder(orderInput)).rejects.toThrow('Inventory update failed');
     });
   });
 
@@ -701,6 +892,114 @@ describe('OrderRepository', () => {
       mockPrismaInstance.order.findMany.mockImplementation(() => { throw new Error('DB error'); });
       const result = await orderRepository.getOrdersByStatus(status);
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('getOrderById', () => {
+    const orderId = 'order-1';
+
+    it('successfully retrieves an order by ID', async () => {
+      // Arrange
+      const orderData = getValidOrderResult(orderId);
+      mockPrismaInstance.order.findUnique.mockResolvedValue(orderData);
+
+      // Act
+      const result = await orderRepository.getOrderById(orderId);
+
+      // Assert
+      expect(mockPrismaInstance.order.findUnique).toHaveBeenCalledWith({
+        where: { id: orderId },
+        include: {
+          items: true,
+          addresses: {
+            where: {
+              type: 'shipping'
+            }
+          }
+        }
+      });
+
+      // Verify the returned view model has the correct data
+      expect(result).not.toBeNull();
+      expect(result?.id).toBe(orderId);
+      expect(result?.status).toBe(OrderStatus.PROCESSING);
+      expect(result?.total).toBe(95);
+      expect(result?.subtotal).toBe(100);
+      expect(result?.discountAmount).toBe(10);
+      expect(result?.items).toHaveLength(1);
+      expect(result?.items[0].quantity).toBe(2);
+      expect(result?.items[0].unitPrice).toBe(50);
+      expect(result?.items[0].totalPrice).toBe(100); // quantity * unitPrice
+      expect(result?.shippingAddress).toBeDefined();
+      expect(result?.shippingAddress.firstName).toBe('John');
+      expect(result?.shippingAddress.lastName).toBe('Doe');
+      expect(result?.shippingAddress.email).toBe('test@example.com');
+    });
+
+    it('returns null when order is not found', async () => {
+      // Arrange
+      mockPrismaInstance.order.findUnique.mockResolvedValue(null);
+
+      // Act
+      const result = await orderRepository.getOrderById('non-existent-id');
+
+      // Assert
+      expect(result).toBeNull();
+    });
+
+    it('returns null when order has no items', async () => {
+      // Arrange
+      const orderData = getValidOrderResult(orderId);
+      orderData.items = []; // Empty items array
+      mockPrismaInstance.order.findUnique.mockResolvedValue(orderData);
+
+      // Act
+      const result = await orderRepository.getOrderById(orderId);
+
+      // Assert
+      expect(result).toBeNull();
+    });
+
+    it('returns null when order has no shipping address', async () => {
+      // Arrange
+      const orderData = getValidOrderResult(orderId);
+      orderData.addresses = []; // Empty addresses array
+      mockPrismaInstance.order.findUnique.mockResolvedValue(orderData);
+
+      // Act
+      const result = await orderRepository.getOrderById(orderId);
+
+      // Assert
+      expect(result).toBeNull();
+    });
+
+    it('handles database errors gracefully', async () => {
+      // Arrange
+      mockPrismaInstance.order.findUnique.mockRejectedValue(new Error('Database connection error'));
+
+      // Act
+      const result = await orderRepository.getOrderById(orderId);
+
+      // Assert
+      expect(result).toBeNull();
+    });
+
+    it('correctly formats the order number', async () => {
+      // Arrange
+      const orderData = getValidOrderResult(orderId);
+      mockPrismaInstance.order.findUnique.mockResolvedValue(orderData);
+
+      // The formatOrderNumber function is imported in the repository
+      // We can verify it's being used correctly by checking the orderNumber format
+
+      // Act
+      const result = await orderRepository.getOrderById(orderId);
+
+      // Assert
+      expect(result?.orderNumber).toBeDefined();
+      // The format should match what formatOrderNumber would return
+      // For order-1 created on 2024-01-01, it should be something like ON-20240101-ORDE
+      expect(result?.orderNumber).toMatch(/ON-\d{8}-\w+/);
     });
   });
 
