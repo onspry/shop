@@ -2,29 +2,9 @@ import { PrismaClient } from '@prisma/client';
 import type { Product, ProductVariant, ProductImage } from '@prisma/client';
 import type { ProductViewModel, ProductVariantViewModel } from '../models/product';
 import type { CatalogueViewModel, ProductGroup } from '../models/catalogue';
+import { VariantError } from '$lib/errors/shop-errors';
 
 const prisma = new PrismaClient();
-
-// Add caching support
-interface CacheEntry<T> {
-    data: T;
-    timestamp: number;
-}
-
-const cache = new Map<string, CacheEntry<unknown>>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-function getFromCache<T>(key: string): T | null {
-    const cached = cache.get(key) as CacheEntry<T> | undefined;
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        return cached.data;
-    }
-    return null;
-}
-
-function setCache<T>(key: string, data: T): void {
-    cache.set(key, { data, timestamp: Date.now() });
-}
 
 // Helper function to determine stock status
 function getStockStatus(quantity: number): 'in_stock' | 'low_stock' | 'out_of_stock' {
@@ -167,6 +147,10 @@ export const productRepository = {
             };
         } catch (error) {
             console.error(`Error getting product ${slug}:`, error);
+            // Re-throw the original error if it's a 'Product not found' error
+            if (error instanceof Error && error.message === 'Product not found') {
+                throw error;
+            }
             throw new Error('Failed to retrieve product');
         }
     },
@@ -179,12 +163,6 @@ export const productRepository = {
         products: ProductViewModel[];
         total: number;
     }> {
-        const cacheKey = `products:category:${category}:page:${page}:size:${pageSize}`;
-        const cached = getFromCache<{ products: ProductViewModel[]; total: number }>(cacheKey);
-        if (cached) {
-            return cached;
-        }
-
         try {
             const skip = (page - 1) * pageSize;
             const [products, total] = await Promise.all([
@@ -203,13 +181,11 @@ export const productRepository = {
                 })
             ]);
 
-            const result = {
+            return {
                 products: products.map(toProductViewModel),
                 total
             };
 
-            setCache(cacheKey, result);
-            return result;
         } catch (error) {
             console.error(`Error getting products for category ${category}:`, error);
             throw new Error('Failed to retrieve products by category');
@@ -236,12 +212,19 @@ export const productRepository = {
             });
 
             if (!variant) {
-                throw new Error('Variant not found');
+                throw new VariantError('Variant not found');
             }
 
             return variant.stockQuantity;
         } catch (error) {
             console.error(`Error getting stock for variant ${variantId}:`, error);
+
+            // Re-throw the specific error if it's our "Variant not found" error
+            if (error instanceof VariantError) {
+                throw error;
+            }
+
+            // Otherwise, throw the generic error
             throw new Error('Failed to get variant stock');
         }
     },
@@ -505,10 +488,6 @@ export const productRepository = {
         }
     },
 
-    async clearCache(): Promise<void> {
-        cache.clear();
-    },
-
     // Helper function to transform grouped products to catalogue view
     toCatalogueViewModel(productGroups: ProductGroup[], totalProducts: number): CatalogueViewModel {
         return {
@@ -516,5 +495,56 @@ export const productRepository = {
             totalProducts,
             categories: productGroups.map(group => group.category)
         };
+    },
+
+    /**
+     * Updates a product and its variants in a single transaction
+     * @param productId - The ID of the product to update
+     * @param productData - The product data to update
+     * @param variantsData - Array of variant updates with ID and data
+     * @throws {Error} If the transaction fails
+     */
+    async updateProductAndVariants(
+        productId: string,
+        productData: {
+            slug?: string;
+            category?: string;
+            name?: string;
+            description?: string;
+            features?: string[];
+            specifications?: Record<string, string | number | boolean>;
+            isAccessory?: boolean;
+        },
+        variantsData: Array<{
+            id: string,
+            data: {
+                sku?: string;
+                name?: string;
+                price?: number;
+                stockQuantity?: number;
+                attributes?: Record<string, string | number | boolean>;
+            }
+        }>
+    ): Promise<void> {
+        try {
+            await prisma.$transaction(async (tx) => {
+                // Update product
+                await tx.product.update({
+                    where: { id: productId },
+                    data: productData
+                });
+
+                // Update variants
+                for (const variant of variantsData) {
+                    await tx.productVariant.update({
+                        where: { id: variant.id },
+                        data: variant.data
+                    });
+                }
+            });
+        } catch (error) {
+            console.error(`Error updating product ${productId} and variants:`, error);
+            throw new Error('Failed to update product and variants');
+        }
     }
-}; 
+};

@@ -1,5 +1,5 @@
 import { PrismaClient, type User } from '@prisma/client';
-import type { UserViewModel, UserDetailViewModel, UserAuthViewModel, Provider, UserStatus } from '../models/user';
+import { type UserViewModel, type UserDetailViewModel, type UserAuthViewModel, type Provider, UserStatus } from '../models/user';
 import { hashPassword } from '$lib/server/auth/password';
 
 // Helper functions to map between Prisma models and view models
@@ -14,7 +14,7 @@ function mapToUserViewModel(user: User): UserViewModel {
     image: user.image,
     isAdmin: user.isAdmin,
     emailVerified: user.emailVerified,
-    status: user.status
+    status: UserStatus.ACTIVE
   };
 }
 

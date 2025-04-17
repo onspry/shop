@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { type CartViewModel, type CartSummaryViewModel, CartStatus } from '$lib/models/cart';
 import { toProductVariantViewModel } from './product-repository';
 import { formatPrice } from '$lib/utils/price';
+import { CartError, VariantError, StockError } from '$lib/errors/shop-errors';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -29,34 +30,7 @@ export interface CartItemBase {
     quantity: number;
 }
 
-// Custom error types for better error handling
-export class CartError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'CartError';
-    }
-}
 
-export class VariantError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'VariantError';
-    }
-}
-
-export class StockError extends CartError {
-    constructor(message: string) {
-        super(message);
-        this.name = 'StockError';
-    }
-}
-
-export class DiscountError extends CartError {
-    constructor(message: string) {
-        super(message);
-        this.name = 'DiscountError';
-    }
-}
 
 // Define the repository class
 export class CartRepository {

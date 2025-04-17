@@ -19,9 +19,6 @@ export const mockPrismaInstance = {
     delete: vi.fn(),
     deleteMany: vi.fn(),
   },
-  productVariant: {
-    findUnique: vi.fn(),
-  },
   order: {
     findUnique: vi.fn(),
     findFirst: vi.fn(),
@@ -57,6 +54,33 @@ export const mockPrismaInstance = {
   inventoryTransaction: {
     create: vi.fn(),
   },
+  product: {
+    create: vi.fn(),
+    findUnique: vi.fn(),
+    findMany: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    deleteMany: vi.fn(),
+    count: vi.fn(),
+  },
+  productVariant: {
+    create: vi.fn(),
+    findUnique: vi.fn(),
+    findMany: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    deleteMany: vi.fn(),
+  },
+  user: {
+    findUnique: vi.fn(),
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    count: vi.fn(),
+  },
+
   $transaction: vi.fn((callback) => callback(mockPrismaInstance)),
 };
 

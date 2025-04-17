@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CartRepository, StockError, CartError, VariantError, type CartWithItems } from '../cart-repository';
+import { CartRepository, type CartWithItems } from '../cart-repository';
+import { StockError, CartError, VariantError } from '$lib/errors/shop-errors';
 import type { CartViewModel } from '$lib/models/cart';
 import { CartStatus } from '$lib/models/cart';
 import { mockPrismaInstance } from '../../../../test/setupTests';
