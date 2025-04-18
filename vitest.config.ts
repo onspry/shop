@@ -14,5 +14,11 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.{js,ts}'],
     globals: true,
     setupFiles: ['./test/setupTests.ts'],
+    deps: {
+      inline: ['@testing-library/svelte']
+    },
+    environmentMatchGlobs: [
+      ['**/*.svelte.{test,spec}.{js,ts}', 'jsdom']
+    ]
   },
 });

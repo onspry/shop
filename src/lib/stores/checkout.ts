@@ -65,31 +65,32 @@ function safeJSONParse<T>(jsonString: string | null, fallback: T): T {
 const CHECKOUT_STORAGE_KEY = 'checkout_data';
 
 // Create checkout store with localStorage persistence
-const createCheckoutStore = () => {
+export const createCheckoutStore = () => {
     // Try to load from localStorage if in browser
     const storedData = browser ? localStorage.getItem(CHECKOUT_STORAGE_KEY) : null;
+
     const initialState = storedData
         ? safeJSONParse(storedData, initialCheckoutState)
         : initialCheckoutState;
 
     const { subscribe, set, update } = writable<CheckoutState>(initialState);
 
-    // Save to localStorage whenever store changes
-    const saveToStorage = (state: CheckoutState) => {
-        if (browser) {
+    // Persist to localStorage whenever store changes
+    if (browser) {
+        // This will run every time the store changes
+        // and persist the state to localStorage
+        subscribe((state) => {
+            // Only persist if state is not empty
             localStorage.setItem(CHECKOUT_STORAGE_KEY, JSON.stringify(state));
-        }
-    };
+        });
+    }
 
     return {
         subscribe,
-
-        // Set the entire checkout state
         set: (state: CheckoutState) => {
-            saveToStorage(state);
             set(state);
         },
-
+        update, // Expose update method for Writable compatibility
         // Reset store to initial state
         reset: () => {
             if (browser) {
@@ -102,7 +103,7 @@ const createCheckoutStore = () => {
         setCurrentSection: (section: 'email' | 'shipping' | 'payment') => {
             update(state => {
                 const newState = { ...state, currentSection: section };
-                saveToStorage(newState);
+
                 return newState;
             });
         },
@@ -114,7 +115,7 @@ const createCheckoutStore = () => {
                     ...state,
                     email: validated ? email : '', // Only save email if validated
                 };
-                saveToStorage(newState);
+
                 return newState;
             });
         },
@@ -129,7 +130,7 @@ const createCheckoutStore = () => {
                         ...config
                     }
                 };
-                saveToStorage(newState);
+
                 return newState;
             });
         },
@@ -144,7 +145,7 @@ const createCheckoutStore = () => {
                         ...config
                     }
                 };
-                saveToStorage(newState);
+
                 return newState;
             });
         },
@@ -156,7 +157,7 @@ const createCheckoutStore = () => {
                     ...state,
                     shippingValidated: validated
                 };
-                saveToStorage(newState);
+
                 return newState;
             });
         },
@@ -168,7 +169,7 @@ const createCheckoutStore = () => {
                     ...state,
                     shippingCost: cost
                 };
-                saveToStorage(newState);
+
                 return newState;
             });
         },
@@ -180,7 +181,7 @@ const createCheckoutStore = () => {
                     ...state,
                     estimatedDays: days
                 };
-                saveToStorage(newState);
+
                 return newState;
             });
         },
@@ -197,7 +198,7 @@ const createCheckoutStore = () => {
                     ...initialCheckoutState,
                     shippingConfig: state.shippingConfig
                 };
-                saveToStorage(newState);
+
                 return newState;
             });
         }

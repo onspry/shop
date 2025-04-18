@@ -1,5 +1,36 @@
 import { vi } from 'vitest';
 
+const mockStorage = (() => {
+  let store: Record<string, string> = {};
+
+  return {
+    get length() {
+      return Object.keys(store).length;
+    },
+    key(index: number) {
+      const keys = Object.keys(store);
+      return keys[index] || null;
+    },
+    getItem(key: string) {
+      return store[key] || null;
+    },
+    setItem(key: string, value: string) {
+      store[key] = value;
+    },
+    removeItem(key: string) {
+      delete store[key];
+    },
+    clear() {
+      store = {};
+    },
+  };
+})();
+
+// Example of assigning to window.localStorage in your test setup:
+Object.defineProperty(window, 'localStorage', {
+  value: mockStorage,
+});
+
 // Mock Prisma instance
 export const mockPrismaInstance = {
   cart: {
