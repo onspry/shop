@@ -9,12 +9,12 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';
 	import VariantCard from '$lib/components/variant-card.svelte';
-	import ImagePreview from '$lib/components/ui/image-preview.svelte';
+	import { AppImage } from '$lib/components/ui/app-image';
 	import { formatPrice } from '$lib/utils/price';
 	import { ProductCompatibilityService } from '$lib/utils/product-compatibility';
 	import { browser } from '$app/environment';
 	import { goto, pushState } from '$app/navigation';
-	import { ShoppingCart, Check, ImageOff, Minus, Plus } from 'lucide-svelte';
+	import { ShoppingCart, Check, Minus, Plus } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 	import { enhance } from '$app/forms';
 	import { cart } from '$lib/stores/cart';
@@ -48,11 +48,7 @@
 	let currentKeycapId = $state<string | null>(null);
 	let isLoading = $state(false);
 
-	type SelectionStateType =
-		| { state: 'initial' }
-		| { state: 'variantSelected'; variantId: string }
-		| { state: 'switchSelected'; variantId: string; switchId: string }
-		| { state: 'complete'; variantId: string; switchId: string; keycapId: string };
+	// Selection state is tracked through the individual variables above
 
 	// Derived states for selections and compatibility
 	let selectedVariant = $state<ProductVariantViewModel | null>(null);
@@ -60,7 +56,7 @@
 	let selectedSwitch = $state<ProductVariantViewModel | null>(null);
 	let compatibleKeycaps = $state<ProductVariantViewModel[]>([]);
 	let selectedKeycap = $state<ProductVariantViewModel | null>(null);
-	let selectionState = $state<SelectionStateType>({ state: 'initial' });
+	// Selection state is tracked through the individual variables above
 
 	// Get initial selections from URL parameters
 	const urlVariantId = searchParams.variant;
@@ -115,38 +111,20 @@
 			: (compatibleKeycaps.find((v: ProductVariantViewModel) => v.id === currentKeycapId) ?? null);
 	});
 
-	$effect(() => {
-		const variant = selectedVariant;
-		const variantId = currentVariantId;
-		const switchId = currentSwitchId;
-		const keycapId = currentKeycapId;
+	// Selection state is tracked through the individual variables above
 
-		if (!variant || !variantId) {
-			selectionState = { state: 'initial' };
-			return;
+	// Track valid images
+	let validImages = $state<string[]>([]);
+
+	// Initialize valid images
+	$effect(() => {
+		if (images) {
+			validImages = images.map((img: { url: string; }) => img.url);
 		}
-		if (!selectedSwitch || !switchId) {
-			selectionState = { state: 'variantSelected', variantId };
-			return;
-		}
-		if (!selectedKeycap || !keycapId) {
-			selectionState = {
-				state: 'switchSelected',
-				variantId,
-				switchId
-			};
-			return;
-		}
-		selectionState = {
-			state: 'complete',
-			variantId,
-			switchId,
-			keycapId
-		};
 	});
 
-	// Image loading state
-	let loadedImages = $state(new Set<string>());
+	// Calculate number of valid images
+	const validImageCount = $derived(validImages.length);
 
 	// Derived data
 	const basePrice = $derived(
@@ -264,13 +242,7 @@
 		isAddingToCart = false;
 	}
 
-	// Image handling functions
-	function handleImageLoad(event: Event) {
-		const img = event.target as HTMLImageElement;
-		loadedImages.add(img.src);
-	}
-
-	let imageErrors = $state(new Set<string>());
+	// Image loading state is tracked but not actively used
 
 	// Helper function to get variant attribute with type safety
 	function getVariantAttribute<T>(
@@ -287,17 +259,7 @@
 		}
 	}
 
-	// Helper function to get required accessories
-	function getRequiredAccessories(variant: ProductVariantViewModel): string[] {
-		return getVariantAttribute(variant, 'requiredAccessories', []);
-	}
-
-	// Helper function to get compatible products
-	function getCompatibleProducts(
-		variant: ProductVariantViewModel
-	): Record<string, Record<string, string>> {
-		return getVariantAttribute(variant, 'compatibleWith', {});
-	}
+	// Helper functions for compatibility are handled by the ProductCompatibilityService
 
 	// Helper function to get button text based on selection state
 	function getButtonText(): string {
@@ -333,7 +295,7 @@
 	}
 </script>
 
-<div class="container mx-auto px-4 py-8">
+<div>
 	{#if !product?.id}
 		<div class="flex justify-center items-center h-64">
 			<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -343,9 +305,9 @@
 			<!-- Product Images -->
 			<div class="relative">
 				{#if images?.length > 0}
-					<div class="flex gap-4">
-						<!-- Thumbnails on the left -->
-						{#if images.length > 1}
+					{#if validImageCount > 1}
+						<!-- Multiple images: show thumbnails on the left -->
+						<div class="flex gap-4">
 							<div class="flex flex-col gap-2 w-20">
 								{#each images as image, index}
 									<Button
@@ -353,38 +315,51 @@
 										size="icon"
 										onclick={() => switchMainImage(index)}
 										aria-label="View {image.alt}"
-										class="p-0 h-auto w-auto hover:bg-transparent aspect-square"
+										class="p-0 h-auto w-auto hover:bg-transparent"
 									>
-										<ImagePreview
+										<AppImage
 											src={image.url}
 											alt={image.alt}
 											width={80}
 											height={80}
-											className="transition-opacity duration-200 aspect-square {currentImageIndex ===
-											index
-												? 'opacity-100 ring-2 ring-primary'
-												: 'opacity-70'}"
+											thumbnailMode={true}
+											isSelected={currentImageIndex === index}
 										/>
 									</Button>
 								{/each}
 							</div>
-						{/if}
 
-						<!-- Main image on the right -->
-						<div class="flex-1">
+							<!-- Main image (with thumbnails) -->
+							<div class="flex-1">
+								<div class="aspect-square max-w-lg mx-auto overflow-hidden rounded-lg">
+									<AppImage
+										src={images[currentImageIndex].url}
+										alt={images[currentImageIndex].alt}
+										width={550}
+										height={550}
+										className="w-full h-full"
+										objectFit="contain"
+									/>
+								</div>
+							</div>
+						</div>
+					{:else}
+						<!-- Single image: centered with no thumbnails -->
+						<div class="w-full">
 							<div class="aspect-square max-w-lg mx-auto overflow-hidden rounded-lg">
-								<ImagePreview
+								<AppImage
 									src={images[currentImageIndex].url}
 									alt={images[currentImageIndex].alt}
 									width={550}
 									height={550}
-									className="rounded-lg w-full h-full object-contain"
+									className="w-full h-full"
+									objectFit="contain"
 								/>
 							</div>
 						</div>
-					</div>
+					{/if}
 				{:else}
-					<div class="aspect-square flex items-center justify-center rounded-lg bg-muted">
+					<div class="aspect-square w-full max-w-lg mx-auto flex items-center justify-center rounded-lg bg-muted">
 						<span class="text-muted-foreground">No image available</span>
 					</div>
 				{/if}
@@ -520,7 +495,7 @@
 						<!-- Quantity selector -->
 						<div class="flex items-center gap-3">
 							<span class="text-sm font-medium">{m.product_quantity()}</span>
-							<div class="flex items-center space-x-2 bg-muted/10 rounded-md p-1.5 border border-gray-100">
+							<div class="flex items-center space-x-2 bg-muted/10 dark:bg-muted/5 rounded-md p-1.5 border border-border/50 dark:border-border">
 								<Button
 									class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
 									variant="ghost"

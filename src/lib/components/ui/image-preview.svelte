@@ -7,21 +7,48 @@
 		width: number;
 		height: number;
 		className?: string;
+		onError?: (src: string) => void;
 	}>();
 
 	let isLoading = $state(true);
 	let hasError = $state(false);
 
+	// Function to get optimized image URL
+	// Note: w and h parameters are kept for API compatibility but not used
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	function getOptimizedImageUrl(url: string, w: number, h: number): string {
 		if (!url) return '';
-		if (!url.startsWith('/') && !url.startsWith('http')) {
-			url = '/' + url;
+
+		// If it's already a full URL, return it as is
+		if (url.startsWith('http')) {
+			return url;
 		}
-		return `${url}?w=${w}&h=${h}&q=80&format=webp`;
+
+		// For paths that start with /images/ (from the database)
+		// We need to keep the path as is, since our server route will handle it
+		if (url.startsWith('/images/')) {
+			return url;
+		}
+
+		// If it's a relative path without the /images/ prefix
+		if (!url.startsWith('/')) {
+			return `/images/${url}`;
+		}
+
+		// Default case - just return the URL
+		return url;
 	}
+
+	// Reset error state when src changes
+	$effect(() => {
+		if (props.src) {
+			isLoading = true;
+			hasError = false;
+		}
+	});
 </script>
 
-<div class="aspect-square overflow-hidden rounded-md bg-muted relative {props.className}">
+<div class="aspect-square overflow-hidden rounded-md bg-muted/5 relative {props.className}">
 	{#if hasError}
 		<div class="absolute inset-0 flex items-center justify-center bg-muted">
 			<div class="text-muted-foreground">
@@ -37,7 +64,10 @@
 			loading="lazy"
 			class="relative z-10 h-full w-full object-cover object-center"
 			onload={() => (isLoading = false)}
-			onerror={() => (hasError = true)}
+			onerror={() => {
+				hasError = true;
+				if (props.onError) props.onError(props.src);
+			}}
 		/>
 		{#if isLoading}
 			<div class="absolute inset-0 z-20 flex items-center justify-center">

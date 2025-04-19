@@ -49,7 +49,7 @@
 	style:aspect-ratio={aspectRatio}
 >
 	{#if !imageLoaded || !src}
-		<Skeleton class="absolute inset-0 w-full h-full rounded-md z-10" />
+		<Skeleton class="absolute inset-0 w-full h-full z-10" />
 	{/if}
 
 	{#if src}
@@ -58,13 +58,13 @@
 			{alt}
 			onload={handleLoad}
 			onerror={handleError}
-			class={`w-full h-full object-${objectFit} rounded-md transition-opacity duration-300 ${!imageLoaded || imageError ? 'opacity-0' : 'opacity-100'}`}
+			class={`w-full h-full object-${objectFit} transition-opacity duration-300 ${!imageLoaded || imageError ? 'opacity-0' : 'opacity-100'}`}
 			aria-hidden={imageError}
 		/>
 	{/if}
 
 	{#if imageError && src}
-		<div class="absolute inset-0 flex items-center justify-center bg-muted rounded-md">
+		<div class="absolute inset-0 flex items-center justify-center bg-muted/5">
 			<ImageOff class="h-6 w-6 text-muted-foreground" />
 		</div>
 	{/if}

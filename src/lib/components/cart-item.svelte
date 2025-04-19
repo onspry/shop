@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { CartItemViewModel } from '$lib/models/cart';
-	import { Trash2, Minus, Plus, ImageOff } from 'lucide-svelte';
+	import { Trash2, Minus, Plus } from 'lucide-svelte';
+import { AppImage } from '$lib/components/ui/app-image';
 	import { formatPrice } from '$lib/utils/price';
 	import * as m from '$lib/paraglide/messages';
 	import { Button } from '$lib/components/ui/button';
@@ -30,6 +31,8 @@
 	// Log initial item state
 	console.log('[CART-ITEM] Initial item:', item);
 	console.log('[CART-ITEM] Initial composites:', item.composites);
+	console.log('[CART-ITEM] Image URL:', item.imageUrl);
+	console.log('[CART-ITEM] Variant attributes:', item.variant?.attributes);
 
 	// Quantity can't go below 1 or above available stock
 	const minQuantity = 1;
@@ -37,21 +40,10 @@
 	const quantity = $derived(currentItem?.quantity || 0);
 	const price = $derived(currentItem?.price || 0);
 	const variantName = $derived(currentItem?.variant?.name || 'Product');
-	const variantImage = $derived(currentItem?.variant?.attributes?.image);
 
 
 
-	let imageError = $state(false);
-	let imageLoaded = $state(false);
 	let isUpdating = $state(false);
-
-	function handleImageError() {
-		imageError = true;
-	}
-
-	function handleImageLoad() {
-		imageLoaded = true;
-	}
 
 	// Function to show remove confirmation
 	function showRemoveConfirmation() {
@@ -79,29 +71,15 @@
 <div class="relative">
 	<div class="flex bg-background rounded-lg p-4 hover:shadow-md transition-all duration-200 border border-transparent hover:border-border">
 		<!-- Product Image with hover zoom -->
-		<div class="w-32 h-32 flex-shrink-0 relative overflow-hidden rounded-md border border-border/50 group">
-			<div class="relative aspect-square h-full overflow-hidden bg-muted/5">
-				{#if imageError}
-					<div class="absolute inset-0 flex items-center justify-center bg-muted">
-						<ImageOff class="h-8 w-8 text-muted-foreground" />
-					</div>
-				{:else}
-					{#if !imageLoaded}
-						<div class="absolute inset-0">
-							<div class="h-full w-full animate-pulse bg-muted-foreground/20"></div>
-						</div>
-					{/if}
-					<img
-						src={variantImage}
-						alt={variantName}
-						class="h-full w-full object-cover transition-all duration-300 group-hover:scale-110"
-						class:opacity-0={!imageLoaded}
-						class:opacity-100={imageLoaded}
-						onerror={handleImageError}
-						onload={handleImageLoad}
-					/>
-				{/if}
-			</div>
+		<div class="w-32 h-32 flex-shrink-0 relative overflow-hidden rounded-md group">
+			<AppImage
+				src={currentItem.imageUrl}
+				alt={variantName}
+				width={128}
+				height={128}
+				className="h-full w-full group-hover:scale-110 transition-all duration-300"
+				objectFit="cover"
+			/>
 		</div>
 
 		<div class="flex-1 pl-6 flex flex-col justify-between">
@@ -200,7 +178,7 @@
 
 			<div class="mt-4 flex justify-between items-center">
 				<!-- Improved Quantity Controls with Server Actions -->
-				<div class="flex items-center space-x-2 bg-muted/10 rounded-md p-1.5 border border-border/50">
+				<div class="flex items-center space-x-2 bg-muted/10 dark:bg-muted/5 rounded-md p-1.5 border border-border/50 dark:border-border">
 					<form
 						method="POST"
 						action="?/updateItem"

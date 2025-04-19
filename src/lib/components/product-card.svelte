@@ -3,18 +3,13 @@
 	import type { ProductViewModel, ProductVariantViewModel } from '$lib/models/product';
 	import { product_starting_at, product_view_details } from '$lib/paraglide/messages';
 	import { formatPrice } from '$lib/utils/price';
-	import { ImageOff } from 'lucide-svelte';
+	import { AppImage } from '$lib/components/ui/app-image';
 	import { Button } from '$lib/components/ui/button';
 
 	let { product, class: className = '' } = $props<{
 		product: ProductViewModel;
 		class?: string;
 	}>();
-
-	// Helper function to get optimized image URL
-	function getOptimizedImageUrl(url: string): string {
-		return `${url}?w=800&q=80&format=webp`;
-	}
 
 	const basePrice = $derived(
 		product?.variants?.length > 0
@@ -23,44 +18,22 @@
 	);
 
 	const hasMultipleVariants = $derived(product?.variants?.length > 1);
-
-	let imageError = $state(false);
-	let imageLoaded = $state(false);
-
-	function handleImageError() {
-		imageError = true;
-	}
-
-	function handleImageLoad() {
-		imageLoaded = true;
-	}
 </script>
 
 <div class="group relative bg-card overflow-hidden rounded-lg border border-border hover:shadow-md transition-all duration-200 hover:border-border/80 {className}">
 	<!-- Image Section -->
-	<div class="relative w-full p-6 overflow-hidden flex items-center justify-center">
-		<div class="relative aspect-square w-full max-w-full overflow-hidden bg-muted/5 rounded-md border border-border/50 group flex items-center justify-center">
-			{#if imageError || !product?.images?.length}
-				<div class="absolute inset-0 flex items-center justify-center bg-muted">
-					<ImageOff class="h-10 w-10 text-muted-foreground" />
-				</div>
-			{:else}
-				{#if !imageLoaded}
-					<div class="absolute inset-0 flex items-center justify-center">
-						<div class="h-full w-full animate-pulse bg-muted-foreground/20"></div>
-					</div>
-				{/if}
-				<img
-					src={getOptimizedImageUrl(product.images[0]?.url || '')}
-					alt={product.images[0]?.alt || product.name}
-					loading="lazy"
-					class="max-h-full max-w-full object-contain object-center transition-all duration-300 group-hover:scale-110"
-					class:opacity-0={!imageLoaded}
-					class:opacity-100={imageLoaded}
-					onerror={handleImageError}
-					onload={handleImageLoad}
-				/>
-			{/if}
+	<div class="relative w-full p-4 pb-20 overflow-hidden flex items-center justify-center">
+		<div class="relative aspect-square w-full overflow-hidden rounded-md">
+			<AppImage
+				src={product?.images?.length ? product.images[0].url : ''}
+				alt={product?.images?.length ? product.images[0].alt : product?.name || 'Product'}
+				width="100%"
+				height="100%"
+				aspectRatio="1/1"
+				className="h-full w-full group-hover:scale-105 transition-all duration-300"
+				objectFit="contain"
+				showPlaceholder={true}
+			/>
 		</div>
 	</div>
 

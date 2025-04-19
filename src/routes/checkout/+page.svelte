@@ -22,12 +22,12 @@
 		ShoppingBag,
 		User,
 		Truck,
-		ImageOff,
 		Mail,
 		MapPin,
 		CreditCard,
 		Check
 	} from 'lucide-svelte';
+	import { AppImage } from '$lib/components/ui/app-image';
 	import type { PageData } from './$types';
 	import { browser } from '$app/environment';
 	import { enhance } from '$app/forms';
@@ -45,9 +45,6 @@
 
 	// Page data props
 	const { data } = $props<{ data: PageData }>();
-
-	// Image handling state
-	let imageStates = $state(new Map<string, { error: boolean; loaded: boolean }>());
 
 	// We validate based on field values and error states
 	// Track the active step (1: Email, 2: Shipping, 3: Payment)
@@ -310,16 +307,7 @@
 		}
 	}
 
-	// Image handling functions
-	function handleImageError(itemId: string) {
-		imageStates.set(itemId, { error: true, loaded: false });
-		imageStates = imageStates;
-	}
-
-	function handleImageLoad(itemId: string) {
-		imageStates.set(itemId, { error: false, loaded: true });
-		imageStates = imageStates;
-	}
+	// No image handling functions needed with AppImage component
 
 	// Add a more detailed error indicator for shipping information
 	const shippingErrorDetails = $derived({
@@ -1247,32 +1235,18 @@
 									<div class="flex gap-4">
 										<div class="relative">
 											<div
-												class="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium shadow-sm z-10"
+												class="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium shadow-sm z-20"
 											>
 												{item.quantity}
 											</div>
-											<div class="relative w-12 h-12 overflow-hidden rounded-md bg-muted/10">
-												{#if imageStates.get(item.id)?.error}
-													<div class="absolute inset-0 flex items-center justify-center bg-muted">
-														<ImageOff class="h-4 w-4 text-muted-foreground" />
-													</div>
-												{:else}
-													{#if !imageStates.get(item.id)?.loaded}
-														<div class="absolute inset-0">
-															<div class="h-full w-full animate-pulse bg-muted-foreground/20"></div>
-														</div>
-													{/if}
-													<img
-														src={item.imageUrl}
-														alt={item.name}
-														class="h-full w-full object-cover transition-opacity duration-300"
-														class:opacity-0={!imageStates.get(item.id)?.loaded}
-														class:opacity-100={imageStates.get(item.id)?.loaded}
-														onerror={() => handleImageError(item.id)}
-														onload={() => handleImageLoad(item.id)}
-													/>
-												{/if}
-											</div>
+											<AppImage
+												src={item.imageUrl}
+												alt={item.name}
+												width={48}
+												height={48}
+												className="h-full w-full"
+												objectFit="cover"
+											/>
 										</div>
 										<div class="flex-1">
 											<div class="flex justify-between items-start">

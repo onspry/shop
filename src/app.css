@@ -51,31 +51,31 @@ html.fonts-failed {
     --input: 20 5.9% 90%;
     --ring: 24.6 95% 53.1%;
     --radius: 0rem;
-    
+
     /* Layout sizes */
     --header-height: 4rem; /* 64px */
     --footer-height: 3rem; /* 48px */
     --page-padding-x: 2rem; /* 32px */
     --content-max-width: 72rem; /* 1152px - optimal reading width */
-    
+
     @screen md {
       --header-height: 5rem; /* 80px */
       --footer-height: 4rem; /* 64px */
       --page-padding-x: 3rem; /* 48px */
     }
-    
+
     @screen lg {
       --page-padding-x: 4rem; /* 64px */
     }
-    
+
     @screen xl {
       --page-padding-x: 5rem; /* 80px - extra spacious on very large screens */
     }
-    
+
     @screen 2xl {
       --page-padding-x: 6rem; /* 96px - maximum spacing for ultra-wide screens */
     }
-    
+
     --logo: url('/logo-dark.svg') no-repeat; /* Dark text for light mode */
   }
   .dark {
@@ -98,7 +98,7 @@ html.fonts-failed {
     --border: 12 6.5% 15.1%;
     --input: 12 6.5% 15.1%;
     --ring: 20.5 90.2% 48.2%;
-    
+
     --logo: url('/logo-light.svg') no-repeat; /* White text for dark mode */
   }
 
@@ -110,7 +110,7 @@ html.fonts-failed {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
   }
-  
+
   /* Prevent SvelteKit from adding unwanted styles when dropdown is open */
   body[style*="padding-right"] {
     padding-right: 0 !important;
@@ -118,7 +118,7 @@ html.fonts-failed {
     overflow: auto !important;
     pointer-events: auto !important;
   }
-  
+
   /* Additional fix for the app-body class */
   .app-body {
     padding-right: 0 !important;
@@ -134,21 +134,21 @@ html.fonts-failed {
     outline: 2px solid hsl(var(--ring));
     outline-offset: 0;
   }
-  
+
   /* Spacing adjustments for form layouts */
   .grid.gap-2 {
     row-gap: 0.75rem;
   }
-  
+
   /* Accordion styling */
   [data-accordion-content] {
     padding-top: 0;
   }
-  
+
   .pt-4 {
     padding-top: 0.5rem;
   }
-  
+
   [data-accordion-item] + [data-accordion-item] {
     margin-top: 0.5rem;
   }
@@ -184,14 +184,14 @@ html.fonts-failed {
   p {
     @apply text-base leading-relaxed;
   }
-  
+
   /* Fix for dropdown menu overlay */
   [data-portal] {
     position: fixed !important;
     z-index: 50 !important;
     pointer-events: none !important;
   }
-  
+
   /* Ensure dropdown content has pointer events */
   [data-portal] > * {
     pointer-events: auto !important;
@@ -213,7 +213,7 @@ html.fonts-failed {
     padding-left: var(--page-padding-x);
     padding-right: var(--page-padding-x);
   }
-  
+
   .logo {
     display: block;
     box-sizing: border-box;

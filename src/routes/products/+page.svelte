@@ -120,8 +120,8 @@
 			<Carousel.Content class="-ml-4">
 				{#each accessories as product (product.id)}
 					<Carousel.Item class="pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5">
-						<div class="p-1 aspect-square w-full">
-							<ProductCard {product} class="h-full" />
+						<div class="p-2 aspect-[1/1.2] w-full">
+							<ProductCard {product} />
 						</div>
 					</Carousel.Item>
 				{/each}

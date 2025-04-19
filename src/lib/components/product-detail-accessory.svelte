@@ -9,6 +9,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';
 	import VariantCard from '$lib/components/variant-card.svelte';
+import { AppImage } from '$lib/components/ui/app-image';
 	import { formatPrice } from '$lib/utils/price';
 	import { ShoppingCart, Check, Minus, Plus } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
@@ -22,8 +23,6 @@
 		images: ProductImageViewModel[];
 	}>();
 
-	// Image loading state
-	let loadedImages = $state(new Set<string>());
 
 	// Derived data
 	const basePrice = $derived(
@@ -64,26 +63,7 @@
 		return (variant.attributes?.[attribute] as string) || '';
 	}
 
-	// Image utility functions
-	function getOptimizedImageUrl(url: string, width: number, height: number): string {
-		if (!url) return '';
-		// Ensure URL starts with a forward slash if it's a relative path
-		if (!url.startsWith('/') && !url.startsWith('http')) {
-			url = '/' + url;
-		}
-		return `${url}?w=${width}&h=${height}&q=80&format=webp`;
-	}
 
-	function handleImageLoad(event: Event) {
-		const img = event.target as HTMLImageElement;
-		if (img.src) {
-			loadedImages.add(img.src);
-		}
-	}
-
-	function handleImageError() {
-		// Image error handling logic here
-	}
 
 	// Add to cart functionality
 	function handleAddToCartResult(result: { type: string; status?: number; data?: any }) {
@@ -114,13 +94,26 @@
 		isAddingToCart = false;
 	}
 
-	// Check if configuration is complete
-	const canAddToCart = $derived(
+	// Check if variant is available
+	const isVariantAvailable = $derived(
 		!!selectedVariant && selectedVariant.stockStatus !== 'out_of_stock'
 	);
+
+	// Track valid images
+	let validImages = $state<string[]>([]);
+
+	// Initialize valid images
+	$effect(() => {
+		if (images) {
+			validImages = images.map((img: { url: string; }) => img.url);
+		}
+	});
+
+	// Calculate number of valid images
+	const validImageCount = $derived(validImages.length);
 </script>
 
-<div class="container mx-auto px-4 py-8">
+<div>
 	{#if !product?.id}
 		<div class="flex justify-center items-center h-64">
 			<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -130,16 +123,14 @@
 			<!-- Product Images -->
 			<div class="relative">
 				{#if images?.length > 0}
-					<div class="flex gap-4">
-						<!-- Thumbnails on the left -->
-						{#if images.length > 1}
+					{#if validImageCount > 1}
+						<!-- Multiple images: show thumbnails on the left -->
+						<div class="flex gap-4">
 							<div class="flex flex-col gap-2 w-20">
 								{#each images as image, index (image.url)}
 									<Button
-										type="button"
-										class={`aspect-square overflow-hidden rounded-md bg-muted relative cursor-pointer hover:opacity-80 transition-opacity border-0 p-0 w-full ${
-											loadedImages.has(image.url) && index === 0 ? 'ring-2 ring-primary' : ''
-										}`}
+										variant="ghost"
+										size="icon"
 										onclick={() => {
 											// Move this image to first position in display
 											const temp = [...images];
@@ -147,55 +138,52 @@
 											temp.unshift(selectedImg);
 											images = temp;
 										}}
-										aria-label={`View ${image.alt || 'product image'}`}
+										aria-label="View {image.alt}"
+										class="p-0 h-auto w-auto hover:bg-transparent"
 									>
-										{#if !loadedImages.has(image.url)}
-											<div class="absolute inset-0 flex items-center justify-center">
-												<div class="animate-pulse bg-muted-foreground/20 w-full h-full"></div>
-											</div>
-										{/if}
-										<img
-											src={getOptimizedImageUrl(image.url, 80, 80)}
+										<AppImage
+											src={image.url}
 											alt={image.alt}
 											width={80}
 											height={80}
-											loading="lazy"
-											class="h-full w-full object-contain object-center transition-opacity duration-300"
-											class:opacity-0={!loadedImages.has(image.url)}
-											class:opacity-100={loadedImages.has(image.url)}
-											onload={handleImageLoad}
-											onerror={handleImageError}
+											thumbnailMode={true}
+											isSelected={index === 0}
 										/>
 									</Button>
 								{/each}
 							</div>
-						{/if}
 
-						<!-- Main image on the right -->
-						<div class="flex-1">
-							<div class="aspect-square max-w-lg mx-auto rounded-lg bg-muted relative">
-								{#if !loadedImages.has(images[0].url)}
-									<div class="absolute inset-0 flex items-center justify-center">
-										<div class="animate-pulse bg-muted-foreground/20 w-full h-full"></div>
-									</div>
-								{/if}
-								<img
-									src={getOptimizedImageUrl(images[0].url, 550, 550)}
+							<!-- Main image (with thumbnails) -->
+							<div class="flex-1">
+								<div class="aspect-square max-w-lg mx-auto overflow-hidden rounded-lg">
+									<AppImage
+										src={images[0].url}
+										alt={images[0].alt}
+										width={550}
+										height={550}
+										className="w-full h-full"
+										objectFit="contain"
+									/>
+								</div>
+							</div>
+						</div>
+					{:else}
+						<!-- Single image: centered with no thumbnails -->
+						<div class="w-full">
+							<div class="aspect-square max-w-lg mx-auto overflow-hidden rounded-lg">
+								<AppImage
+									src={images[0].url}
 									alt={images[0].alt}
 									width={550}
 									height={550}
-									loading="lazy"
-									class="h-full w-full object-contain object-center transition-opacity duration-300"
-									class:opacity-0={!loadedImages.has(images[0].url)}
-									class:opacity-100={loadedImages.has(images[0].url)}
-									onload={handleImageLoad}
-									onerror={handleImageError}
+									className="w-full h-full"
+									objectFit="contain"
 								/>
 							</div>
 						</div>
-					</div>
+					{/if}
 				{:else}
-					<div class="aspect-square flex items-center justify-center rounded-lg bg-muted">
+					<div class="aspect-square w-full max-w-lg mx-auto flex items-center justify-center rounded-lg bg-muted">
 						<span class="text-muted-foreground">No image available</span>
 					</div>
 				{/if}
@@ -268,7 +256,7 @@
 					<!-- Quantity selector -->
 					<div class="flex items-center gap-3">
 						<span class="text-sm font-medium">{m.product_quantity()}</span>
-						<div class="flex items-center space-x-2 bg-muted/10 rounded-md p-1.5 border border-gray-100">
+						<div class="flex items-center space-x-2 bg-muted/10 dark:bg-muted/5 rounded-md p-1.5 border border-border/50 dark:border-border">
 							<Button
 								class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
 								variant="ghost"
@@ -324,9 +312,7 @@
 
 						<Button
 							type="submit"
-							disabled={!selectedVariant ||
-								isAddingToCart ||
-								selectedVariant.stockStatus === 'out_of_stock'}
+							disabled={!isVariantAvailable || isAddingToCart}
 							class="w-full mt-6 py-3 px-6 flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							{#if isAddingToCart}
