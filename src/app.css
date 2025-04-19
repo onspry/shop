@@ -199,6 +199,12 @@ html.fonts-failed {
 }
 
 @layer components {
+  /* Reusable text-only class for prominent paragraphs */
+  .text-only {
+    max-width: 65ch;
+    margin-left: auto;
+    margin-right: auto;
+  }
   /* Layout container for consistent spacing */
   .layout-container {
     width: 100%;

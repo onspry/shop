@@ -93,10 +93,40 @@ export const createCheckoutStore = () => {
         update, // Expose update method for Writable compatibility
         // Reset store to initial state
         reset: () => {
+            console.log('[CHECKOUT] Resetting checkout store');
+
+            // First set the store to initial state
+            set({ ...initialCheckoutState });
+
+            // Then remove from localStorage if in browser
             if (browser) {
-                localStorage.removeItem(CHECKOUT_STORAGE_KEY);
+                try {
+                    // Try multiple approaches to ensure it's removed
+                    localStorage.removeItem(CHECKOUT_STORAGE_KEY);
+                    window.localStorage.removeItem(CHECKOUT_STORAGE_KEY);
+                    localStorage.setItem(CHECKOUT_STORAGE_KEY, ''); // Set to empty as fallback
+                    localStorage.removeItem(CHECKOUT_STORAGE_KEY); // Try again
+
+                    console.log('[CHECKOUT] Store reset and removed from localStorage');
+
+                    // Double-check that it was actually removed
+                    const storedData = localStorage.getItem(CHECKOUT_STORAGE_KEY);
+                    if (storedData) {
+                        console.warn('[CHECKOUT] Failed to remove from localStorage, trying again');
+                        localStorage.removeItem(CHECKOUT_STORAGE_KEY);
+                        // As a last resort, overwrite with initial state
+                        localStorage.setItem(CHECKOUT_STORAGE_KEY, JSON.stringify(initialCheckoutState));
+                    }
+                } catch (error) {
+                    console.error('[CHECKOUT] Failed to remove from localStorage:', error);
+                    // Try a different approach if the first one failed
+                    try {
+                        window.localStorage.removeItem(CHECKOUT_STORAGE_KEY);
+                    } catch {
+                        console.error('[CHECKOUT] All attempts to clear localStorage failed');
+                    }
+                }
             }
-            set(initialCheckoutState);
         },
 
         // Update current accordion section
@@ -189,6 +219,34 @@ export const createCheckoutStore = () => {
         // Get a specific part of the state without subscribing
         // Useful for one-off access
         getState: () => get(checkoutStore),
+
+        // Debug function to log the current state
+        debug: () => {
+            const state = get(checkoutStore);
+            console.log('[CHECKOUT DEBUG] Current state:', state);
+
+            if (browser) {
+                const storedData = localStorage.getItem(CHECKOUT_STORAGE_KEY);
+                console.log('[CHECKOUT DEBUG] localStorage data:', storedData);
+            }
+
+            return state;
+        },
+
+        // Force clear localStorage data (for troubleshooting)
+        forceClearStorage: () => {
+            if (browser) {
+                try {
+                    localStorage.removeItem(CHECKOUT_STORAGE_KEY);
+                    console.log('[CHECKOUT] Forced removal from localStorage');
+                    return true;
+                } catch (error) {
+                    console.error('[CHECKOUT] Failed to force remove from localStorage:', error);
+                    return false;
+                }
+            }
+            return false;
+        },
 
         // Clear sensitive data but keep shipping preferences
         clearSensitiveData: () => {

@@ -56,8 +56,8 @@
 	class={`relative rounded-lg border p-4 transition-all ${
 		isSelected
 			? 'border-primary bg-card shadow-sm'
-			: 'border-muted hover:border-primary/50 bg-background'
-	} ${isOutOfStock || disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`}
+			: 'border-muted hover:border-primary/50 bg-background hover:shadow-md'
+	} ${isOutOfStock || disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'} transition-all duration-200`}
 	onclick={handleClick}
 >
 	<div class="flex flex-col h-full">
@@ -78,25 +78,29 @@
 
 		<!-- Variant Visual -->
 		<div class="mb-3 flex justify-center">
-			<div class="relative w-16 h-16">
-				{#if variantImageUrl && !imageError}
-					{#if !imageLoaded}
-						<div class="absolute inset-0 bg-muted animate-pulse rounded-md"></div>
+			<div class="relative w-16 h-16 overflow-hidden rounded-md border border-gray-100 group">
+				<div class="relative aspect-square h-full overflow-hidden bg-muted/5">
+					{#if variantImageUrl && !imageError}
+						{#if !imageLoaded}
+							<div class="absolute inset-0">
+								<div class="h-full w-full animate-pulse bg-muted-foreground/20"></div>
+							</div>
+						{/if}
+						<img
+							src={variantImageUrl}
+							alt={variant.name}
+							class="h-full w-full object-cover transition-all duration-300 group-hover:scale-110"
+							class:opacity-0={!imageLoaded}
+							class:opacity-100={imageLoaded}
+							onload={handleImageLoad}
+							onerror={handleImageError}
+						/>
+					{:else}
+						<div class="absolute inset-0 flex items-center justify-center bg-muted">
+							<ImageOff class="h-8 w-8 text-muted-foreground" />
+						</div>
 					{/if}
-					<img
-						src={variantImageUrl}
-						alt={variant.name}
-						class="w-full h-full object-cover rounded-md"
-						class:opacity-0={!imageLoaded}
-						class:opacity-100={imageLoaded}
-						onload={handleImageLoad}
-						onerror={handleImageError}
-					/>
-				{:else}
-					<div class="w-full h-full bg-muted rounded-md flex items-center justify-center">
-						<ImageOff class="h-8 w-8 text-muted-foreground" />
-					</div>
-				{/if}
+				</div>
 			</div>
 		</div>
 

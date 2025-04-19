@@ -71,7 +71,14 @@ export const actions: Actions = {
                 quantity
             );
 
-            return { success: true };
+            // Get the updated cart to return to the client
+            const updatedCart = await cartRepository.getCartViewModel(sessionId, userId);
+
+            // Return success response with updated cart
+            return {
+                success: true,
+                cart: updatedCart
+            };
         } catch (error) {
             console.error('Error adding item to cart:', error);
 

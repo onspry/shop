@@ -10,10 +10,11 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import VariantCard from '$lib/components/variant-card.svelte';
 	import { formatPrice } from '$lib/utils/price';
-	import { cartActions } from '$lib/stores/cart';
-	import { ShoppingCart, Check } from 'lucide-svelte';
+	import { ShoppingCart, Check, Minus, Plus } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
+	import { enhance } from '$app/forms';
+	import { cart } from '$lib/stores/cart';
 
 	let { product, variants, images } = $props<{
 		product: ProductViewModel;
@@ -53,8 +54,6 @@
 
 	// Quantity counter
 	let quantity = $state(1);
-	const incrementQuantity = () => quantity++;
-	const decrementQuantity = () => (quantity = Math.max(1, quantity - 1));
 
 	// Add to cart state
 	let isAddingToCart = $state(false);
@@ -87,36 +86,32 @@
 	}
 
 	// Add to cart functionality
-	async function addToCart() {
-		if (!selectedVariant || isAddingToCart) return;
+	function handleAddToCartResult(result: { type: string; status?: number; data?: any }) {
+		if (result.type === 'success') {
+			addedToCart = true;
 
-		isAddingToCart = true;
-		try {
-			const success = await cartActions.addToCart({
-				productVariantId: selectedVariant.id,
-				quantity
-			});
-
-			if (success) {
-				addedToCart = true;
-
-				// Show success toast with checkout and view cart actions
-				toast.success(`${product.name} added to your cart!`, {
-					action: {
-						label: 'View Cart',
-						onClick: () => goto('/cart')
-					},
-					duration: 5000
-				});
-			} else {
-				toast.error('Could not add item to cart. Please try again.');
+			// Update the cart store with the returned data
+			if (result.data?.cart) {
+				console.log('Setting cart with data from product page:', result.data.cart);
+				cart.set(result.data.cart);
 			}
-		} catch (error) {
-			console.error('Error adding to cart:', error);
-			toast.error('An error occurred while adding to cart');
-		} finally {
-			isAddingToCart = false;
+
+			// Show success toast with checkout and view cart actions
+			toast.success(`${product.name} added to your cart!`, {
+				action: {
+					label: 'View Cart',
+					onClick: () => goto('/cart')
+				},
+				duration: 5000
+			});
+		} else {
+			// Handle error cases
+			const errorMessage = result.data?.message || 'Could not add item to cart. Please try again.';
+			toast.error(errorMessage);
 		}
+
+		// Reset loading state
+		isAddingToCart = false;
 	}
 
 	// Check if configuration is complete
@@ -273,27 +268,27 @@
 					<!-- Quantity selector -->
 					<div class="flex items-center gap-3">
 						<span class="text-sm font-medium">{m.product_quantity()}</span>
-						<div class="flex items-center">
+						<div class="flex items-center space-x-2 bg-muted/10 rounded-md p-1.5 border border-gray-100">
 							<Button
+								class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+								variant="ghost"
 								type="button"
 								onclick={() => quantity > 1 && (quantity -= 1)}
-								class="px-2 py-1 border border-border rounded-l-md bg-card hover:bg-muted transition-colors"
 								disabled={quantity <= 1 || isAddingToCart}
 								aria-label="Decrease quantity"
 							>
-								-
+								<Minus class="h-4 w-4" />
 							</Button>
-							<span class="px-4 py-1 border-y border-border bg-background text-center w-12">
-								{quantity}
-							</span>
+							<span class="w-8 text-center text-sm font-medium">{quantity}</span>
 							<Button
+								class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+								variant="ghost"
 								type="button"
 								onclick={() => (quantity += 1)}
-								class="px-2 py-1 border border-border rounded-r-md bg-card hover:bg-muted transition-colors"
 								disabled={isAddingToCart}
 								aria-label="Increase quantity"
 							>
-								+
+								<Plus class="h-4 w-4" />
 							</Button>
 						</div>
 					</div>
@@ -306,30 +301,45 @@
 						</span>
 					</div>
 
-					<!-- Add to cart button -->
-					<Button
-						type="button"
-						onclick={addToCart}
-						disabled={!selectedVariant ||
-							isAddingToCart ||
-							selectedVariant.stockStatus === 'out_of_stock'}
-						class="w-full mt-6 py-3 px-6 flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+					<!-- Add to cart form with server action -->
+					<form
+						method="POST"
+						action="?/addToCart"
+						use:enhance={() => {
+							// Set loading state
+							isAddingToCart = true;
+
+							return async ({ result }) => {
+								handleAddToCartResult(result);
+							};
+						}}
 					>
-						{#if isAddingToCart}
-							<span
-								class="h-5 w-5 block animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"
-							></span>
-							<span>Adding...</span>
-						{:else if addedToCart}
-							<Check class="h-5 w-5" />
-							<span>Added to Cart</span>
-						{:else if selectedVariant?.stockStatus === 'out_of_stock'}
-							<span>{m.product_out_of_stock()}</span>
-						{:else}
-							<ShoppingCart class="h-5 w-5" />
-							<span>{m.addToCart()}</span>
-						{/if}
-					</Button>
+						<input type="hidden" name="productVariantId" value={selectedVariant?.id || ''} />
+						<input type="hidden" name="quantity" value={quantity} />
+
+						<Button
+							type="submit"
+							disabled={!selectedVariant ||
+								isAddingToCart ||
+								selectedVariant.stockStatus === 'out_of_stock'}
+							class="w-full mt-6 py-3 px-6 flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+						>
+							{#if isAddingToCart}
+								<span
+									class="h-5 w-5 block animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"
+								></span>
+								<span>Adding...</span>
+							{:else if addedToCart}
+								<Check class="h-5 w-5" />
+								<span>Added to Cart</span>
+							{:else if selectedVariant?.stockStatus === 'out_of_stock'}
+								<span>{m.product_out_of_stock()}</span>
+							{:else}
+								<ShoppingCart class="h-5 w-5" />
+								<span>{m.addToCart()}</span>
+							{/if}
+						</Button>
+					</form>
 
 					{#if addedToCart}
 						<div class="flex justify-between gap-2 mt-2">

@@ -35,7 +35,6 @@
 	import { countries, addressStructures } from '$lib/config/address-structures';
 	import { checkoutStore } from '$lib/stores/checkout';
 	import { cart } from '$lib/stores/cart';
-	import { cartActions } from '$lib/stores/cart';
 	import { userStore } from '$lib/stores/auth';
 
 	import { onMount } from 'svelte';
@@ -241,8 +240,20 @@
 		$shippingForm.country = $checkoutStore.shippingConfig.country || data.user?.country || 'US';
 		$shippingForm.shippingMethod = $checkoutStore.shippingConfig.shippingMethod || '';
 
+		// Persist firstName and lastName from user data to checkoutStore if user is logged in and not already set
+		if (data.user) {
+			$checkoutStore.shippingConfig = {
+				...$checkoutStore.shippingConfig,
+				firstName: $checkoutStore.shippingConfig.firstName || data.user.firstName || '',
+				lastName: $checkoutStore.shippingConfig.lastName || data.user.lastName || ''
+			};
+		}
+
 		// Set payment form from store
 		if ($checkoutStore.paymentConfig) {
+
+		// Explicitly validate shipping form after setting values
+		await validateShippingForm();
 			$paymentForm.cardNumber = $checkoutStore.paymentConfig.cardNumber || '';
 			$paymentForm.cardHolder = $checkoutStore.paymentConfig.cardHolder || '';
 			$paymentForm.expiryDate = $checkoutStore.paymentConfig.expiryDate || '';
@@ -357,6 +368,7 @@
 
 	// Functions to navigate between steps
 	async function goToNextStep() {
+		window.scrollTo({ top: 0, behavior: 'smooth' });
 		if (activeStep === 1 && checkout.emailValidated) {
 			activeStep = 2;
 		} else if (activeStep === 2 && checkout.shippingValidated) {
@@ -365,6 +377,7 @@
 	}
 
 	function goToPreviousStep() {
+		window.scrollTo({ top: 0, behavior: 'smooth' });
 		if (activeStep > 1) {
 			activeStep--;
 		}
@@ -654,7 +667,7 @@
 							<Form.Field form={shippingSuperForm} name="firstName">
 								<Form.Control>
 									{#snippet children({ props })}
-										<Form.Label>{m.checkout_first_name()}</Form.Label>
+										<Form.Label>{m.checkout_first_name()} <span class="text-red-600" aria-label="required">*</span></Form.Label>
 										<Input
 											{...props}
 											bind:value={$shippingForm.firstName}
@@ -675,7 +688,7 @@
 							<Form.Field form={shippingSuperForm} name="lastName">
 								<Form.Control>
 									{#snippet children({ props })}
-										<Form.Label>{m.checkout_last_name()}</Form.Label>
+										<Form.Label>{m.checkout_last_name()} <span class="text-red-600" aria-label="required">*</span></Form.Label>
 										<Input
 											{...props}
 											bind:value={$shippingForm.lastName}
@@ -698,7 +711,7 @@
 						<Form.Field form={shippingSuperForm} name="addressLine1">
 							<Form.Control>
 								{#snippet children({ props })}
-									<Form.Label>{checkout.addressStructure.labels.addressLine1}</Form.Label>
+									<Form.Label>{checkout.addressStructure.labels.addressLine1} <span class="text-red-600" aria-label="required">*</span></Form.Label>
 									<Input
 										{...props}
 										bind:value={$shippingForm.addressLine1}
@@ -739,7 +752,7 @@
 							<Form.Field form={shippingSuperForm} name="city">
 								<Form.Control>
 									{#snippet children({ props })}
-										<Form.Label>{checkout.addressStructure.labels.city}</Form.Label>
+										<Form.Label>{checkout.addressStructure.labels.city} <span class="text-red-600" aria-label="required">*</span></Form.Label>
 										<Input
 											{...props}
 											bind:value={$shippingForm.city}
@@ -763,17 +776,17 @@
 										{#snippet children({ props })}
 											<Form.Label>
 												{checkout.addressStructure.labels.state ||
-													checkout.addressStructure.labels.prefecture ||
-													checkout.addressStructure.labels.province ||
-													checkout.addressStructure.labels.county}
+												checkout.addressStructure.labels.prefecture ||
+												checkout.addressStructure.labels.province ||
+												checkout.addressStructure.labels.county} <span class="text-red-600" aria-label="required">*</span>
 											</Form.Label>
 											<Input
 												{...props}
 												bind:value={$shippingForm.state}
 												placeholder={checkout.addressStructure.placeholders.state ||
-													checkout.addressStructure.placeholders.prefecture ||
-													checkout.addressStructure.placeholders.province ||
-													checkout.addressStructure.placeholders.county}
+												checkout.addressStructure.placeholders.prefecture ||
+												checkout.addressStructure.placeholders.province ||
+												checkout.addressStructure.placeholders.county}
 												oninput={async () => {
 													checkoutStore.updateShippingConfig({
 														state: $shippingForm.state
@@ -790,7 +803,7 @@
 							<Form.Field form={shippingSuperForm} name="postalCode">
 								<Form.Control>
 									{#snippet children({ props })}
-										<Form.Label>{checkout.addressStructure.labels.postalCode}</Form.Label>
+										<Form.Label>{checkout.addressStructure.labels.postalCode} <span class="text-red-600" aria-label="required">*</span></Form.Label>
 										<Input
 											{...props}
 											bind:value={$shippingForm.postalCode}
@@ -972,13 +985,20 @@
 											bind:value={$paymentForm.cardNumber}
 											placeholder="1234 5678 9012 3456"
 											style="padding-right: 2.5rem;"
+											maxlength={19}
 											onblur={async () => {
 												await validatePayment('cardNumber');
 											}}
 											oninput={(e) => {
-												// Format card number with spaces every 4 digits
-												const value = e.currentTarget.value.replace(/\D/g, '');
-												const formattedValue = value.replace(/(.{4})/g, '$1 ').trim();
+												// Remove all non-digits
+												let value = e.currentTarget.value.replace(/\D/g, '');
+												
+												// Limit to 16 digits
+												value = value.substring(0, 16);
+												
+												// Format with spaces after every 4 digits
+												const formattedValue = value.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+												
 												$paymentForm.cardNumber = formattedValue;
 												checkoutStore.updatePaymentConfig({
 													cardNumber: formattedValue

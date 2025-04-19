@@ -14,9 +14,10 @@
 	import { ProductCompatibilityService } from '$lib/utils/product-compatibility';
 	import { browser } from '$app/environment';
 	import { goto, pushState } from '$app/navigation';
-	import { cartActions } from '$lib/stores/cart';
-	import { ShoppingCart, Check, ImageOff } from 'lucide-svelte';
+	import { ShoppingCart, Check, ImageOff, Minus, Plus } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
+	import { enhance } from '$app/forms';
+	import { cart } from '$lib/stores/cart';
 
 	// Props
 	let {
@@ -227,64 +228,40 @@
 	let isAddingToCart = $state(false);
 	let addedToCart = $state(false);
 
-	// Add a new function to handle adding to cart
-	async function addToCart() {
-		if (!currentVariantId || isAddingToCart) return;
+	// Cart store is imported at the top of the file
 
-		isAddingToCart = true;
+	// Function to handle the result of adding to cart
+	function handleAddToCartResult(result: { type: string; status?: number; data?: any }) {
+		if (result.type === 'success') {
+			addedToCart = true;
 
-		try {
-			const composites = [];
-
-			// Add selected switch if available
-			if (selectedSwitch) {
-				composites.push({
-					variantId: selectedSwitch.id,
-					name: selectedSwitch.name,
-					quantity: quantity
-				});
+			// Update the cart store with the returned data
+			if (result.data?.cart) {
+				console.log('Setting cart with data from product page:', result.data.cart);
+				cart.set(result.data.cart);
 			}
 
-			// Add selected keycap if available
-			if (selectedKeycap) {
-				composites.push({
-					variantId: selectedKeycap.id,
-					name: selectedKeycap.name,
-					quantity: quantity
-				});
-			}
-
-			const success = await cartActions.addToCart({
-				productVariantId: currentVariantId,
-				quantity,
-				composites
+			// Show success toast with checkout and view cart actions
+			toast.success(`${product.name} added to your cart!`, {
+				action: {
+					label: 'View Cart',
+					onClick: () => goto('/cart')
+				},
+				duration: 5000
 			});
 
-			if (success) {
-				addedToCart = true;
-
-				// Show success toast with checkout and view cart actions
-				toast.success(`${product.name} added to your cart!`, {
-					action: {
-						label: 'View Cart',
-						onClick: () => goto('/cart')
-					},
-					duration: 5000
-				});
-
-				// Reset the success message after 3 seconds, but keep the selection
-				setTimeout(() => {
-					addedToCart = false;
-				}, 3000);
-			} else {
-				toast.error('Could not add item to cart. Please try again.');
-			}
-		} catch (error) {
-			toast.error('An error occurred while adding to cart');
-			console.error('Error adding to cart:', error);
-		} finally {
-			isAddingToCart = false;
+			// Reset the success message after 3 seconds, but keep the selection
+			setTimeout(() => {
+				addedToCart = false;
+			}, 3000);
+		} else {
+			// Handle error cases
+			const errorMessage = result.data?.message || 'Could not add item to cart. Please try again.';
+			toast.error(errorMessage);
 		}
+
+		// Reset loading state
+		isAddingToCart = false;
 	}
 
 	// Image handling functions
@@ -592,25 +569,25 @@
 						<!-- Quantity selector -->
 						<div class="flex items-center gap-3">
 							<span class="text-sm font-medium">{m.product_quantity()}</span>
-							<div class="flex items-center">
+							<div class="flex items-center space-x-2 bg-muted/10 rounded-md p-1.5 border border-gray-100">
 								<Button
+									class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
 									variant="ghost"
 									onclick={() => quantity > 1 && (quantity -= 1)}
 									disabled={quantity <= 1 || isAddingToCart}
 									aria-label="Decrease quantity"
-									class="rounded-r-none"
 								>
-									-
+									<Minus class="h-4 w-4" />
 								</Button>
-								<span class="w-8 text-center text-sm">{quantity}</span>
+								<span class="w-8 text-center text-sm font-medium">{quantity}</span>
 								<Button
+									class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
 									variant="ghost"
 									onclick={() => (quantity += 1)}
 									disabled={isAddingToCart}
 									aria-label="Increase quantity"
-									class="rounded-l-none"
 								>
-									+
+									<Plus class="h-4 w-4" />
 								</Button>
 							</div>
 						</div>
@@ -623,27 +600,56 @@
 							</span>
 						</div>
 
-						<!-- Add to cart button -->
-						<Button
-							variant="default"
-							size="lg"
-							onclick={addToCart}
-							disabled={!canAddToCart || isAddingToCart}
-							class="w-full"
+						<!-- Add to cart form with server action -->
+						<form
+							method="POST"
+							action="?/addToCart"
+							use:enhance={() => {
+								// Set loading state
+								isAddingToCart = true;
+
+								return async ({ result }) => {
+									handleAddToCartResult(result);
+								};
+							}}
 						>
-							{#if isAddingToCart}
-								<span
-									class="h-5 w-5 block animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"
-								></span>
-								<span>Adding...</span>
-							{:else if addedToCart}
-								<Check class="h-5 w-5" />
-								<span>Added to Cart</span>
-							{:else}
-								<ShoppingCart class="h-5 w-5" />
-								<span>{getButtonText()}</span>
+							<input type="hidden" name="productVariantId" value={selectedVariant?.id || ''} />
+							<input type="hidden" name="quantity" value={quantity} />
+
+							<!-- Add composites for switches and keycaps if selected -->
+							{#if selectedSwitch}
+								<input type="hidden" name="composites[0][variantId]" value={selectedSwitch.id} />
+								<input type="hidden" name="composites[0][name]" value={selectedSwitch.name} />
+								<input type="hidden" name="composites[0][quantity]" value={quantity} />
 							{/if}
-						</Button>
+
+							{#if selectedKeycap}
+								<input type="hidden" name="composites[1][variantId]" value={selectedKeycap.id} />
+								<input type="hidden" name="composites[1][name]" value={selectedKeycap.name} />
+								<input type="hidden" name="composites[1][quantity]" value={quantity} />
+							{/if}
+
+							<Button
+								variant="default"
+								size="lg"
+								type="submit"
+								disabled={!canAddToCart || isAddingToCart}
+								class="w-full"
+							>
+								{#if isAddingToCart}
+									<span
+										class="h-5 w-5 block animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"
+									></span>
+									<span>Adding...</span>
+								{:else if addedToCart}
+									<Check class="h-5 w-5" />
+									<span>Added to Cart</span>
+								{:else}
+									<ShoppingCart class="h-5 w-5" />
+									<span>{getButtonText()}</span>
+								{/if}
+							</Button>
+						</form>
 
 						{#if addedToCart}
 							<div class="flex justify-between gap-2 mt-2">

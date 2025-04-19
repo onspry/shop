@@ -20,11 +20,12 @@
 	class:opacity-0={!contentVisible}
 	class:opacity-100={contentVisible}
 >
+<div class="text-only">
 	<div class="space-y-12">
 		<div class="space-y-4">
 			<h1 class="text-4xl font-medium">Our Story</h1>
 			<div class="prose prose-lg dark:prose-invert max-w-none">
-				<p class="text-xl text-muted-foreground leading-relaxed">
+				<p>
 					Two European engineers, brought together by chance in China, united by a shared passion
 					for open-source hardware and ergonomic design.
 				</p>
@@ -91,5 +92,6 @@
 		<div class="flex justify-center pt-8">
 			<Button variant="outline" onclick={() => window.history.back()}>Back</Button>
 		</div>
-	</div>
+		</div>
+</div>
 </div>

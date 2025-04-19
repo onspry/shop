@@ -1,114 +1,250 @@
-import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { get } from 'svelte/store';
-import {
-  cart,
-  isLoading,
-  addToCart,
-  updateCartItem,
-  removeCartItem,
-  applyDiscount,
-  removeDiscount,
-  clearCart,
-  resetCartStore,
-  updateCartFromPageData
-} from '../cart';
-
-// Mock fetch and invalidateAll
-vi.mock('$app/navigation', () => ({ invalidateAll: vi.fn() }));
-globalThis.fetch = vi.fn();
-
-const mockCart = {
-  id: 'mock-cart',
-  items: [
-    { id: 'item-1', productVariantId: 'pv-1', quantity: 2, name: 'Item 1', price: 100 }
-  ],
-  discountCode: null,
-  discountAmount: 0,
-  subtotal: 200,
-  total: 200,
-  itemCount: 2
-};
+import { createCartStore } from '../cart';
 
 describe('cart store', () => {
+  const mockCartItem = {
+    id: 'item-1',
+    variantId: 'variant-1',
+    name: 'Test Product',
+    price: 100,
+    quantity: 1,
+    imageUrl: '',
+    composites: [],
+    variant: {
+      id: 'variant-1',
+      name: 'Test Variant',
+      price: 100,
+      sku: 'TEST-SKU',
+      stock_quantity: 10,
+      attributes: {},
+      stockStatus: 'in_stock',
+      productId: 'product-1',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+  };
+
+  const mockInitialCart = {
+    id: '',
+    items: [],
+    discountCode: null,
+    discountAmount: 0,
+    subtotal: 0,
+    total: 0,
+    itemCount: 0
+  };
+
+  let cartStore: ReturnType<typeof createCartStore>;
+
   beforeEach(() => {
-    resetCartStore();
-    vi.clearAllMocks();
+    // Clear localStorage before each test
+    if (typeof window !== 'undefined') {
+      localStorage.clear();
+    }
+    cartStore = createCartStore();
   });
 
-  it('should have correct initial state', () => {
-    expect(get(cart)).toEqual({
-      id: '',
-      items: [],
-      discountCode: null,
-      discountAmount: 0,
-      subtotal: 0,
-      total: 0,
-      itemCount: 0
+  it('should initialize with empty cart', () => {
+    const cart = get(cartStore);
+    expect(cart).toEqual(mockInitialCart);
+  });
+
+  it('should add item to cart', () => {
+    cartStore.addItem({
+      ...mockCartItem,
+      imageUrl: '',
+      composites: [],
+      variant: {
+        id: 'variant-1',
+        name: 'Test Variant',
+        price: 100,
+        sku: 'TEST-SKU',
+        stock_quantity: 10,
+        attributes: {},
+        stockStatus: 'in_stock',
+        productId: 'product-1',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
     });
-    expect(get(isLoading)).toBe(false);
+    const cart = get(cartStore);
+
+    expect(cart.items).toHaveLength(1);
+    expect(cart.itemCount).toBe(1);
+    expect(cart.items[0].variant.sku).toEqual(mockCartItem.variant.sku);
   });
 
-  it('should update cart from page data', () => {
-    updateCartFromPageData({ cart: mockCart });
-    expect(get(cart)).toEqual(mockCart);
-  });
-
-  it('should reset cart store', () => {
-    updateCartFromPageData({ cart: mockCart });
-    resetCartStore();
-    expect(get(cart)).toEqual({
-      id: '',
-      items: [],
-      discountCode: null,
-      discountAmount: 0,
-      subtotal: 0,
-      total: 0,
-      itemCount: 0
+  it('should not add duplicate items', () => {
+    cartStore.addItem({
+      ...mockCartItem,
+      imageUrl: '',
+      composites: [],
+      variant: {
+        id: 'variant-1',
+        name: 'Test Variant',
+        price: 100,
+        sku: 'TEST-SKU',
+        stock_quantity: 10,
+        attributes: {},
+        stockStatus: 'in_stock',
+        productId: 'product-1',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
     });
+    cartStore.addItem({
+      ...mockCartItem,
+      imageUrl: '',
+      composites: [],
+      variant: {
+        id: 'variant-1',
+        name: 'Test Variant',
+        price: 100,
+        sku: 'TEST-SKU',
+        stock_quantity: 10,
+        attributes: {},
+        stockStatus: 'in_stock',
+        productId: 'product-1',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    });
+
+    const cart = get(cartStore);
+    expect(cart.items).toHaveLength(1);
+    expect(cart.itemCount).toBe(1);
   });
 
-  it('should handle addToCart success', async () => {
-    (fetch as unknown as Mock).mockResolvedValueOnce({ ok: true, json: async () => ({}) });
-    const result = await addToCart('pv-1', 2);
-    expect(result.success).toBe(true);
-    expect(get(isLoading)).toBe(false);
+  it('should remove item from cart', () => {
+    cartStore.addItem({
+      ...mockCartItem,
+      imageUrl: '',
+      composites: [],
+      variant: {
+        id: 'variant-1',
+        name: 'Test Variant',
+        price: 100,
+        sku: 'TEST-SKU',
+        stock_quantity: 10,
+        attributes: {},
+        stockStatus: 'in_stock',
+        productId: 'product-1',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    });
+    cartStore.removeItem(mockCartItem.id);
+
+    const cart = get(cartStore);
+    expect(cart.items).toHaveLength(0);
+    expect(cart.itemCount).toBe(0);
   });
 
-  it('should handle addToCart error', async () => {
-    (fetch as unknown as Mock).mockResolvedValueOnce({ ok: false, json: async () => ({ message: 'fail' }) });
-    const result = await addToCart('pv-1', 2);
-    expect(result.success).toBe(false);
-    expect(result.error).toBe('fail');
-    expect(get(isLoading)).toBe(false);
+  it('should update item quantity', () => {
+    cartStore.addItem({
+      ...mockCartItem,
+      imageUrl: '',
+      composites: [],
+      variant: {
+        id: 'variant-1',
+        name: 'Test Variant',
+        price: 100,
+        sku: 'TEST-SKU',
+        stock_quantity: 10,
+        attributes: {},
+        stockStatus: 'in_stock',
+        productId: 'product-1',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    });
+    cartStore.updateQuantity(mockCartItem.id, 3);
+
+    const cart = get(cartStore);
+    expect(cart.items[0].quantity).toBe(3);
   });
 
-  it('should handle updateCartItem', async () => {
-    (fetch as unknown as Mock).mockResolvedValueOnce({ ok: true, json: async () => ({}) });
-    const result = await updateCartItem('item-1', 5);
-    expect(result.success).toBe(true);
+  it('should clear cart', () => {
+    cartStore.addItem({
+      ...mockCartItem,
+      imageUrl: '',
+      composites: [],
+      variant: {
+        id: 'variant-1',
+        name: 'Test Variant',
+        price: 100,
+        sku: 'TEST-SKU',
+        stock_quantity: 10,
+        attributes: {},
+        stockStatus: 'in_stock',
+        productId: 'product-1',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    });
+    cartStore.clear();
+
+    const cart = get(cartStore);
+    expect(cart).toEqual(mockInitialCart);
   });
 
-  it('should handle removeCartItem', async () => {
-    (fetch as unknown as Mock).mockResolvedValueOnce({ ok: true, json: async () => ({}) });
-    const result = await removeCartItem('item-1');
-    expect(result.success).toBe(true);
+  it('should persist cart data to localStorage', () => {
+    if (typeof window === 'undefined') return;
+
+    cartStore.addItem({
+      ...mockCartItem,
+      imageUrl: '',
+      composites: [],
+      variant: {
+        id: 'variant-1',
+        name: 'Test Variant',
+        price: 100,
+        sku: 'TEST-SKU',
+        stock_quantity: 10,
+        attributes: {},
+        stockStatus: 'in_stock',
+        productId: 'product-1',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    });
+
+    const storedData = localStorage.getItem('cart_data');
+    expect(storedData).toBeTruthy();
+
+    const parsedData = JSON.parse(storedData!);
+    expect(parsedData.items).toHaveLength(1);
+    expect(parsedData.items[0].variant.sku).toEqual(mockCartItem.variant.sku);
   });
 
-  it('should handle applyDiscount', async () => {
-    (fetch as unknown as Mock).mockResolvedValueOnce({ ok: true, json: async () => ({}) });
-    const result = await applyDiscount('CODE');
-    expect(result.success).toBe(true);
+  it('should load persisted cart data from localStorage', () => {
+    if (typeof window === 'undefined') return;
+
+    const persistedCart = {
+      ...mockInitialCart,
+      items: [mockCartItem],
+      itemCount: 1
+    };
+
+    localStorage.setItem('cart_data', JSON.stringify(persistedCart));
+
+    const newCartStore = createCartStore();
+    const cart = get(newCartStore);
+
+    expect(cart.items).toHaveLength(1);
+    expect(cart.itemCount).toBe(1);
+    expect(cart.items[0].id).toEqual(mockCartItem.id);
   });
 
-  it('should handle removeDiscount', async () => {
-    (fetch as unknown as Mock).mockResolvedValueOnce({ ok: true, json: async () => ({}) });
-    const result = await removeDiscount();
-    expect(result.success).toBe(true);
-  });
+  it('should handle invalid localStorage data', () => {
+    if (typeof window === 'undefined') return;
 
-  it('should handle clearCart', async () => {
-    (fetch as unknown as Mock).mockResolvedValueOnce({ ok: true, json: async () => ({}) });
-    const result = await clearCart();
-    expect(result.success).toBe(true);
+    localStorage.setItem('cart_data', 'invalid json');
+
+    const newCartStore = createCartStore();
+    const cart = get(newCartStore);
+
+    expect(cart).toEqual(mockInitialCart);
   });
 });

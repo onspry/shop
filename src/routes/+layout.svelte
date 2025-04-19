@@ -10,8 +10,13 @@
 	import { setUser } from '$lib/stores/auth';
 	import { theme } from '$lib/stores/theme';
 	import { Toaster } from '$lib/components/ui/sonner';
+	import { cart } from '$lib/stores/cart';
+	import { checkoutStore } from '$lib/stores/checkout';
+	import { afterNavigate, beforeNavigate } from '$app/navigation';
+	import { browser } from '$app/environment';
 
 	let { children, data } = $props();
+	let cartInitialized = $state(false);
 
 	// Update context when user changes
 	$effect(() => {
@@ -19,11 +24,58 @@
 		setUser(data.user);
 	});
 
+	// Hydrate cart store ONLY on first load
+	$effect(() => {
+		if (!cartInitialized && data.cart) {
+			cart.set(data.cart);
+			cartInitialized = true;
+		}
+	});
+
 	// Initialize theme on mount
 	onMount(() => {
 		// The theme store will handle initialization from localStorage or system preference
 		const isDark = $theme === 'dark';
 		document.documentElement.classList.toggle('dark', isDark);
+	});
+
+	// Handle checkout store reset
+	beforeNavigate(({ to }) => {
+		// Reset checkout store before navigating to logout
+		if (to?.url.pathname === '/auth/logout') {
+			console.log('Navigating to logout page, resetting checkout store');
+			checkoutStore.reset();
+
+			// Force clear localStorage directly as a backup
+			if (browser) {
+				try {
+					localStorage.removeItem('checkout_data');
+					console.log('Directly removed checkout data from localStorage');
+				} catch (error) {
+					console.error('Failed to remove checkout data from localStorage:', error);
+				}
+			}
+		}
+	});
+
+	// Handle user state after navigation
+	afterNavigate(({ from }) => {
+		// Check for the X-Clear-Checkout header in the response
+		if (from?.url.pathname === '/auth/logout') {
+			console.log('Coming from logout page, resetting checkout store and user');
+			checkoutStore.reset();
+			setUser(null);
+
+			// Force clear localStorage directly as a backup
+			if (browser) {
+				try {
+					localStorage.removeItem('checkout_data');
+					console.log('Directly removed checkout data from localStorage after logout');
+				} catch (error) {
+					console.error('Failed to remove checkout data from localStorage after logout:', error);
+				}
+			}
+		}
 	});
 </script>
 

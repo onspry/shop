@@ -5,8 +5,12 @@ import { toProductVariantViewModel } from './product-repository';
 import { formatPrice } from '$lib/utils/price';
 import { CartError, VariantError, StockError } from '$lib/errors/shop-errors';
 
+// No cache implementation - we'll use direct database access for simplicity
+
 // Initialize Prisma client
 const prisma = new PrismaClient();
+
+// No cache - we'll use direct database access
 
 // Define type for cart with items to avoid 'any'
 export type CartWithItems = Cart & {
@@ -38,6 +42,8 @@ export class CartRepository {
      * Cart repository for managing shopping cart operations.
      * Handles cart creation, item management, discounts, and user session management.
      */
+
+    // No cache invalidation needed
 
     /**
      * Gets or creates a cart based on session ID and optional user ID.
@@ -144,13 +150,28 @@ export class CartRepository {
      */
     async _getCartWithItems(cartId: string): Promise<CartWithItems | null> {
         try {
-            // First, get the basic cart data with items but minimal nesting
+            // Use a more optimized query with selective includes
             const cartData = await prisma.cart.findUnique({
                 where: { id: cartId },
                 include: {
                     items: {
                         include: {
-                            variant: true,
+                            // Include variant with product
+                            variant: {
+                                include: {
+                                    product: {
+                                        include: {
+                                            images: {
+                                                orderBy: {
+                                                    position: 'asc'
+                                                },
+                                                take: 1 // Only take the first image for cart display
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            // Include product for direct product references
                             product: true
                         }
                     }
@@ -161,74 +182,20 @@ export class CartRepository {
                 return null;
             }
 
-            // If there are no items, return early
-            if (cartData.items.length === 0) {
-                return cartData as CartWithItems;
+            // If there are no items or items property doesn't exist, return early
+            if (!cartData.items || cartData.items.length === 0) {
+                // Create a default CartWithItems structure
+                return {
+                    ...cartData,
+                    items: []
+                } as CartWithItems;
             }
 
-            // Get all product IDs from the cart items
-            const productIds = [...new Set(
-                cartData.items.map(item =>
-                    item.variant?.productId || item.productId
-                ).filter(Boolean)
-            )];
+            // No need for additional queries - we've already included the necessary data
+            // in a more optimized way with the initial query
 
-            // Fetch product images in a separate query
-            const productImages = await prisma.productImage.findMany({
-                where: {
-                    productId: { in: productIds }
-                },
-                orderBy: {
-                    position: 'asc'
-                }
-            });
-
-            // Group images by product ID for easy lookup
-            const imagesByProductId = productImages.reduce((acc, img) => {
-                if (!acc[img.productId]) {
-                    acc[img.productId] = [];
-                }
-                acc[img.productId].push(img);
-                return acc;
-            }, {} as Record<string, ProductImage[]>);
-
-            // Enhance cart items with product images
-            const enhancedItems = cartData.items.map(item => {
-                const productId = item.variant?.productId || item.productId;
-                if (productId && item.variant) {
-                    // Add images to the product
-                    const images = imagesByProductId[productId] || [];
-                    // Create a product object if it doesn't exist
-                    const product = {
-                        id: productId,
-                        name: item.product?.name || 'Product',
-                        description: item.product?.description || '',
-                        category: item.product?.category || '',
-                        features: item.product?.features || [],
-                        specifications: item.product?.specifications || {},
-                        isAccessory: item.product?.isAccessory || false,
-                        slug: item.product?.slug || '',
-                        createdAt: item.product?.createdAt || new Date(),
-                        updatedAt: item.product?.updatedAt || new Date(),
-                        images
-                    };
-
-                    return {
-                        ...item,
-                        variant: {
-                            ...item.variant,
-                            product
-                        }
-                    };
-                }
-                return item;
-            });
-
-            // Return the enhanced cart data
-            return {
-                ...cartData,
-                items: enhancedItems
-            } as CartWithItems;
+            // Return the cart data directly
+            return cartData as CartWithItems;
         } catch (error) {
             console.error('Error fetching cart with items:', error);
             return null;
@@ -440,9 +407,7 @@ export class CartRepository {
             }
 
             // No cart found, create a new one
-            const result = await this.getOrCreateCart(sessionId, userId);
-
-            return result;
+            return await this.getOrCreateCart(sessionId, userId);
         } catch (error) {
             console.error('Error in getCartViewModel:', error);
             throw new CartError('Failed to get cart view model');
@@ -558,6 +523,8 @@ export class CartRepository {
                     }
                 });
 
+                // No cache to invalidate
+
                 return {
                     sessionId: cartData.sessionId,
                     userId: cartData.userId
@@ -638,6 +605,8 @@ export class CartRepository {
                             lastActivityAt: new Date()
                         }
                     });
+
+                    // No cache to invalidate
                 });
             } else {
                 // Check stock availability
@@ -673,6 +642,8 @@ export class CartRepository {
                             lastActivityAt: new Date()
                         }
                     });
+
+                    // No cache to invalidate
                 });
             }
         } catch (error) {
@@ -734,6 +705,8 @@ export class CartRepository {
                         lastActivityAt: new Date()
                     }
                 });
+
+                // No cache to invalidate
             });
         } catch (error) {
             if (error instanceof CartError) {
@@ -784,6 +757,8 @@ export class CartRepository {
                         lastActivityAt: new Date()
                     }
                 });
+
+                // No cache to invalidate
             });
         } catch (error) {
             console.error('Error clearing cart:', error);
@@ -935,6 +910,8 @@ export class CartRepository {
                 }
             });
 
+            // No cache to invalidate
+
             // Increment the used count for the discount
             await prisma.discount.update({
                 where: { id: discount.id },
@@ -974,6 +951,8 @@ export class CartRepository {
                     lastActivityAt: new Date()
                 }
             });
+
+            // No cache to invalidate
         } catch (error) {
             console.error('Error removing discount from cart:', error);
             throw new CartError('Failed to remove discount from cart');

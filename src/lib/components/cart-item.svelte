@@ -4,29 +4,49 @@
 	import { formatPrice } from '$lib/utils/price';
 	import * as m from '$lib/paraglide/messages';
 	import Button from './ui/button/button.svelte';
+	import { enhance } from '$app/forms';
+	import { toast } from 'svelte-sonner';
+	import { cart } from '$lib/stores/cart';
 
 	let {
 		item,
-		onQuantityChange,
-		onRemove,
 		disabled = false
 	} = $props<{
 		item: CartItemViewModel;
-		onQuantityChange: (quantity: number) => void;
-		onRemove: () => void;
 		disabled?: boolean;
 	}>();
 
 	// Track if remove confirmation is shown
 	let showRemoveConfirm = $state(false);
 
+	// Create a reactive variable to track the current item
+	let currentItem = $state(item);
+
+	// Update currentItem when the cart store changes
+	$effect(() => {
+		const unsubscribe = cart.subscribe((cartData) => {
+			if (cartData && cartData.items && cartData.items.length > 0) {
+				// Find the updated item in the cart
+				const updatedItem = cartData.items.find(i => i.id === item.id);
+				if (updatedItem) {
+					console.log('[CART-ITEM] Updating item:', updatedItem);
+					currentItem = updatedItem;
+				}
+			}
+		});
+
+		return () => {
+			unsubscribe();
+		};
+	});
+
 	// Quantity can't go below 1 or above available stock
 	const minQuantity = 1;
-	const maxQuantity = $derived(item?.variant?.stock_quantity || 1);
-	const quantity = $derived(item?.quantity || 0);
-	const price = $derived(item?.price || 0);
-	const variantName = $derived(item?.variant?.name || 'Product');
-	const variantImage = $derived(item?.variant?.attributes?.image);
+	const maxQuantity = $derived(currentItem?.variant?.stock_quantity || 1);
+	const quantity = $derived(currentItem?.quantity || 0);
+	const price = $derived(currentItem?.price || 0);
+	const variantName = $derived(currentItem?.variant?.name || 'Product');
+	const variantImage = $derived(currentItem?.variant?.attributes?.image);
 
 	// Get variant attributes for display
 	const variantAttributes = $derived(getVariantAttributes());
@@ -34,8 +54,8 @@
 	// Helper function to extract variant attributes
 	function getVariantAttributes() {
 		const attrs = [];
-		if (item?.variant?.attributes) {
-			for (const [key, value] of Object.entries(item.variant.attributes)) {
+		if (currentItem?.variant?.attributes) {
+			for (const [key, value] of Object.entries(currentItem.variant.attributes)) {
 				// Skip the image attribute
 				if (key !== 'image' && value) {
 					attrs.push(`${key}: ${value}`);
@@ -57,43 +77,26 @@
 		imageLoaded = true;
 	}
 
-	function incrementQuantity() {
-		if (disabled || quantity >= maxQuantity || isUpdating) return;
-		isUpdating = true;
-		onQuantityChange(quantity + 1);
-		// Reset updating state after a short delay
-		setTimeout(() => isUpdating = false, 300);
-	}
-
-	function decrementQuantity() {
-		if (disabled || quantity <= minQuantity || isUpdating) return;
-		isUpdating = true;
-		onQuantityChange(quantity - 1);
-		// Reset updating state after a short delay
-		setTimeout(() => isUpdating = false, 300);
-	}
-
-	function handleRemove() {
+	// Function to show remove confirmation
+	function showRemoveConfirmation() {
 		if (disabled || isUpdating) return;
-
-		if (showRemoveConfirm) {
-			isUpdating = true;
-			onRemove();
-			// Reset state after a short delay
-			setTimeout(() => {
-				isUpdating = false;
-				showRemoveConfirm = false;
-			}, 300);
-		} else {
-			showRemoveConfirm = true;
-			// Auto-hide confirmation after 3 seconds if not clicked
-			setTimeout(() => showRemoveConfirm = false, 3000);
-		}
+		showRemoveConfirm = true;
+		// Auto-hide confirmation after 3 seconds if not clicked
+		setTimeout(() => showRemoveConfirm = false, 3000);
 	}
 
 	// Cancel remove action (used in button click handler)
 	function cancelRemove() {
 		showRemoveConfirm = false;
+	}
+
+	// Helper function to safely update the cart store
+	function safeUpdateCart(cartData: any) {
+		if (cartData && typeof cartData === 'object' && 'items' in cartData && 'id' in cartData) {
+			cart.set(cartData as any);
+		} else {
+			console.warn('[CART] Invalid cart data:', cartData);
+		}
 	}
 </script>
 
@@ -143,84 +146,170 @@
 					{/if}
 
 					<!-- Composite Items -->
-					{#if item.composites && item.composites.length > 0}
+					{#if currentItem.composites && currentItem.composites.length > 0}
 						<div class="mt-2 space-y-1">
-							{#each item.composites as composite}
+							{#each currentItem.composites as composite}
 								<p class="text-sm text-muted-foreground">{composite.name}</p>
 							{/each}
 						</div>
 					{/if}
 
 					<!-- Stock Status -->
-					{#if item.variant.stockStatus === 'low_stock'}
-						<p class="text-xs text-warning mt-1">Only {item.variant.stock_quantity} left in stock</p>
-					{:else if item.variant.stockStatus === 'in_stock'}
+					{#if currentItem.variant.stockStatus === 'low_stock'}
+						<p class="text-xs text-warning mt-1">Only {currentItem.variant.stock_quantity} left in stock</p>
+					{:else if currentItem.variant.stockStatus === 'in_stock'}
 						<p class="text-xs text-green-600 mt-1">In Stock</p>
 					{/if}
 				</div>
 
 				<!-- Remove Button -->
-				<div class="flex items-start gap-1">
-					{#if showRemoveConfirm}
-						<Button
-							class="p-2 rounded-md hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors disabled:opacity-50 group"
-							variant="ghost"
-							onclick={handleRemove}
-							disabled={disabled || isUpdating}
-							aria-label="Confirm removal"
-						>
-							<div class="flex items-center">
-								<span class="text-xs font-medium mr-1">Confirm</span>
+				<div class="flex items-start justify-end gap-1">
+					<div class="relative flex items-center gap-2">
+						{#if showRemoveConfirm}
+							<form
+								method="POST"
+								action="?/removeItem"
+								use:enhance={() => {
+									isUpdating = true;
+									const itemName = currentItem.variant?.name || 'Item';
+									const toastId = toast.loading(`Removing ${itemName}...`);
+
+									return async ({ result }) => {
+										if (result.type === 'success') {
+											// Update the cart store with the returned data
+											if (result.data?.cart) {
+												safeUpdateCart(result.data.cart);
+											}
+											toast.success(`${itemName} removed from cart`, { id: toastId });
+										} else {
+											toast.error(`Failed to remove ${itemName}`, { id: toastId });
+										}
+										isUpdating = false;
+										showRemoveConfirm = false;
+									};
+								}}
+							>
+								<div class="flex items-center gap-2">
+									<Button
+										class="p-2 rounded-md hover:bg-muted text-muted-foreground transition-colors disabled:opacity-50"
+										variant="ghost"
+										type="button"
+										onclick={cancelRemove}
+										disabled={disabled || isUpdating}
+										aria-label="Cancel removal"
+									>
+										<span class="text-xs">Cancel</span>
+									</Button>
+									<Button
+										class="p-2 rounded-md hover:bg-muted text-muted-foreground transition-colors disabled:opacity-50"
+										variant="ghost"
+										type="submit"
+										disabled={disabled || isUpdating}
+										aria-label="Confirm removal"
+									>
+										<span class="text-xs font-medium">Confirm</span>
+									</Button>
+								</div>
+								<input type="hidden" name="cartItemId" value={currentItem.id} />
+							</form>
+						{:else}
+							<Button
+								class="p-2 rounded-md hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors disabled:opacity-50 group"
+								variant="ghost"
+								onclick={showRemoveConfirmation}
+								disabled={disabled || isUpdating}
+								aria-label="Remove item"
+							>
 								<Trash2 class="h-4 w-4" />
-							</div>
-						</Button>
-						<Button
-							class="p-2 rounded-md hover:bg-muted text-muted-foreground transition-colors disabled:opacity-50"
-							variant="ghost"
-							onclick={cancelRemove}
-							disabled={disabled || isUpdating}
-							aria-label="Cancel removal"
-						>
-							<span class="text-xs">Cancel</span>
-						</Button>
-					{:else}
-						<Button
-							class="p-2 rounded-md hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors disabled:opacity-50 group"
-							variant="ghost"
-							onclick={handleRemove}
-							disabled={disabled || isUpdating}
-							aria-label={m.cart_remove()}
-						>
-							<Trash2 class="h-5 w-5 group-hover:scale-110 transition-transform" />
-						</Button>
-					{/if}
+							</Button>
+						{/if}
+					</div>
 				</div>
 			</div>
 
 			<div class="mt-4 flex justify-between items-center">
-				<!-- Improved Quantity Controls -->
+				<!-- Improved Quantity Controls with Server Actions -->
 				<div class="flex items-center space-x-2 bg-muted/10 rounded-md p-1.5 border border-gray-100">
-					<Button
-						class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-						variant="ghost"
-						onclick={decrementQuantity}
-						disabled={disabled || isUpdating || quantity <= minQuantity}
-						aria-label={m.cart_decrease_quantity()}
+					<form
+						method="POST"
+						action="?/updateItem"
+						use:enhance={() => {
+							isUpdating = true;
+							const itemName = currentItem.variant?.name || 'Item';
+							const toastId = toast.loading(`Updating ${itemName}...`);
+
+							return async ({ result }) => {
+								if (result.type === 'success') {
+									// Update the cart store with the returned data
+									if (result.data?.cart) {
+										console.log('[CART] Received updated cart data:', result.data.cart);
+										safeUpdateCart(result.data.cart);
+									} else {
+										console.warn('[CART] No cart data received in result:', result);
+									}
+									toast.success(`${itemName} quantity updated`, { id: toastId });
+								} else {
+									console.error('[CART] Error updating item:', result);
+									toast.error(`Failed to update ${itemName}`, { id: toastId });
+								}
+								isUpdating = false;
+							};
+						}}
 					>
-						<Minus class="h-4 w-4" />
-					</Button>
+						<input type="hidden" name="cartItemId" value={currentItem.id} />
+						<input type="hidden" name="quantity" value={Math.max(1, quantity - 1)} />
+						<Button
+							class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+							variant="ghost"
+							type="submit"
+							disabled={disabled || isUpdating || quantity <= minQuantity}
+							aria-label={m.cart_decrease_quantity()}
+						>
+							<Minus class="h-4 w-4" />
+						</Button>
+					</form>
 
 					<span class="w-8 text-center text-sm font-medium">{quantity}</span>
 
-					<Button
-						class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-						variant="ghost"
-						onclick={incrementQuantity}
-						disabled={disabled || isUpdating || quantity >= maxQuantity}
-						aria-label={m.cart_increase_quantity()}
+					<form
+						method="POST"
+						action="?/updateItem"
+						use:enhance={() => {
+							isUpdating = true;
+							const itemName = currentItem.variant?.name || 'Item';
+							const toastId = toast.loading(`Updating ${itemName}...`);
+
+							return async ({ result }) => {
+								console.log('Cart update result:', result);
+								if (result.type === 'success') {
+									// Update the cart store with the returned data
+									if (result.data?.cart) {
+										console.log('Setting cart with data:', result.data.cart);
+										safeUpdateCart(result.data.cart);
+									} else {
+										console.warn('No cart data in result:', result);
+									}
+									toast.success(`${itemName} quantity updated`, { id: toastId });
+								} else {
+									console.error('Failed to update cart:', result);
+									toast.error(`Failed to update ${itemName}`, { id: toastId });
+								}
+								isUpdating = false;
+							};
+						}}
 					>
-						<Plus class="h-4 w-4" />
-					</Button>
+						<input type="hidden" name="cartItemId" value={currentItem.id} />
+						<input type="hidden" name="quantity" value={quantity + 1} />
+						<Button
+							class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+							variant="ghost"
+							type="submit"
+							disabled={disabled || isUpdating || quantity >= maxQuantity}
+							aria-label={m.cart_increase_quantity()}
+						>
+							<Plus class="h-4 w-4" />
+						</Button>
+					</form>
 				</div>
 
 				<!-- Price -->

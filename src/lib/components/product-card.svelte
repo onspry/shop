@@ -36,38 +36,40 @@
 	}
 </script>
 
-<div class="group relative bg-card overflow-hidden rounded-lg border border-border {className}">
+<div class="group relative bg-card overflow-hidden rounded-lg border border-border hover:shadow-md transition-all duration-200 hover:border-gray-200 {className}">
 	<!-- Image Section -->
-	<div class="relative w-full h-full p-6">
-		{#if imageError || !product?.images?.length}
-			<div class="w-full h-full flex items-center justify-center bg-muted">
-				<ImageOff class="h-10 w-10 text-muted-foreground" />
-			</div>
-		{:else}
-			{#if !imageLoaded}
-				<div class="absolute inset-0 p-6">
-					<div class="h-full w-full animate-pulse bg-muted rounded-md"></div>
+	<div class="relative w-full h-full p-6 overflow-hidden">
+		<div class="relative aspect-square h-full overflow-hidden bg-muted/5 rounded-md border border-gray-100 group">
+			{#if imageError || !product?.images?.length}
+				<div class="absolute inset-0 flex items-center justify-center bg-muted">
+					<ImageOff class="h-10 w-10 text-muted-foreground" />
 				</div>
+			{:else}
+				{#if !imageLoaded}
+					<div class="absolute inset-0">
+						<div class="h-full w-full animate-pulse bg-muted-foreground/20"></div>
+					</div>
+				{/if}
+				<img
+					src={getOptimizedImageUrl(product.images[0]?.url || '')}
+					alt={product.images[0]?.alt || product.name}
+					loading="lazy"
+					class="h-full w-full object-contain transition-all duration-300 group-hover:scale-110"
+					class:opacity-0={!imageLoaded}
+					class:opacity-100={imageLoaded}
+					onerror={handleImageError}
+					onload={handleImageLoad}
+				/>
 			{/if}
-			<img
-				src={getOptimizedImageUrl(product.images[0]?.url || '')}
-				alt={product.images[0]?.alt || product.name}
-				loading="lazy"
-				class="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
-				class:opacity-0={!imageLoaded}
-				class:opacity-100={imageLoaded}
-				onerror={handleImageError}
-				onload={handleImageLoad}
-			/>
-		{/if}
+		</div>
 	</div>
 
 	<!-- Text Overlay (Theme aware) -->
-	<div class="absolute bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm">
+	<div class="absolute bottom-0 left-0 right-0 p-4 bg-background/90 backdrop-blur-sm border-t border-gray-100">
 		<h3 class="text-lg font-medium text-foreground truncate">
 			{product?.name || 'Product Name'}
 		</h3>
-		<div class="flex items-center justify-between gap-2 mt-1">
+		<div class="flex items-center justify-between gap-2 mt-2">
 			<div class="flex items-baseline gap-2">
 				{#if hasMultipleVariants}
 					<span class="text-xs text-muted-foreground">
@@ -78,7 +80,12 @@
 					{formatPrice(basePrice)}
 				</span>
 			</div>
-			<Button href="/products/{product?.slug || ''}" variant="default" size="sm" class="h-8 px-3">
+			<Button
+				href="/products/{product?.slug || ''}"
+				variant="default"
+				size="sm"
+				class="h-8 px-3 transition-colors hover:bg-primary/90"
+			>
 				{product_view_details({ name: product.name })}
 			</Button>
 		</div>

@@ -85,7 +85,7 @@ export const actions: Actions = {
     /**
      * Update cart item quantity
      */
-    updateItem: async ({ request }) => {
+    updateItem: async ({ request, cookies, locals }) => {
         const formData = await request.formData();
         const cartItemId = formData.get('cartItemId')?.toString();
         const quantity = parseInt(formData.get('quantity')?.toString() || '1', 10);
@@ -98,7 +98,14 @@ export const actions: Actions = {
             // Update cart item quantity
             await cartRepository.updateCartItemQuantity(cartItemId, quantity);
 
-            return { success: true };
+            // Get cart data from the repository
+            const sessionId = cookies.get('cart-session') || '';
+            const userId = locals.user?.id;
+
+            // Fetch the updated cart
+            const updatedCart = await cartRepository.getCartViewModel(sessionId, userId);
+
+            return { success: true, cart: updatedCart };
         } catch (error) {
             console.error('Error updating cart item:', error);
             return fail(500, { message: 'Failed to update cart item' });
@@ -108,7 +115,7 @@ export const actions: Actions = {
     /**
      * Remove item from cart
      */
-    removeItem: async ({ request }) => {
+    removeItem: async ({ request, cookies, locals }) => {
         const formData = await request.formData();
         const cartItemId = formData.get('cartItemId')?.toString();
 
@@ -120,7 +127,13 @@ export const actions: Actions = {
             // Remove cart item
             await cartRepository.removeCartItem(cartItemId);
 
-            return { success: true };
+            // Get cart data from the repository
+            const sessionId = cookies.get('cart-session') || '';
+            const userId = locals.user?.id;
+
+            // Fetch the updated cart
+            const updatedCart = await cartRepository.getCartViewModel(sessionId, userId);
+            return { success: true, cart: updatedCart };
         } catch (error) {
             console.error('Error removing cart item:', error);
             return fail(500, { message: 'Failed to remove cart item' });
@@ -152,7 +165,10 @@ export const actions: Actions = {
             // Apply discount
             await cartRepository.applyDiscountToCart(userCart.id, discountCode);
 
-            return { success: true };
+            // Fetch the updated cart
+            const updatedCart = await cartRepository.getCartViewModel(sessionId, userId);
+
+            return { success: true, cart: updatedCart };
         } catch (error) {
             console.error('Error applying discount:', error);
 
@@ -183,7 +199,10 @@ export const actions: Actions = {
             // Remove discount
             await cartRepository.removeDiscountFromCart(userCart.id);
 
-            return { success: true };
+            // Fetch the updated cart
+            const updatedCart = await cartRepository.getCartViewModel(sessionId, userId);
+
+            return { success: true, cart: updatedCart };
         } catch (error) {
             console.error('Error removing discount:', error);
             return fail(500, { message: 'Failed to remove discount' });
@@ -208,10 +227,13 @@ export const actions: Actions = {
             // Clear cart
             await cartRepository.clearCart(userCart.id);
 
-            return { success: true };
+            // Fetch the updated cart
+            const updatedCart = await cartRepository.getCartViewModel(sessionId, userId);
+
+            return { success: true, cart: updatedCart };
         } catch (error) {
             console.error('Error clearing cart:', error);
             return fail(500, { message: 'Failed to clear cart' });
         }
     }
-}; 
+};

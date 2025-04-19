@@ -1,8 +1,19 @@
 import { writable } from 'svelte/store';
-import { invalidateAll } from '$app/navigation';
-import type { CartViewModel } from '$lib/models/cart';
+import type { CartViewModel, CartItemViewModel } from '$lib/models/cart';
 
-// Initial empty cart state
+const CART_STORAGE_KEY = 'cart_data';
+
+function safeJSONParse<T>(jsonString: string | null, fallback: T): T {
+    if (!jsonString) return fallback;
+    try {
+        return JSON.parse(jsonString) as T;
+    } catch (error) {
+        console.error('Failed to parse stored cart data:', error);
+        return fallback;
+    }
+}
+
+// Initial cart state
 const initialCart: CartViewModel = {
     id: '',
     items: [],
@@ -13,149 +24,49 @@ const initialCart: CartViewModel = {
     itemCount: 0
 };
 
-// Writable store for local cart changes
-export const cart = writable<CartViewModel>(initialCart);
+export const createCartStore = () => {
+    const storedData = typeof window !== 'undefined' ? localStorage.getItem(CART_STORAGE_KEY) : null;
+    const initialState = storedData ? safeJSONParse(storedData, initialCart) : initialCart;
+    const { subscribe, set, update } = writable<CartViewModel>(initialState);
 
-// Loading state for cart operations
-export const isLoading = writable(false);
+    // Remove any setTimeout or artificial delays here
+    if (typeof window !== 'undefined') {
+        subscribe((state) => {
+            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state));
+        });
+    }
 
-// Response type for cart operations
-type CartOperationResult = {
-    success: boolean;
-    error?: string;
+    return {
+        subscribe,
+        set: (cartData: CartViewModel) => {
+            // Ensure we have a valid cart object
+            const validCart: CartViewModel = {
+                id: cartData?.id || '',
+                items: cartData?.items || [],
+                discountCode: cartData?.discountCode || null,
+                discountAmount: cartData?.discountAmount || 0,
+                subtotal: cartData?.subtotal || 0,
+                total: cartData?.total || 0,
+                itemCount: cartData?.itemCount || 0
+            };
+            set(validCart);
+        },
+        addItem: (item: CartItemViewModel) => update(cart => {
+            // Only add if not already present
+            if (cart.items.some(i => i.id === item.id)) return cart;
+            const items = [...cart.items, item];
+            return { ...cart, items, itemCount: items.length };
+        }),
+        removeItem: (itemId: string) => update(cart => {
+            const items = cart.items.filter(i => i.id !== itemId);
+            return { ...cart, items, itemCount: items.length };
+        }),
+        updateQuantity: (itemId: string, quantity: number) => update(cart => {
+            const items = cart.items.map(i => i.id === itemId ? { ...i, quantity } : i);
+            return { ...cart, items };
+        }),
+        clear: () => set(initialCart),
+    };
 };
 
-/**
- * Generic function to handle cart form actions with consistent error handling
- */
-async function executeCartAction(
-    action: string,
-    formData: FormData
-): Promise<CartOperationResult> {
-    // Set loading state before any operations
-    isLoading.set(true);
-
-    try {
-        const response = await fetch(`/cart?/${action}`, {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || `Failed to execute ${action}`);
-        }
-
-        // Wait a bit before invalidating to ensure loading state is visible
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        // Refresh data by invalidating all endpoints
-        await invalidateAll();
-
-        return { success: true };
-    } catch (error) {
-        console.error(`Failed to execute ${action}:`, error);
-        return {
-            success: false,
-            error: error instanceof Error ? error.message : 'Unknown error occurred'
-        };
-    } finally {
-        // Clear loading state after operation completes
-        isLoading.set(false);
-    }
-}
-
-// Function to reset cart store when there might be stale data
-export function resetCartStore() {
-    cart.set(initialCart);
-    invalidateAll();
-}
-
-// Function to update cart store from page data
-export function updateCartFromPageData(pageData: Record<string, unknown>) {
-    if (!pageData) return;
-
-    try {
-        const cartData = pageData.cart as CartViewModel;
-        if (!cartData) {
-            resetCartStore();
-            return;
-        }
-        cart.set(cartData);
-    } catch (error) {
-        console.error('Error updating cart from page data:', error);
-        resetCartStore();
-    }
-}
-
-// Add item to cart using form action
-export async function addToCart(
-    productVariantId: string,
-    quantity: number = 1
-): Promise<CartOperationResult> {
-    const formData = new FormData();
-    formData.append('productVariantId', productVariantId);
-    formData.append('quantity', quantity.toString());
-    return executeCartAction('addItem', formData);
-}
-
-// Update cart item quantity using form action
-export async function updateCartItem(
-    cartItemId: string,
-    quantity: number
-): Promise<CartOperationResult> {
-    const formData = new FormData();
-    formData.append('cartItemId', cartItemId);
-    formData.append('quantity', quantity.toString());
-    return executeCartAction('updateItem', formData);
-}
-
-// Remove cart item using form action
-export async function removeCartItem(cartItemId: string): Promise<CartOperationResult> {
-    const formData = new FormData();
-    formData.append('cartItemId', cartItemId);
-    return executeCartAction('removeItem', formData);
-}
-
-// Apply discount code using form action
-export async function applyDiscount(code: string): Promise<CartOperationResult> {
-    const formData = new FormData();
-    formData.append('discountCode', code);
-    return executeCartAction('applyDiscount', formData);
-}
-
-// Remove discount code using form action
-export async function removeDiscount(): Promise<CartOperationResult> {
-    return executeCartAction('removeDiscount', new FormData());
-}
-
-// Clear cart using form action
-export async function clearCart(): Promise<CartOperationResult> {
-    return executeCartAction('clearCart', new FormData());
-}
-
-// Cart actions object for component usage
-export const cartActions = {
-    addToCart: async ({ productVariantId, quantity = 1, composites = [] }: {
-        productVariantId: string;
-        quantity: number;
-        composites?: Array<{
-            variantId: string;
-            name: string;
-            quantity: number;
-        }>;
-    }) => {
-        const formData = new FormData();
-        formData.append('productVariantId', productVariantId);
-        formData.append('quantity', quantity.toString());
-        if (composites.length > 0) {
-            formData.append('composites', JSON.stringify(composites));
-        }
-        return executeCartAction('addItem', formData);
-    },
-    updateItem: updateCartItem,
-    removeItem: removeCartItem,
-    applyDiscount,
-    removeDiscount,
-    clearCart
-}; 
+export const cart = createCartStore();
