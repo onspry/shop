@@ -4,6 +4,12 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Seed configuration
+generator seed {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
@@ -248,6 +254,7 @@ model OrderItem {
   price            Int       // Price at time of purchase, in cents
   name             String    // Added to match Drizzle - product name at time of order
   variantName      String    @map("variant_name") // Added to match Drizzle - variant name at time of order
+  composites       Json      @default("[]") // For composite products (switches, keycaps, etc.)
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at") // Added to match Drizzle
 

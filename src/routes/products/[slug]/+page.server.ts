@@ -61,6 +61,24 @@ export const actions: Actions = {
                 return fail(400, { message: 'No cart session available. Please refresh the page and try again.' });
             }
 
+            // Extract composites from form data
+            const composites: Array<{ variantId: string, name: string, quantity: number }> = [];
+
+            // Process form data to extract composites
+            for (const [key, value] of formData.entries()) {
+                // Check if this is a composite field
+                if (key.startsWith('composites[') && key.includes('][variantId]')) {
+                    const index = key.match(/composites\[(\d+)\]/)![1];
+                    const variantId = value.toString();
+                    const name = formData.get(`composites[${index}][name]`)?.toString() || '';
+                    const quantity = parseInt(formData.get(`composites[${index}][quantity]`)?.toString() || '1', 10);
+
+                    composites.push({ variantId, name, quantity });
+                }
+            }
+
+            console.log('[PAGE.SERVER] Extracted composites:', composites);
+
             // Get or create cart
             const userCart = await cartRepository.getOrCreateCart(sessionId, userId);
 
@@ -68,7 +86,8 @@ export const actions: Actions = {
             await cartRepository.addItemToCart(
                 userCart.id,
                 productVariantId,
-                quantity
+                quantity,
+                composites
             );
 
             // Get the updated cart to return to the client

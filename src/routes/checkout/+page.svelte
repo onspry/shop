@@ -992,13 +992,13 @@
 											oninput={(e) => {
 												// Remove all non-digits
 												let value = e.currentTarget.value.replace(/\D/g, '');
-												
+
 												// Limit to 16 digits
 												value = value.substring(0, 16);
-												
+
 												// Format with spaces after every 4 digits
 												const formattedValue = value.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
-												
+
 												$paymentForm.cardNumber = formattedValue;
 												checkoutStore.updatePaymentConfig({
 													cardNumber: formattedValue
@@ -1207,6 +1207,7 @@
 						<div class="flex items-center gap-2">
 							<ShoppingBag class="h-5 w-5" />
 							<span class="font-medium">{m.checkout_order_summary()}</span>
+							<span class="text-sm text-muted-foreground ml-1">({data.cart.items.length} {data.cart.items.length === 1 ? 'item' : 'items'})</span>
 						</div>
 						<div class="flex items-center gap-2">
 							<span class="font-medium">{formatPrice(data.cart.total)}</span>
@@ -1236,7 +1237,7 @@
 
 				<div
 					id="mobile-order-summary"
-					class="hidden sm:block bg-background rounded-lg space-y-6 shadow-sm border border-muted/50 p-4"
+					class="hidden lg:block bg-background rounded-lg space-y-6 shadow-sm border border-muted/50 p-4"
 				>
 					<!-- Cart items summary -->
 					<div class="space-y-6">
@@ -1275,15 +1276,20 @@
 										</div>
 										<div class="flex-1">
 											<div class="flex justify-between items-start">
-												<p class="font-medium">{item.name}</p>
+												<div>
+													<p class="font-medium">{item.variant?.name || item.name}</p>
+												</div>
 												<p class="font-medium ml-4">{formatPrice(item.price * item.quantity)}</p>
 											</div>
 											{#if item.composites && item.composites.length > 0}
-												<div class="mt-1">
+												<div class="mt-1 space-y-1">
 													{#each item.composites as composite}
-														<p class="text-sm text-muted-foreground">
-															{composite.name}
-														</p>
+														<div class="flex items-center gap-1">
+															<div class="w-1.5 h-1.5 rounded-full bg-muted-foreground/40"></div>
+															<p class="text-sm text-muted-foreground">
+																{composite.name}
+															</p>
+														</div>
 													{/each}
 												</div>
 											{/if}
@@ -1429,9 +1435,9 @@
 					{/if}
 
 					<!-- Order Form -->
-					<form id="order-form" method="POST" action="?/placeOrder" class="pt-6 border-t" use:enhance={async ({ cancel }) => {
-							// Show processing toast
-							const processingToast = toast.loading('Processing your order...');
+					<form id="order-form" method="POST" action="?/placeOrder" class="pt-6 border-t" use:enhance={async () => {
+							// Show processing toast with longer duration
+							const processingToast = toast.loading('Processing your order...', { duration: 60000 });
 
 							return ({ result }) => {
 								// Dismiss the processing toast
@@ -1445,7 +1451,7 @@
 
 									if (orderId) {
 										// Show success message
-										toast.success('Order placed successfully!');
+										toast.success('Order placed successfully!', { duration: 3000 });
 
 										// Reset checkout store
 										checkoutStore.reset();

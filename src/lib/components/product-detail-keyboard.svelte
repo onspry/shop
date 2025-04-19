@@ -247,7 +247,7 @@
 					label: 'View Cart',
 					onClick: () => goto('/cart')
 				},
-				duration: 5000
+				duration: 3000 // Shorter duration for success toast
 			});
 
 			// Reset the success message after 3 seconds, but keep the selection
@@ -271,21 +271,6 @@
 	}
 
 	let imageErrors = $state(new Set<string>());
-
-	function handleImageError(event: Event) {
-		const img = event.target as HTMLImageElement;
-		const originalUrl = img.src.split('?')[0]; // Get the base URL without query params
-		imageErrors.add(originalUrl);
-	}
-
-	function getOptimizedImageUrl(url: string, width: number, height: number): string {
-		if (!url) return '';
-		// Ensure URL starts with a forward slash if it's a relative path
-		if (!url.startsWith('/') && !url.startsWith('http')) {
-			url = '/' + url;
-		}
-		return `${url}?w=${width}&h=${height}&q=80&format=webp`;
-	}
 
 	// Helper function to get variant attribute with type safety
 	function getVariantAttribute<T>(
@@ -339,25 +324,6 @@
 			!!selectedKeycap
 	);
 
-	// Generate structured data for the product
-	const structuredData = $derived(() => ({
-		'@context': 'https://schema.org/',
-		'@type': 'Product',
-		name: product.name,
-		description: product.description,
-		image: images?.[0]?.url,
-		offers: {
-			'@type': 'AggregateOffer',
-			priceCurrency: 'USD',
-			lowPrice: basePrice,
-			highPrice: Math.max(...variants.map((v: { price: any }) => Number(v.price))),
-			availability:
-				selectedVariant?.stockStatus === 'in_stock'
-					? 'https://schema.org/InStock'
-					: 'https://schema.org/OutOfStock'
-		}
-	}));
-
 	// Add state for current main image
 	let currentImageIndex = $state(0);
 
@@ -366,21 +332,6 @@
 		currentImageIndex = index;
 	}
 </script>
-
-<!-- Add structured data to head -->
-<svelte:head>
-	<script type="application/ld+json">
-		{JSON.stringify(structuredData)}
-	</script>
-	<title>{product.name} - Your Store Name</title>
-	<meta name="description" content={product.description} />
-	<meta property="og:title" content={product.name} />
-	<meta property="og:description" content={product.description} />
-	{#if images?.[0]?.url}
-		<meta property="og:image" content={images[0].url} />
-	{/if}
-	<link rel="canonical" href={`https://yourstore.com/products/${product.slug}`} />
-</svelte:head>
 
 <div class="container mx-auto px-4 py-8">
 	{#if !product?.id}
@@ -608,7 +559,12 @@
 								// Set loading state
 								isAddingToCart = true;
 
+								// Show loading toast
+								const toastId = toast.loading(`Adding ${product.name} to cart...`, { duration: 30000 });
+
 								return async ({ result }) => {
+									// Dismiss loading toast
+									toast.dismiss(toastId);
 									handleAddToCartResult(result);
 								};
 							}}

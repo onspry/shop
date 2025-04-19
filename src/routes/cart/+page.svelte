@@ -12,7 +12,7 @@
 	// Get the cart data from the server
 	let { data } = $props();
 
-	// Update the client-side cart store with server data
+	// Use the cart store directly
 	$effect(() => {
 		if (data?.cart) {
 			console.log('Updating cart store with server data:', data.cart);
@@ -46,7 +46,7 @@
 </script>
 
 <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-opacity duration-500" class:opacity-0={!contentVisible} class:opacity-100={contentVisible}>
-	{#if !data.cart || !data.cart.items || data.cart.items.length === 0}
+	{#if !$cart || !$cart.items || $cart.items.length === 0}
 		<!-- Empty Cart View - Full Width Layout -->
 		<div class="flex flex-col items-center justify-center py-24 px-4">
 			<div class="w-24 h-24 mb-6 relative">
@@ -80,7 +80,7 @@
 				</div>
 
 				<div class="space-y-6">
-					{#each data.cart.items as item (item.id)}
+					{#each $cart.items as item (item.id)}
 						<CartItem {item} disabled={false} />
 					{/each}
 				</div>
@@ -88,7 +88,7 @@
 
 			<!-- Cart summary -->
 			<div class="lg:col-span-5 lg:sticky lg:top-[calc(var(--header-height)+1rem)] lg:h-fit">
-				{#if data.cart && data.cart.items && data.cart.items.length > 0}
+				{#if $cart && $cart.items && $cart.items.length > 0}
 					<div class="bg-background rounded-lg">
 						<div class="flex items-center justify-between w-full mb-6">
 							<h2 class="text-2xl font-semibold flex items-center gap-2">
@@ -102,15 +102,15 @@
 							<div class="text-sm text-muted-foreground">
 								<div class="flex justify-between mb-1">
 									<span
-										>{data.cart.items.length}
-										{data.cart.items.length === 1 ? 'item' : 'items'} in cart</span
+										>{$cart.items.length}
+										{$cart.items.length === 1 ? 'item' : 'items'} in cart</span
 									>
 									<span
-										>{data.cart.items.reduce((sum: number, item: typeof data.cart.items[0]) => sum + item.quantity, 0)} units total</span
+										>{$cart.items.reduce((sum: number, item: typeof $cart.items[0]) => sum + item.quantity, 0)} units total</span
 									>
 								</div>
 
-								{#if data.cart.items.some((item: typeof data.cart.items[0]) => item.variant.stockStatus === 'low_stock')}
+								{#if $cart.items.some((item: typeof $cart.items[0]) => item.variant.stockStatus === 'low_stock')}
 									<p class="text-warning mt-2">Some items are low in stock</p>
 								{/if}
 							</div>
@@ -125,7 +125,7 @@
 
 							<div class="flex justify-between text-xl font-semibold pt-4 mt-4 border-t">
 								<span>{m.cart_total()}</span>
-								<span>{formatPrice(data.cart.total)}</span>
+								<span>{formatPrice($cart.total)}</span>
 							</div>
 						</div>
 

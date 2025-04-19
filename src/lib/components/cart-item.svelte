@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { CartItemViewModel } from '$lib/models/cart';
-	import { Trash2, Minus, Plus, ImageOff, Tag } from 'lucide-svelte';
+	import { Trash2, Minus, Plus, ImageOff } from 'lucide-svelte';
 	import { formatPrice } from '$lib/utils/price';
 	import * as m from '$lib/paraglide/messages';
-	import Button from './ui/button/button.svelte';
+	import { Button } from '$lib/components/ui/button';
 	import { enhance } from '$app/forms';
 	import { toast } from 'svelte-sonner';
 	import { cart } from '$lib/stores/cart';
@@ -19,26 +19,17 @@
 	// Track if remove confirmation is shown
 	let showRemoveConfirm = $state(false);
 
-	// Create a reactive variable to track the current item
+	// Use the item prop directly
 	let currentItem = $state(item);
 
-	// Update currentItem when the cart store changes
+	// Update currentItem when the item prop changes
 	$effect(() => {
-		const unsubscribe = cart.subscribe((cartData) => {
-			if (cartData && cartData.items && cartData.items.length > 0) {
-				// Find the updated item in the cart
-				const updatedItem = cartData.items.find(i => i.id === item.id);
-				if (updatedItem) {
-					console.log('[CART-ITEM] Updating item:', updatedItem);
-					currentItem = updatedItem;
-				}
-			}
-		});
-
-		return () => {
-			unsubscribe();
-		};
+		currentItem = item;
 	});
+
+	// Log initial item state
+	console.log('[CART-ITEM] Initial item:', item);
+	console.log('[CART-ITEM] Initial composites:', item.composites);
 
 	// Quantity can't go below 1 or above available stock
 	const minQuantity = 1;
@@ -48,22 +39,7 @@
 	const variantName = $derived(currentItem?.variant?.name || 'Product');
 	const variantImage = $derived(currentItem?.variant?.attributes?.image);
 
-	// Get variant attributes for display
-	const variantAttributes = $derived(getVariantAttributes());
 
-	// Helper function to extract variant attributes
-	function getVariantAttributes() {
-		const attrs = [];
-		if (currentItem?.variant?.attributes) {
-			for (const [key, value] of Object.entries(currentItem.variant.attributes)) {
-				// Skip the image attribute
-				if (key !== 'image' && value) {
-					attrs.push(`${key}: ${value}`);
-				}
-			}
-		}
-		return attrs;
-	}
 
 	let imageError = $state(false);
 	let imageLoaded = $state(false);
@@ -101,9 +77,9 @@
 </script>
 
 <div class="relative">
-	<div class="flex bg-background rounded-lg p-4 hover:shadow-md transition-all duration-200 border border-transparent hover:border-gray-200">
+	<div class="flex bg-background rounded-lg p-4 hover:shadow-md transition-all duration-200 border border-transparent hover:border-border">
 		<!-- Product Image with hover zoom -->
-		<div class="w-32 h-32 flex-shrink-0 relative overflow-hidden rounded-md border border-gray-100 group">
+		<div class="w-32 h-32 flex-shrink-0 relative overflow-hidden rounded-md border border-border/50 group">
 			<div class="relative aspect-square h-full overflow-hidden bg-muted/5">
 				{#if imageError}
 					<div class="absolute inset-0 flex items-center justify-center bg-muted">
@@ -133,23 +109,18 @@
 				<div>
 					<h3 class="font-medium text-base">{variantName}</h3>
 
-					<!-- Variant Attributes -->
-					{#if variantAttributes.length > 0}
-						<div class="mt-1 flex flex-wrap gap-2">
-							{#each variantAttributes as attr}
-								<span class="inline-flex items-center text-xs bg-muted/30 px-2 py-0.5 rounded text-muted-foreground">
-									<Tag class="h-3 w-3 mr-1" />
-									{attr}
-								</span>
-							{/each}
-						</div>
-					{/if}
+
 
 					<!-- Composite Items -->
 					{#if currentItem.composites && currentItem.composites.length > 0}
 						<div class="mt-2 space-y-1">
 							{#each currentItem.composites as composite}
-								<p class="text-sm text-muted-foreground">{composite.name}</p>
+								<div class="flex items-center gap-1">
+									<div class="w-1.5 h-1.5 rounded-full bg-muted-foreground/40"></div>
+									<p class="text-sm text-muted-foreground">
+										{composite.name}
+									</p>
+								</div>
 							{/each}
 						</div>
 					{/if}
@@ -172,7 +143,7 @@
 								use:enhance={() => {
 									isUpdating = true;
 									const itemName = currentItem.variant?.name || 'Item';
-									const toastId = toast.loading(`Removing ${itemName}...`);
+									const toastId = toast.loading(`Removing ${itemName}...`, { duration: 30000 });
 
 									return async ({ result }) => {
 										if (result.type === 'success') {
@@ -180,7 +151,7 @@
 											if (result.data?.cart) {
 												safeUpdateCart(result.data.cart);
 											}
-											toast.success(`${itemName} removed from cart`, { id: toastId });
+											toast.success(`${itemName} removed from cart`, { id: toastId, duration: 3000 });
 										} else {
 											toast.error(`Failed to remove ${itemName}`, { id: toastId });
 										}
@@ -229,14 +200,14 @@
 
 			<div class="mt-4 flex justify-between items-center">
 				<!-- Improved Quantity Controls with Server Actions -->
-				<div class="flex items-center space-x-2 bg-muted/10 rounded-md p-1.5 border border-gray-100">
+				<div class="flex items-center space-x-2 bg-muted/10 rounded-md p-1.5 border border-border/50">
 					<form
 						method="POST"
 						action="?/updateItem"
 						use:enhance={() => {
 							isUpdating = true;
 							const itemName = currentItem.variant?.name || 'Item';
-							const toastId = toast.loading(`Updating ${itemName}...`);
+							const toastId = toast.loading(`Updating ${itemName}...`, { duration: 30000 });
 
 							return async ({ result }) => {
 								if (result.type === 'success') {
@@ -247,7 +218,7 @@
 									} else {
 										console.warn('[CART] No cart data received in result:', result);
 									}
-									toast.success(`${itemName} quantity updated`, { id: toastId });
+									toast.success(`${itemName} quantity updated`, { id: toastId, duration: 3000 });
 								} else {
 									console.error('[CART] Error updating item:', result);
 									toast.error(`Failed to update ${itemName}`, { id: toastId });
@@ -277,7 +248,7 @@
 						use:enhance={() => {
 							isUpdating = true;
 							const itemName = currentItem.variant?.name || 'Item';
-							const toastId = toast.loading(`Updating ${itemName}...`);
+							const toastId = toast.loading(`Updating ${itemName}...`, { duration: 30000 });
 
 							return async ({ result }) => {
 								console.log('Cart update result:', result);
@@ -289,7 +260,7 @@
 									} else {
 										console.warn('No cart data in result:', result);
 									}
-									toast.success(`${itemName} quantity updated`, { id: toastId });
+									toast.success(`${itemName} quantity updated`, { id: toastId, duration: 3000 });
 								} else {
 									console.error('Failed to update cart:', result);
 									toast.error(`Failed to update ${itemName}`, { id: toastId });

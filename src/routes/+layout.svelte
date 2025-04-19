@@ -102,16 +102,19 @@
 		</footer>
 	</div>
 
+	<!-- Toast positioned above footer on the right side -->
 	<Toaster
 		richColors
 		closeButton
+		position="bottom-right"
+		offset={65}
 		toastOptions={{
 			classes: {
 				success: 'toast-success',
 				error: 'toast-error',
 				actionButton: 'toast-action'
 			},
-			duration: 4000
+			duration: 8000 // Increased from 4000 to 8000 ms
 		}}
 	/>
 </ParaglideJS>

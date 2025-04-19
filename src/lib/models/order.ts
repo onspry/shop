@@ -29,6 +29,16 @@ export const RefundStatus = {
 export type RefundStatus = typeof RefundStatus[keyof typeof RefundStatus];
 
 /**
+ * Represents a composite item in an order
+ */
+export interface OrderItemCompositeViewModel {
+    variantId: string;
+    name: string;
+    quantity: number;
+    type?: string; // For categorizing composites (e.g., 'SWITCH', 'KEYCAP')
+}
+
+/**
  * Represents an item in an order
  */
 export interface OrderItemViewModel {
@@ -39,6 +49,7 @@ export interface OrderItemViewModel {
     unitPrice: number; // Same as price, but needed for compatibility
     productName: string;
     variantName: string;
+    composites?: OrderItemCompositeViewModel[];
 }
 
 /**
@@ -111,6 +122,7 @@ export interface OrderViewModel {
         totalPrice: number;
         name: string;
         variantName: string;
+        composites?: OrderItemCompositeViewModel[];
     }>;
     shippingAddress: {
         firstName: string;

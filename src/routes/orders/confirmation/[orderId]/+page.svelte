@@ -106,6 +106,20 @@
 										<h3 class="font-medium">{item.name}</h3>
 										<p class="text-sm text-muted-foreground">{item.variantName}</p>
 										<p class="text-sm">{m.checkout_quantity()} {item.quantity}</p>
+
+										<!-- Composite items (if any) -->
+										{#if item.composites && item.composites.length > 0}
+											<div class="mt-2 space-y-1">
+												{#each item.composites as composite}
+													<div class="flex items-center gap-1">
+														<div class="w-1.5 h-1.5 rounded-full bg-muted-foreground/40"></div>
+														<p class="text-sm text-muted-foreground">
+															{composite.name}
+														</p>
+													</div>
+												{/each}
+											</div>
+										{/if}
 									</div>
 								</div>
 								<div class="text-right">

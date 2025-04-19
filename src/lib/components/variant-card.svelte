@@ -78,7 +78,7 @@
 
 		<!-- Variant Visual -->
 		<div class="mb-3 flex justify-center">
-			<div class="relative w-16 h-16 overflow-hidden rounded-md border border-gray-100 group">
+			<div class="relative w-16 h-16 overflow-hidden rounded-md border border-border/50 group">
 				<div class="relative aspect-square h-full overflow-hidden bg-muted/5">
 					{#if variantImageUrl && !imageError}
 						{#if !imageLoaded}

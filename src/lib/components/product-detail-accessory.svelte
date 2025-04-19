@@ -102,7 +102,7 @@
 					label: 'View Cart',
 					onClick: () => goto('/cart')
 				},
-				duration: 5000
+				duration: 3000 // Shorter duration for success toast
 			});
 		} else {
 			// Handle error cases
@@ -309,7 +309,12 @@
 							// Set loading state
 							isAddingToCart = true;
 
+							// Show loading toast
+							const toastId = toast.loading(`Adding ${product.name} to cart...`, { duration: 30000 });
+
 							return async ({ result }) => {
+								// Dismiss loading toast
+								toast.dismiss(toastId);
 								handleAddToCartResult(result);
 							};
 						}}

@@ -3,6 +3,7 @@
 	import ProductDetailKeyboard from '$lib/components/product-detail-keyboard.svelte';
 	import ProductDetailAccessory from '$lib/components/product-detail-accessory.svelte';
 	import { onMount } from 'svelte';
+	import * as m from '$lib/paraglide/messages';
 
 	let { data } = $props<{ data: PageData }>();
 
@@ -26,7 +27,56 @@
 		// No need to update URL, just pass the event to the component
 		console.log('Variant selected:', event.detail.variantId);
 	}
+
+	// Generate structured data for the product
+	const structuredData = $derived(() => {
+		if (!data?.product) return null;
+
+		const product = data.product;
+		const variants = data.variants || [];
+		const images = data.images || [];
+		const basePrice = variants.length > 0
+			? Math.min(...variants.map((v: any) => Number(v.price)))
+			: 0;
+
+		return {
+			'@context': 'https://schema.org/',
+			'@type': 'Product',
+			name: product.name,
+			description: product.description,
+			image: images?.[0]?.url,
+			offers: {
+				'@type': 'AggregateOffer',
+				priceCurrency: 'USD',
+				lowPrice: basePrice,
+				highPrice: Math.max(...variants.map((v: any) => Number(v.price))),
+				availability: variants.some((v: any) => v.stockStatus === 'in_stock')
+					? 'https://schema.org/InStock'
+					: 'https://schema.org/OutOfStock'
+			}
+		};
+	});
+
+	// Get the store name from the messages
+	const storeName = m.shop_title();
 </script>
+
+<!-- Add SEO metadata to head -->
+<svelte:head>
+	{#if data?.product}
+		<script type="application/ld+json">
+			{JSON.stringify(structuredData)}
+		</script>
+		<title>{data.product.name} - {storeName}</title>
+		<meta name="description" content={data.product.description} />
+		<meta property="og:title" content={data.product.name} />
+		<meta property="og:description" content={data.product.description} />
+		{#if data.images?.[0]?.url}
+			<meta property="og:image" content={data.images[0].url} />
+		{/if}
+		<link rel="canonical" href={`/products/${data.product.slug}`} />
+	{/if}
+</svelte:head>
 
 <div class="min-h-screen bg-background">
 	<div

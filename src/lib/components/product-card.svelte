@@ -36,17 +36,17 @@
 	}
 </script>
 
-<div class="group relative bg-card overflow-hidden rounded-lg border border-border hover:shadow-md transition-all duration-200 hover:border-gray-200 {className}">
+<div class="group relative bg-card overflow-hidden rounded-lg border border-border hover:shadow-md transition-all duration-200 hover:border-border/80 {className}">
 	<!-- Image Section -->
-	<div class="relative w-full h-full p-6 overflow-hidden">
-		<div class="relative aspect-square h-full overflow-hidden bg-muted/5 rounded-md border border-gray-100 group">
+	<div class="relative w-full p-6 overflow-hidden flex items-center justify-center">
+		<div class="relative aspect-square w-full max-w-full overflow-hidden bg-muted/5 rounded-md border border-border/50 group flex items-center justify-center">
 			{#if imageError || !product?.images?.length}
 				<div class="absolute inset-0 flex items-center justify-center bg-muted">
 					<ImageOff class="h-10 w-10 text-muted-foreground" />
 				</div>
 			{:else}
 				{#if !imageLoaded}
-					<div class="absolute inset-0">
+					<div class="absolute inset-0 flex items-center justify-center">
 						<div class="h-full w-full animate-pulse bg-muted-foreground/20"></div>
 					</div>
 				{/if}
@@ -54,7 +54,7 @@
 					src={getOptimizedImageUrl(product.images[0]?.url || '')}
 					alt={product.images[0]?.alt || product.name}
 					loading="lazy"
-					class="h-full w-full object-contain transition-all duration-300 group-hover:scale-110"
+					class="max-h-full max-w-full object-contain object-center transition-all duration-300 group-hover:scale-110"
 					class:opacity-0={!imageLoaded}
 					class:opacity-100={imageLoaded}
 					onerror={handleImageError}
@@ -65,7 +65,7 @@
 	</div>
 
 	<!-- Text Overlay (Theme aware) -->
-	<div class="absolute bottom-0 left-0 right-0 p-4 bg-background/90 backdrop-blur-sm border-t border-gray-100">
+	<div class="absolute bottom-0 left-0 right-0 p-4 bg-background/90 backdrop-blur-sm border-t border-border/50">
 		<h3 class="text-lg font-medium text-foreground truncate">
 			{product?.name || 'Product Name'}
 		</h3>

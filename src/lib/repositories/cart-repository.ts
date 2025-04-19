@@ -228,6 +228,37 @@ export class CartRepository {
             });
             const firstImage = item.variant.product?.images?.[0];
 
+            // Parse composites from JSON if they exist
+            let composites = [];
+            if (item.composites) {
+                console.log('[CART-REPO] Item composites type:', typeof item.composites);
+                console.log('[CART-REPO] Item composites value:', item.composites);
+
+                try {
+                    // If composites is already an array, use it directly
+                    if (Array.isArray(item.composites)) {
+                        console.log('[CART-REPO] Composites is an array');
+                        composites = item.composites;
+                    }
+                    // If it's a string, parse it
+                    else if (typeof item.composites === 'string') {
+                        console.log('[CART-REPO] Composites is a string, parsing...');
+                        composites = JSON.parse(item.composites);
+                    }
+                    // If it's an object with a toJSON method (like Prisma's JsonValue), use that
+                    else if (typeof item.composites === 'object') {
+                        console.log('[CART-REPO] Composites is an object');
+                        // Cast to array if it's a JSON object
+                        composites = Array.isArray(item.composites) ? item.composites : [];
+                    }
+
+                    console.log('[CART-REPO] Parsed composites:', composites);
+                } catch (error) {
+                    console.error('Error parsing composites:', error);
+                    composites = [];
+                }
+            }
+
             return {
                 id: item.id,
                 cartId: item.cartId,
@@ -243,7 +274,12 @@ export class CartRepository {
                     }
                 },
                 imageUrl: firstImage?.url || '',
-                composites: []
+                composites: composites.map((comp: { variantId: string, name: string, quantity: number }) => ({
+                    variantId: comp.variantId,
+                    name: comp.name,
+                    quantity: comp.quantity,
+                    variant: null // We'll need to fetch this separately if needed
+                }))
             };
         });
 
@@ -425,7 +461,8 @@ export class CartRepository {
     async addItemToCart(
         cartId: string,
         productVariantId: string,
-        quantity: number = 1
+        quantity: number = 1,
+        composites: Array<{ variantId: string, name: string, quantity: number }> = []
     ): Promise<void> {
         // Input validation
         if (!cartId || typeof cartId !== 'string') {
@@ -497,7 +534,9 @@ export class CartRepository {
                         where: { id: existingItem.id },
                         data: {
                             quantity: newQuantity,
-                            updatedAt: new Date()
+                            updatedAt: new Date(),
+                            // Only update composites if provided
+                            ...(composites.length > 0 ? { composites } : {})
                         }
                     });
                 } else {
@@ -509,7 +548,8 @@ export class CartRepository {
                             variantId: productVariantId,
                             productId: variant.productId,
                             quantity: quantity,
-                            price: variant.price
+                            price: variant.price,
+                            composites: composites.length > 0 ? composites : []
                         }
                     });
                 }

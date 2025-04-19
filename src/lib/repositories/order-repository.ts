@@ -79,6 +79,16 @@ export function mapCartItemToOrderItem(cartItem: CartItemViewModel): OrderItemVi
     const productId = cartItem.variant.product?.id || cartItem.variant.productId;
     const productName = cartItem.variant.product?.name || cartItem.variant.name;
 
+    // Map composite items if they exist
+    const composites = cartItem.composites && cartItem.composites.length > 0
+        ? cartItem.composites.map(composite => ({
+            variantId: composite.variantId,
+            name: composite.name,
+            quantity: composite.quantity,
+            // No type field in CartItemCompositeViewModel, so we'll omit it
+        }))
+        : undefined;
+
     return {
         // Get product ID from the variant's product reference
         productId: productId,
@@ -90,7 +100,9 @@ export function mapCartItemToOrderItem(cartItem: CartItemViewModel): OrderItemVi
         // Get product name from the variant's product reference
         productName: productName,
         // Get variant name directly from the variant
-        variantName: cartItem.variant.name
+        variantName: cartItem.variant.name,
+        // Include composite items
+        composites
     }
 }
 
@@ -186,7 +198,9 @@ export class OrderRepository {
                         quantity: item.quantity,
                         price: item.unitPrice,
                         name: item.productName || 'Product',
-                        variantName: item.variantName || 'Variant'
+                        variantName: item.variantName || 'Variant',
+                        // Prisma expects a JSON value for the composites field
+                        composites: item.composites ? JSON.parse(JSON.stringify(item.composites)) : []
                     }));
 
                 console.log('Order items after filtering:', orderItemsData);
@@ -300,16 +314,40 @@ export class OrderRepository {
             shippingMethod: 'standard',
             paymentMethod: orderData.stripePaymentIntentId ? 'stripe' : 'unknown',
             createdAt: orderData.createdAt.toISOString(),
-            items: orderData.items.map((item) => ({
-                id: item.id,
-                productId: item.productId,
-                variantId: item.variantId,
-                quantity: item.quantity,
-                unitPrice: item.price,
-                totalPrice: item.quantity * item.price,
-                name: item.name,
-                variantName: item.variantName
-            })),
+            items: orderData.items.map((item) => {
+                // Handle composites which could be a string, array, or object
+                let composites = [];
+                try {
+                    if (typeof item.composites === 'string' && item.composites.trim() !== '') {
+                        // If it's a non-empty string, try to parse it
+                        composites = JSON.parse(item.composites);
+                    } else if (Array.isArray(item.composites)) {
+                        // If it's already an array, use it directly
+                        composites = item.composites;
+                    } else if (typeof item.composites === 'object' && item.composites !== null) {
+                        // If it's an object (like Prisma's JsonValue), convert it to an array if possible
+                        const jsonValue = item.composites as any;
+                        if (jsonValue.length !== undefined) {
+                            composites = Array.from(jsonValue);
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error handling composites:', e);
+                    composites = [];
+                }
+
+                return {
+                    id: item.id,
+                    productId: item.productId,
+                    variantId: item.variantId,
+                    quantity: item.quantity,
+                    unitPrice: item.price,
+                    totalPrice: item.quantity * item.price,
+                    name: item.name,
+                    variantName: item.variantName,
+                    composites: composites.length > 0 ? composites : undefined
+                };
+            }),
             shippingAddress: {
                 firstName: shippingAddress.firstName,
                 lastName: shippingAddress.lastName,
