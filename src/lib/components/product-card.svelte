@@ -23,14 +23,14 @@
 <div class="group relative bg-card overflow-hidden rounded-lg border border-border hover:shadow-md transition-all duration-200 hover:border-border/80 {className}">
 	<!-- Image Section -->
 	<div class="relative w-full p-4 pb-20 overflow-hidden flex items-center justify-center">
-		<div class="relative aspect-square w-full max-h-[300px] overflow-hidden rounded-md">
+		<div class="relative aspect-square w-full h-[250px] overflow-hidden rounded-md flex items-center justify-center">
 			<AppImage
 				src={product?.images?.length ? product.images[0].url : ''}
 				alt={product?.images?.length ? product.images[0].alt : product?.name || 'Product'}
 				width="100%"
 				height="100%"
 				aspectRatio="1/1"
-				className="h-full w-full max-h-[200px] group-hover:scale-105 transition-all duration-300"
+				className="h-full w-full group-hover:scale-105 transition-all duration-300 mx-auto"
 				objectFit="contain"
 				showPlaceholder={true}
 			/>

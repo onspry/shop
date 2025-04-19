@@ -31,7 +31,7 @@
 						size="icon"
 						onclick={() => handleImageSelect(index)}
 						aria-label="View {image.alt}"
-						class="p-0 h-auto w-auto hover:bg-transparent overflow-hidden transition-all duration-200"
+						class="p-0 h-auto w-auto flex items-center justify-center hover:bg-transparent overflow-hidden transition-all duration-200"
 					>
 						<AppImage
 							src={image.url}
@@ -47,13 +47,13 @@
 
 			<!-- Main image (with thumbnails) -->
 			<div class="flex-1">
-				<div class="aspect-square max-w-lg mx-auto overflow-hidden rounded-lg max-h-[calc(100vh-var(--header-height)-var(--footer-height)-8rem)]">
+				<div class="flex items-center justify-center max-w-lg mx-auto overflow-hidden rounded-lg min-h-[400px] max-h-[calc(100vh-var(--header-height)-var(--footer-height)-8rem)]">
 					<AppImage
 						src={props.images[displayIndex].url}
 						alt={props.images[displayIndex].alt}
-						width={550}
-						height={550}
-						className="w-full h-full"
+						width="100%"
+						height="auto"
+						aspectRatio="auto"
 						objectFit="contain"
 					/>
 				</div>
@@ -62,13 +62,13 @@
 	{:else}
 		<!-- Single image: centered with no thumbnails -->
 		<div class="w-full">
-			<div class="aspect-square max-w-lg mx-auto overflow-hidden rounded-lg max-h-[calc(100vh-var(--header-height)-var(--footer-height)-8rem)]">
+			<div class="flex items-center justify-center max-w-lg mx-auto overflow-hidden rounded-lg min-h-[400px] max-h-[calc(100vh-var(--header-height)-var(--footer-height)-8rem)]">
 				<AppImage
 					src={props.images[0].url}
 					alt={props.images[0].alt}
-					width={550}
-					height={550}
-					className="w-full h-full"
+					width="100%"
+					height="auto"
+					aspectRatio="auto"
 					objectFit="contain"
 				/>
 			</div>

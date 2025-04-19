@@ -65,7 +65,7 @@ import { AppImage } from '$lib/components/ui/app-image';
 
 		<!-- Variant Visual -->
 		<div class="mb-3 flex justify-center">
-			<div class="relative w-16 h-16 overflow-hidden rounded-md group">
+			<div class="relative w-16 h-16 overflow-hidden rounded-md group flex items-center justify-center">
 				<AppImage
 					src={variantImageUrl}
 					alt={variant.name}

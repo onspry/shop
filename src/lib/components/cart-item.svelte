@@ -71,7 +71,7 @@ import { AppImage } from '$lib/components/ui/app-image';
 <div class="relative">
 	<div class="flex bg-background rounded-lg p-4 hover:shadow-md transition-all duration-200 border border-transparent hover:border-border">
 		<!-- Product Image with hover zoom -->
-		<div class="w-32 h-32 flex-shrink-0 relative overflow-hidden rounded-md group">
+		<div class="w-32 h-32 flex-shrink-0 relative overflow-hidden rounded-md group flex items-center justify-center">
 			<AppImage
 				src={currentItem.imageUrl}
 				alt={variantName}

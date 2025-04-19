@@ -1239,7 +1239,8 @@
 											>
 												{item.quantity}
 											</div>
-											<AppImage
+											<div class="w-12 h-12 flex items-center justify-center overflow-hidden rounded-md">
+												<AppImage
 												src={item.imageUrl}
 												alt={item.name}
 												width={48}
@@ -1247,6 +1248,7 @@
 												className="h-full w-full"
 												objectFit="cover"
 											/>
+										</div>
 										</div>
 										<div class="flex-1">
 											<div class="flex justify-between items-start">

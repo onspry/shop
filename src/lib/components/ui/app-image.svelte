@@ -77,10 +77,10 @@
 
 <div
 	class={cn(
-		'relative overflow-hidden bg-muted/5 transition-all duration-200',
+		'relative overflow-hidden bg-muted/5 transition-all duration-200 flex items-center justify-center',
 		thumbnailMode ? 'aspect-square rounded-md' : '',
-thumbnailMode && !isSelected ? 'border border-border/50' : '',
-thumbnailMode && isSelected ? 'border border-primary' : '',
+		thumbnailMode && !isSelected ? 'border border-border/50' : '',
+		thumbnailMode && isSelected ? 'border border-primary' : '',
 		props.className
 	)}
 	style:width={typeof props.width === 'number' ? `${props.width}px` : props.width}
@@ -106,18 +106,19 @@ thumbnailMode && isSelected ? 'border border-primary' : '',
 			height={typeof props.height === 'number' ? props.height : undefined}
 			loading="lazy"
 			class={cn(
-				'relative z-0 h-full w-full transition-opacity duration-300',
+				'relative z-0 transition-opacity duration-300',
 				`object-${objectFit}`,
 				isLoading ? 'opacity-0' : 'opacity-100',
-				'max-h-full'
+				'max-h-full max-w-full h-auto w-auto mx-auto'
 			)}
+			style="display: block; margin: 0 auto;"
 			onload={handleLoad}
 			onerror={handleError}
 		/>
 
 		<!-- Loading state -->
 		{#if isLoading && showPlaceholder}
-			<div class="absolute inset-0 z-5 flex items-center justify-center">
+			<div class="absolute inset-0 z-5">
 				<div class="absolute inset-0 animate-pulse bg-muted-foreground/10 rounded-md"></div>
 			</div>
 		{/if}
