@@ -19,7 +19,9 @@
 	const objectFit = props.objectFit || 'contain';
 	const showPlaceholder = props.showPlaceholder !== false;
 	const thumbnailMode = props.thumbnailMode || false;
-	const isSelected = props.isSelected || false;
+
+	// Derive isSelected from props
+	const isSelected = $derived(props.isSelected || false);
 
 	// State
 	let isLoading = $state(true);
@@ -75,9 +77,10 @@
 
 <div
 	class={cn(
-		'relative overflow-hidden bg-muted/5',
-		thumbnailMode ? 'aspect-square' : '',
-		thumbnailMode && isSelected ? 'ring-2 ring-primary' : '',
+		'relative overflow-hidden bg-muted/5 transition-all duration-200',
+		thumbnailMode ? 'aspect-square rounded-md' : '',
+thumbnailMode && !isSelected ? 'border border-border/50' : '',
+thumbnailMode && isSelected ? 'border border-primary' : '',
 		props.className
 	)}
 	style:width={typeof props.width === 'number' ? `${props.width}px` : props.width}
@@ -105,7 +108,8 @@
 			class={cn(
 				'relative z-0 h-full w-full transition-opacity duration-300',
 				`object-${objectFit}`,
-				isLoading ? 'opacity-0' : 'opacity-100'
+				isLoading ? 'opacity-0' : 'opacity-100',
+				'max-h-full'
 			)}
 			onload={handleLoad}
 			onerror={handleError}

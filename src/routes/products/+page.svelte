@@ -52,8 +52,8 @@
 		);
 	});
 
-	// Create an autoplay plugin with continuous movement
-	const autoplayPlugin = Autoplay({
+	// Create autoplay plugins for carousels if needed
+	const createAutoplayPlugin = () => Autoplay({
 		delay: 2000,
 		stopOnInteraction: false,
 		playOnInit: true
@@ -87,25 +87,23 @@
 	</div>
 
 	<!-- Desktop layout with right cards matching left card height -->
-	<div class="hidden sm:flex sm:flex-row gap-4 md:gap-6">
-		<!-- Main product -->
-		<div class="w-2/3">
+	<div class="hidden sm:grid sm:grid-cols-3 gap-4 md:gap-6">
+		<!-- Main product - takes up 2 columns -->
+		<div class="col-span-2 max-h-[500px]">
 			{#if mainProduct}
-				<div class="aspect-[4/3] w-full h-full">
-					<ProductCard product={mainProduct} class="h-full" />
-				</div>
+				<ProductCard product={mainProduct} class="h-full" />
 			{/if}
 		</div>
 
-		<!-- Right accessory column - sized to match height of main product exactly -->
-		<div class="w-1/3 flex flex-col gap-4 md:gap-6">
-			<div class="flex-1">
+		<!-- Right accessory column - takes up 1 column -->
+		<div class="flex flex-col gap-4 md:gap-6">
+			<div class="flex-1 max-h-[240px]">
 				{#if topAccessory}
 					<ProductCard product={topAccessory} class="h-full" />
 				{/if}
 			</div>
 
-			<div class="flex-1">
+			<div class="flex-1 max-h-[240px]">
 				{#if bottomAccessory}
 					<ProductCard product={bottomAccessory} class="h-full" />
 				{/if}
@@ -116,12 +114,12 @@
 	<!-- Accessories Carousel -->
 	<div class="mt-8 mb-6 md:mt-12">
 		<h2 class="text-xl md:text-2xl font-bold mb-3 md:mb-4">More Accessories</h2>
-		<Carousel.Root>
+		<Carousel.Root plugins={[createAutoplayPlugin()]}>
 			<Carousel.Content class="-ml-4">
 				{#each accessories as product (product.id)}
 					<Carousel.Item class="pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5">
-						<div class="p-2 aspect-[1/1.2] w-full">
-							<ProductCard {product} />
+						<div class="p-2 w-full h-[300px]">
+							<ProductCard {product} class="h-full" />
 						</div>
 					</Carousel.Item>
 				{/each}

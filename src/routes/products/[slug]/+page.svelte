@@ -80,7 +80,7 @@
 
 <div class="min-h-screen bg-background">
 	<div
-		class="container mx-auto px-4 py-8 transition-opacity duration-500"
+		class="container mx-auto px-4 py-4 transition-opacity duration-500"
 		class:opacity-0={!contentVisible}
 		class:opacity-100={contentVisible}
 	>

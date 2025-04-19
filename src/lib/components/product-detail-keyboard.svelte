@@ -9,7 +9,8 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';
 	import VariantCard from '$lib/components/variant-card.svelte';
-	import { AppImage } from '$lib/components/ui/app-image';
+	// AppImage is now used via ProductImageGallery
+	import ProductImageGallery from '$lib/components/product-image-gallery.svelte';
 	import { formatPrice } from '$lib/utils/price';
 	import { ProductCompatibilityService } from '$lib/utils/product-compatibility';
 	import { browser } from '$app/environment';
@@ -113,18 +114,18 @@
 
 	// Selection state is tracked through the individual variables above
 
-	// Track valid images
-	let validImages = $state<string[]>([]);
+	// Track valid images - now handled by ProductImageGallery
+	// let validImages = $state<string[]>([]);
 
 	// Initialize valid images
-	$effect(() => {
-		if (images) {
-			validImages = images.map((img: { url: string; }) => img.url);
-		}
-	});
+	// $effect(() => {
+	// 	if (images) {
+	// 		validImages = images.map((img: { url: string; }) => img.url);
+	// 	}
+	// });
 
-	// Calculate number of valid images
-	const validImageCount = $derived(validImages.length);
+	// Calculate number of valid images - used by ProductImageGallery
+	// const validImageCount = $derived(validImages.length);
 
 	// Derived data
 	const basePrice = $derived(
@@ -286,13 +287,7 @@
 			!!selectedKeycap
 	);
 
-	// Add state for current main image
-	let currentImageIndex = $state(0);
-
-	// Function to switch main image
-	function switchMainImage(index: number) {
-		currentImageIndex = index;
-	}
+	// Image handling is now done by ProductImageGallery component
 </script>
 
 <div>
@@ -303,66 +298,10 @@
 	{:else}
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
 			<!-- Product Images -->
-			<div class="relative">
-				{#if images?.length > 0}
-					{#if validImageCount > 1}
-						<!-- Multiple images: show thumbnails on the left -->
-						<div class="flex gap-4">
-							<div class="flex flex-col gap-2 w-20">
-								{#each images as image, index}
-									<Button
-										variant="ghost"
-										size="icon"
-										onclick={() => switchMainImage(index)}
-										aria-label="View {image.alt}"
-										class="p-0 h-auto w-auto hover:bg-transparent"
-									>
-										<AppImage
-											src={image.url}
-											alt={image.alt}
-											width={80}
-											height={80}
-											thumbnailMode={true}
-											isSelected={currentImageIndex === index}
-										/>
-									</Button>
-								{/each}
-							</div>
-
-							<!-- Main image (with thumbnails) -->
-							<div class="flex-1">
-								<div class="aspect-square max-w-lg mx-auto overflow-hidden rounded-lg">
-									<AppImage
-										src={images[currentImageIndex].url}
-										alt={images[currentImageIndex].alt}
-										width={550}
-										height={550}
-										className="w-full h-full"
-										objectFit="contain"
-									/>
-								</div>
-							</div>
-						</div>
-					{:else}
-						<!-- Single image: centered with no thumbnails -->
-						<div class="w-full">
-							<div class="aspect-square max-w-lg mx-auto overflow-hidden rounded-lg">
-								<AppImage
-									src={images[currentImageIndex].url}
-									alt={images[currentImageIndex].alt}
-									width={550}
-									height={550}
-									className="w-full h-full"
-									objectFit="contain"
-								/>
-							</div>
-						</div>
-					{/if}
-				{:else}
-					<div class="aspect-square w-full max-w-lg mx-auto flex items-center justify-center rounded-lg bg-muted">
-						<span class="text-muted-foreground">No image available</span>
-					</div>
-				{/if}
+			<div class="relative max-h-[calc(100vh-var(--header-height)-var(--footer-height)-4rem)] overflow-y-auto">
+				<ProductImageGallery
+					images={images}
+				/>
 			</div>
 
 			<!-- Product Details -->
