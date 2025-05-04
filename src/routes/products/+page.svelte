@@ -52,45 +52,27 @@
 		);
 	});
 
-	// Reference to store the autoplay plugin instance
-	let autoplayInstance: any = null;
-
-	// Create autoplay plugin for continuous sliding
+	// Create autoplay plugin for very slow continuous sliding from right to left
 	const createAutoplayPlugin = () => {
-		const plugin = Autoplay({
-			delay: 3000, // 3 seconds between transitions for a more relaxed pace
-			stopOnInteraction: false, // Don't stop on normal interaction
-			playOnInit: true // Start autoplay on initial load
+		return Autoplay({
+			delay: 10, // Extremely short delay for near-continuous movement
+			stopOnInteraction: false, // Don't stop on interaction
+			playOnInit: true, // Start autoplay on initial load
+			jump: false // Prevent jumping during transitions
 		}) as AutoplayType;
-
-		// Store the instance for later use
-		autoplayInstance = plugin;
-		return plugin;
 	};
 
-	// Function to handle mouse enter (pause)
-	function handleMouseEnter() {
-		if (autoplayInstance && typeof autoplayInstance.stop === 'function') {
-			autoplayInstance.stop();
-		}
-	}
-
-	// Function to handle mouse leave (resume)
-	function handleMouseLeave() {
-		if (autoplayInstance && typeof autoplayInstance.play === 'function') {
-			autoplayInstance.play();
-		}
-	}
-
-	// Carousel options for smoother experience
+	// Carousel options for extremely smooth, continuous movement
 	const carouselOptions = {
 		loop: true,
-		align: "start" as const, // Type assertion for alignment
-		skipSnaps: false,
-		dragFree: true, // Allow free dragging for smoother feel
+		align: "start" as const, // Start alignment for more predictable movement
+		skipSnaps: false, // Don't skip snap points for more predictable movement
+		dragFree: true, // Enable free dragging for smoother transitions
 		startIndex: 0,
-		containScroll: 'trimSnaps' as const, // Ensure proper alignment with type assertion
-		duration: 1500 // Slower, smoother transitions (1.5 seconds)
+		containScroll: 'trimSnaps' as const, // Trim snaps for smoother looping
+		duration: 30000, // Extremely slow transitions (30 seconds)
+		slidesToScroll: 1, // Move one slide at a time
+		speed: 0.1 // Very slow speed factor
 	};
 </script>
 
@@ -154,17 +136,15 @@
 			class="w-full"
 			role="region"
 			aria-label="Accessories carousel"
-			onmouseenter={handleMouseEnter}
-			onmouseleave={handleMouseLeave}
 		>
 			<Carousel.Root
 				plugins={[createAutoplayPlugin()]}
 				opts={carouselOptions}
-				class="w-full overflow-hidden hover-carousel"
+				class="w-full overflow-hidden"
 			>
-			<Carousel.Content class="-ml-4 md:-ml-6 flex transition-transform duration-500 ease-in-out">
+			<Carousel.Content class="-ml-4 md:-ml-6 flex transition-transform duration-30000 ease-linear">
 				{#each accessories as product (product.id)}
-					<Carousel.Item class="pl-4 md:pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 transition-opacity duration-300">
+					<Carousel.Item class="pl-4 md:pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 transition-opacity duration-1000">
 						<div class="p-2 h-[350px]">
 							<ProductCard {product} class="h-full" />
 						</div>
@@ -173,7 +153,7 @@
 			</Carousel.Content>
 			<div class="flex justify-center items-center mt-4">
 				<div class="text-sm text-muted-foreground">
-					Hover to pause • Scroll to browse
+					Continuous scrolling
 				</div>
 			</div>
 			</Carousel.Root>
