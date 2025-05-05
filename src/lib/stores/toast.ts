@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import { randomUUID } from 'crypto';
+import { generateUUID } from '$lib/utils/uuid';
 
 export interface ToastNotification {
     id: string;
@@ -18,7 +18,7 @@ const toasts = writable<ToastNotification[]>([]);
 
 // Function to add a toast notification
 function addToast(notification: Omit<ToastNotification, 'id' | 'visible'>) {
-    const id = randomUUID();
+    const id = generateUUID();
 
     toasts.update(notifications => [
         ...notifications,
@@ -73,4 +73,4 @@ export default {
     success,
     error,
     info
-}; 
+};

@@ -3,7 +3,7 @@ import { CartRepository, type CartWithItems } from '../cart-repository';
 import { StockError, CartError, VariantError } from '$lib/errors/shop-errors';
 import { CartStatus } from '$lib/models/cart';
 import { mockPrismaInstance } from '../../../../test/setupTests';
-import { randomUUID } from 'crypto';
+import { generateUUID } from '$lib/utils/uuid';
 import type { Cart, CartItem, ProductVariant } from '@prisma/client';
 
 describe('CartRepository', () => {
@@ -571,8 +571,8 @@ describe('CartRepository', () => {
         .mockResolvedValueOnce(null)  // No anonymous cart
         .mockResolvedValueOnce(null); // No user cart
 
-      // Mock cart creation with randomUUID
-      const newCartId = randomUUID();
+      // Mock cart creation with generateUUID
+      const newCartId = generateUUID();
       mockPrismaInstance.cart.create.mockResolvedValueOnce({
         id: newCartId,
         sessionId,

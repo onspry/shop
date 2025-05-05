@@ -2,7 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { superValidate, message } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { registerSchema } from '$lib/schemas/auth';
-import { randomUUID } from 'crypto';
+import { generateUUID } from '$lib/utils/uuid';
 import { userRepository } from "$lib/repositories/user-repository";
 import { hashPassword } from '$lib/server/auth/password';
 import { createSession, generateSessionToken, setSessionTokenCookie } from '$lib/server/auth/session';
@@ -59,7 +59,7 @@ export const actions: Actions = {
         }
 
         try {
-            const id = randomUUID();
+            const id = generateUUID();
             const user = await userRepository.createUser({
                 id: id,
                 provider: Provider.EMAIL, // Use the Provider enum from Prisma

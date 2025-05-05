@@ -1,7 +1,7 @@
 import { PrismaClient, type Order, type OrderItem, type OrderStatusHistory, type OrderAddress, type PaymentTransaction, type Refund } from '@prisma/client';
 import { TransactionType } from '$lib/models/inventory';
 import { OrderStatus, PaymentStatus } from '$lib/models/order';
-import { randomUUID } from 'crypto';
+import { generateUUID } from '$lib/utils/uuid';
 import type { CreateOrderViewModel, OrderViewModel, OrderItemViewModel } from '$lib/models/order';
 import type { CartItemViewModel } from '$lib/models/cart';
 import { formatOrderNumber } from '$lib/utils/order';
@@ -162,7 +162,7 @@ export class OrderRepository {
     async createOrder(data: CreateOrderViewModel): Promise<Order> {
         this.validate(data);
 
-        const orderId = randomUUID();
+        const orderId = generateUUID();
         console.log('Generated new order ID:', orderId);
         const totalAmount = data.subtotal + data.taxAmount + data.shipping.amount - (data.discountAmount || 0);
         console.log('Calculated total amount:', totalAmount);
@@ -191,7 +191,7 @@ export class OrderRepository {
                 const orderItemsData = data.items
                     .filter(isValidOrderItem)
                     .map(item => ({
-                        id: randomUUID(),
+                        id: generateUUID(),
                         orderId,
                         productId: item.productId,
                         variantId: item.variantId,
@@ -223,7 +223,7 @@ export class OrderRepository {
                 // Create shipping address
                 await tx.orderAddress.create({
                     data: {
-                        id: randomUUID(),
+                        id: generateUUID(),
                         orderId,
                         type: 'shipping',
                         firstName: data.shipping.address.firstName,
@@ -241,7 +241,7 @@ export class OrderRepository {
                 // Create initial status history
                 await tx.orderStatusHistory.create({
                     data: {
-                        id: randomUUID(),
+                        id: generateUUID(),
                         orderId,
                         status: OrderStatus.PENDING_PAYMENT,
                         note: 'Order created'
@@ -253,7 +253,7 @@ export class OrderRepository {
                     if (item.variantId) {
                         await tx.inventoryTransaction.create({
                             data: {
-                                id: randomUUID(),
+                                id: generateUUID(),
                                 variantId: item.variantId,
                                 orderId,
                                 type: TransactionType.ORDER,
@@ -428,7 +428,7 @@ export class OrderRepository {
                 // Create a status history entry
                 await tx.orderStatusHistory.create({
                     data: {
-                        id: randomUUID(),
+                        id: generateUUID(),
                         orderId: id,
                         status,
                         note
@@ -459,12 +459,12 @@ export class OrderRepository {
         try {
             await prisma.paymentTransaction.create({
                 data: {
-                    id: randomUUID(),
+                    id: generateUUID(),
                     orderId,
                     status,
                     amount,
                     currency: 'USD',
-                    stripePaymentIntentId: paymentIntentId || randomUUID(),
+                    stripePaymentIntentId: paymentIntentId || generateUUID(),
                     stripePaymentMethodId: paymentMethod
                 }
             });
@@ -494,7 +494,7 @@ export class OrderRepository {
                 // Create the refund
                 await tx.refund.create({
                     data: {
-                        id: randomUUID(),
+                        id: generateUUID(),
                         orderId,
                         transactionId,
                         amount,
@@ -516,7 +516,7 @@ export class OrderRepository {
                 // Create status history entry
                 await tx.orderStatusHistory.create({
                     data: {
-                        id: randomUUID(),
+                        id: generateUUID(),
                         orderId,
                         status: 'refunded',
                         note: reason

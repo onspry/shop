@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { generateUUID } from '$lib/utils/uuid';
 import type { RequestEvent } from "@sveltejs/kit";
 import { generateRandomOTP } from "./utils";
 import { prisma } from '$lib/server/db';
@@ -39,7 +39,7 @@ export async function createEmailVerificationRequest(userId: string, email: stri
         throw new Error('Email is required for verification request');
     }
 
-    const id = randomUUID();
+    const id = generateUUID();
     const code = generateRandomOTP();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 

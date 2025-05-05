@@ -1,5 +1,5 @@
 import { PrismaClient, type Cart, type CartItem, type ProductVariant, type ProductImage, type Product } from '@prisma/client';
-import { randomUUID } from 'crypto';
+import { generateUUID } from '$lib/utils/uuid';
 import { type CartViewModel, type CartSummaryViewModel, CartStatus } from '$lib/models/cart';
 import { toProductVariantViewModel } from './product-repository';
 import { formatPrice } from '$lib/utils/price';
@@ -123,7 +123,7 @@ export class CartRepository {
             // No cart found, create a new one
             const newCart = await prisma.cart.create({
                 data: {
-                    id: randomUUID(),
+                    id: generateUUID(),
                     sessionId: sessionId,
                     userId: userId,
                     status: CartStatus.ACTIVE // Using enum for type safety
@@ -315,7 +315,7 @@ export class CartRepository {
         try {
             // If no session ID and no user ID, create a new cart
             if (!sessionId && !userId) {
-                return await this.getOrCreateCart(randomUUID(), userId);
+                return await this.getOrCreateCart(generateUUID(), userId);
             }
 
             let existingCart = null;
@@ -543,7 +543,7 @@ export class CartRepository {
                     // Create new item
                     await tx.cartItem.create({
                         data: {
-                            id: randomUUID(),
+                            id: generateUUID(),
                             cartId: cartId,
                             variantId: productVariantId,
                             productId: variant.productId,
@@ -1036,7 +1036,7 @@ export class CartRepository {
                 if (!userCart) {
                     await prisma.cart.create({
                         data: {
-                            id: randomUUID(),
+                            id: generateUUID(),
                             sessionId: sessionId,
                             userId: userId,
                             status: CartStatus.ACTIVE // Using enum for type safety
@@ -1081,7 +1081,7 @@ export class CartRepository {
                         // Create new item in user cart
                         await tx.cartItem.create({
                             data: {
-                                id: randomUUID(),
+                                id: generateUUID(),
                                 cartId: userCart.id,
                                 variantId: item.variantId,
                                 productId: item.productId,

@@ -1,5 +1,5 @@
 import type { LayoutServerLoad } from './$types';
-import { randomUUID } from 'crypto';
+import { generateUUID } from '$lib/utils/uuid';
 import { cartRepository } from '$lib/repositories/cart-repository';
 
 /**
@@ -13,7 +13,7 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => {
 
     // Create cart session ID if none exists (regardless of login status)
     if (!sessionId) {
-        sessionId = `session_${randomUUID()}`;
+        sessionId = `session_${generateUUID()}`;
 
         cookies.set('cart-session', sessionId, {
             path: '/',

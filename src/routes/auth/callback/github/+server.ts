@@ -1,6 +1,6 @@
 import { generateSessionToken, createSession } from "$lib/server/auth/session";
 import { github } from "$lib/server/auth/oauth";
-import { randomUUID } from 'crypto';
+import { generateUUID } from '$lib/utils/uuid';
 import type { RequestEvent } from "@sveltejs/kit";
 import type { OAuth2Tokens } from "arctic";
 import { cartRepository } from "$lib/repositories/cart-repository";
@@ -57,7 +57,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
 
     // If no cart session exists yet, create one now
     if (!cartSessionId) {
-        cartSessionId = `session_${randomUUID()}`;
+        cartSessionId = `session_${generateUUID()}`;
     }
 
     // Clean up the temporary preserved cart session cookie
