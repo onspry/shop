@@ -1,7 +1,7 @@
 import { hash, verify } from "@node-rs/argon2";
 import { sha1 } from "@oslojs/crypto/sha1";
 import { encodeHexLowerCase } from "@oslojs/encoding";
-import { PWNED_PASSWORDS_API_URL } from "$env/static/private";
+import { PWNED_PASSWORDS_API_URL } from "$env/dynamic/private";
 
 /**
  * Hashes a password using Argon2id with secure parameters
