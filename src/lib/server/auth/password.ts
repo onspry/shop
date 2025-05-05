@@ -1,7 +1,7 @@
 import { hash, verify } from "@node-rs/argon2";
 import { sha1 } from "@oslojs/crypto/sha1";
 import { encodeHexLowerCase } from "@oslojs/encoding";
-import { PWNED_PASSWORDS_API_URL } from "$env/dynamic/private";
+import { env } from "$env/dynamic/private";
 
 /**
  * Hashes a password using Argon2id with secure parameters
@@ -43,7 +43,7 @@ export async function verifyPasswordStrength(password: string): Promise<boolean>
     }
     const hash = encodeHexLowerCase(sha1(new TextEncoder().encode(password)));
     const hashPrefix = hash.slice(0, 5);
-    const response = await fetch(`${PWNED_PASSWORDS_API_URL}/${hashPrefix}`);
+    const response = await fetch(`${env.PWNED_PASSWORDS_API_URL}/${hashPrefix}`);
     const data = await response.text();
     const items = data.split("\n");
     for (const item of items) {
