@@ -1,7 +1,11 @@
-import argon2 from "phc-argon2";
 import { sha1 } from "@oslojs/crypto/sha1";
 import { encodeHexLowerCase } from "@oslojs/encoding";
 import { env } from "$env/dynamic/private";
+
+// Using CommonJS require-style import for better compatibility with Cloudflare
+// @ts-expect-error - Importing CommonJS module
+import * as argon2Module from 'phc-argon2';
+const argon2 = argon2Module.default || argon2Module;
 
 /**
  * Hashes a password using Argon2id with secure parameters
@@ -11,8 +15,8 @@ import { env } from "$env/dynamic/private";
  */
 export async function hashPassword(password: string): Promise<string> {
     return await argon2.hash(password, {
-        memory: 19456,
-        iterations: 2,
+        memoryCost: 19456,
+        timeCost: 2,
         parallelism: 1,
         variant: 'id'
     });
