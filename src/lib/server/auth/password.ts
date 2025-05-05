@@ -1,4 +1,4 @@
-import { hash, verify } from "@node-rs/argon2";
+import argon2 from "phc-argon2";
 import { sha1 } from "@oslojs/crypto/sha1";
 import { encodeHexLowerCase } from "@oslojs/encoding";
 import { env } from "$env/dynamic/private";
@@ -10,11 +10,11 @@ import { env } from "$env/dynamic/private";
  * @returns Promise<string> - The hashed password
  */
 export async function hashPassword(password: string): Promise<string> {
-    return await hash(password, {
-        memoryCost: 19456,
-        timeCost: 2,
-        outputLen: 32,
-        parallelism: 1
+    return await argon2.hash(password, {
+        memory: 19456,
+        iterations: 2,
+        parallelism: 1,
+        variant: 'id'
     });
 }
 
@@ -26,7 +26,7 @@ export async function hashPassword(password: string): Promise<string> {
  * @returns Promise<boolean> - True if the password matches the hash, false otherwise
  */
 export async function verifyPasswordHash(hash: string, password: string): Promise<boolean> {
-    return await verify(hash, password);
+    return await argon2.verify(hash, password);
 }
 
 /**

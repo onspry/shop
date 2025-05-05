@@ -12,16 +12,6 @@ export default defineConfig({
 		})
 	],
 
-	// Exclude problematic Node.js native modules from the bundle
-	ssr: {
-		external: [
-			'@node-rs/argon2',
-			'@node-rs/argon2-wasm32-wasi',
-			'@node-rs/bcrypt',
-			'@node-rs/bcrypt-wasm32-wasi'
-		]
-	},
-
 	test: {
 		workspace: [
 			{
