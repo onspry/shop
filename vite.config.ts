@@ -11,13 +11,22 @@ export default defineConfig({
 			outdir: './src/lib/paraglide'
 		})
 	],
-
+	ssr: {
+		noExternal: ['@phc/argon2', 'argon2', '@kdf/salt', 'bindings', 'file-uri-to-path', 'safe-buffer', 'tsse'],
+		optimizeDeps: {
+			exclude: ['@phc/argon2', 'argon2']
+		}
+	},
+	build: {
+		rollupOptions: {
+			external: ['crypto', 'fs', 'path', 'buffer']
+		}
+	},
 	test: {
 		workspace: [
 			{
 				extends: './vite.config.ts',
 				plugins: [svelteTesting()],
-
 				test: {
 					name: 'client',
 					environment: 'jsdom',
@@ -29,7 +38,6 @@ export default defineConfig({
 			},
 			{
 				extends: './vite.config.ts',
-
 				test: {
 					name: 'server',
 					environment: 'node',

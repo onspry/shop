@@ -1,24 +1,18 @@
 import { defineConfig } from 'vitest/config';
-import { sveltekit } from '@sveltejs/kit/vite';
-import { resolve } from 'path';
 
 export default defineConfig({
-  plugins: [sveltekit()],
-  resolve: {
-    alias: {
-      $lib: resolve('./src/lib')
-    }
-  },
   test: {
     environment: 'jsdom',
     include: ['src/**/*.{test,spec}.{js,ts}'],
-    globals: true,
-    setupFiles: ['./test/setupTests.ts'],
+    exclude: ['src/lib/server/**'],
+    setupFiles: ['./vitest-setup-client.ts'],
+    environmentMatchGlobs: [
+      ['**/*.svelte.{test,spec}.{js,ts}', 'jsdom'],
+      ['**/server/**/*.{test,spec}.{js,ts}', 'node']
+    ],
+    clearMocks: true,
     deps: {
       inline: ['@testing-library/svelte']
-    },
-    environmentMatchGlobs: [
-      ['**/*.svelte.{test,spec}.{js,ts}', 'jsdom']
-    ]
-  },
+    }
+  }
 });
