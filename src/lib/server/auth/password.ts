@@ -2,6 +2,8 @@ import { sha1 } from "@oslojs/crypto/sha1";
 import { encodeHexLowerCase } from "@oslojs/encoding";
 import { env } from "$env/dynamic/private";
 
+declare const crypto: Crypto;
+
 /**
  * Constant-time comparison of two arrays
  */
@@ -22,14 +24,17 @@ function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
  */
 export async function hashPassword(password: string): Promise<string> {
     const encoder = new TextEncoder();
-    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const salt = new Uint8Array(16);
+    crypto.getRandomValues(salt);
+
     const key = await crypto.subtle.importKey(
         'raw',
         encoder.encode(password),
-        'PBKDF2',
+        { name: 'PBKDF2' },
         false,
         ['deriveBits']
     );
+
     const hash = await crypto.subtle.deriveBits(
         {
             name: 'PBKDF2',
@@ -40,6 +45,7 @@ export async function hashPassword(password: string): Promise<string> {
         key,
         256
     );
+
     const hashArray = new Uint8Array(hash);
     const saltArray = new Uint8Array(salt);
     const combined = new Uint8Array(saltArray.length + hashArray.length);
@@ -64,10 +70,11 @@ export async function verifyPasswordHash(storedHash: string, password: string): 
     const key = await crypto.subtle.importKey(
         'raw',
         encoder.encode(password),
-        'PBKDF2',
+        { name: 'PBKDF2' },
         false,
         ['deriveBits']
     );
+
     const hash = await crypto.subtle.deriveBits(
         {
             name: 'PBKDF2',
@@ -78,8 +85,8 @@ export async function verifyPasswordHash(storedHash: string, password: string): 
         key,
         256
     );
-    const hashArray = new Uint8Array(hash);
 
+    const hashArray = new Uint8Array(hash);
     return constantTimeEqual(storedHashArray, hashArray);
 }
 
