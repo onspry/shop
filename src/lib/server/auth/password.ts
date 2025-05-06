@@ -1,32 +1,86 @@
 import { sha1 } from "@oslojs/crypto/sha1";
 import { encodeHexLowerCase } from "@oslojs/encoding";
 import { env } from "$env/dynamic/private";
-import argon2 from "@phc/argon2";
 
 /**
- * Hashes a password using Argon2id with secure parameters
+ * Constant-time comparison of two arrays
+ */
+function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
+    if (a.length !== b.length) return false;
+    let result = 0;
+    for (let i = 0; i < a.length; i++) {
+        result |= a[i] ^ b[i];
+    }
+    return result === 0;
+}
+
+/**
+ * Hashes a password using PBKDF2 with secure parameters
  *
  * @param password - The password to hash
  * @returns Promise<string> - The hashed password
  */
 export async function hashPassword(password: string): Promise<string> {
-    return await argon2.hash(password, {
-        memoryCost: 19456,
-        timeCost: 2,
-        parallelism: 1,
-        variant: 'id'
-    });
+    const encoder = new TextEncoder();
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const key = await crypto.subtle.importKey(
+        'raw',
+        encoder.encode(password),
+        'PBKDF2',
+        false,
+        ['deriveBits']
+    );
+    const hash = await crypto.subtle.deriveBits(
+        {
+            name: 'PBKDF2',
+            salt,
+            iterations: 100000,
+            hash: 'SHA-256'
+        },
+        key,
+        256
+    );
+    const hashArray = new Uint8Array(hash);
+    const saltArray = new Uint8Array(salt);
+    const combined = new Uint8Array(saltArray.length + hashArray.length);
+    combined.set(saltArray);
+    combined.set(hashArray, saltArray.length);
+    return btoa(String.fromCharCode(...combined));
 }
 
 /**
  * Verifies a password against a hash
  *
- * @param hash - The hashed password
+ * @param storedHash - The stored hashed password
  * @param password - The plain text password to verify
  * @returns Promise<boolean> - True if the password matches the hash, false otherwise
  */
-export async function verifyPasswordHash(hash: string, password: string): Promise<boolean> {
-    return await argon2.verify(hash, password);
+export async function verifyPasswordHash(storedHash: string, password: string): Promise<boolean> {
+    const combined = new Uint8Array(atob(storedHash).split('').map(c => c.charCodeAt(0)));
+    const salt = combined.slice(0, 16);
+    const storedHashArray = combined.slice(16);
+
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+        'raw',
+        encoder.encode(password),
+        'PBKDF2',
+        false,
+        ['deriveBits']
+    );
+    const hash = await crypto.subtle.deriveBits(
+        {
+            name: 'PBKDF2',
+            salt,
+            iterations: 100000,
+            hash: 'SHA-256'
+        },
+        key,
+        256
+    );
+    const hashArray = new Uint8Array(hash);
+
+    return constantTimeEqual(storedHashArray, hashArray);
 }
 
 /**
