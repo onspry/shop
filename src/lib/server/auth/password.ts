@@ -1,11 +1,7 @@
 import { sha1 } from "@oslojs/crypto/sha1";
 import { encodeHexLowerCase } from "@oslojs/encoding";
 import { env } from "$env/dynamic/private";
-
-// Using CommonJS require-style import for better compatibility with Cloudflare
-// @ts-expect-error - Importing CommonJS module
-import * as argon2Module from 'phc-argon2';
-const argon2 = argon2Module.default || argon2Module;
+import argon2 from "@phc/argon2";
 
 /**
  * Hashes a password using Argon2id with secure parameters
