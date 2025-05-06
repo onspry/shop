@@ -1,5 +1,4 @@
 import { sha1 } from "@oslojs/crypto/sha1";
-import { pbkdf2 } from "@oslojs/crypto/pbkdf2";
 import { encodeHexLowerCase } from "@oslojs/encoding";
 import { env } from "$env/dynamic/private";
 
@@ -23,23 +22,28 @@ function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
  */
 export async function hashPassword(password: string): Promise<string> {
     const encoder = new TextEncoder();
-    const salt = new Uint8Array(16);
-    // Generate random salt
-    for (let i = 0; i < salt.length; i++) {
-        salt[i] = Math.floor(Math.random() * 256);
-    }
-
-    const hash = await pbkdf2(
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const key = await crypto.subtle.importKey(
+        "raw",
         encoder.encode(password),
-        salt,
-        100000,
-        32,
-        'SHA-256'
+        { name: "PBKDF2" },
+        false,
+        ["deriveBits"]
     );
-
-    const combined = new Uint8Array(salt.length + hash.length);
+    const hash = await crypto.subtle.deriveBits(
+        {
+            name: "PBKDF2",
+            salt,
+            iterations: 100_000,
+            hash: "SHA-256"
+        },
+        key,
+        256
+    );
+    const hashArray = new Uint8Array(hash);
+    const combined = new Uint8Array(salt.length + hashArray.length);
     combined.set(salt);
-    combined.set(hash, salt.length);
+    combined.set(hashArray, salt.length);
     return btoa(String.fromCharCode(...combined));
 }
 
@@ -51,20 +55,30 @@ export async function hashPassword(password: string): Promise<string> {
  * @returns Promise<boolean> - True if the password matches the hash, false otherwise
  */
 export async function verifyPasswordHash(storedHash: string, password: string): Promise<boolean> {
-    const combined = new Uint8Array(atob(storedHash).split('').map(c => c.charCodeAt(0)));
+    const combined = new Uint8Array(atob(storedHash).split("").map(c => c.charCodeAt(0)));
     const salt = combined.slice(0, 16);
     const storedHashArray = combined.slice(16);
 
     const encoder = new TextEncoder();
-    const hash = await pbkdf2(
+    const key = await crypto.subtle.importKey(
+        "raw",
         encoder.encode(password),
-        salt,
-        100000,
-        32,
-        'SHA-256'
+        { name: "PBKDF2" },
+        false,
+        ["deriveBits"]
     );
-
-    return constantTimeEqual(storedHashArray, hash);
+    const hash = await crypto.subtle.deriveBits(
+        {
+            name: "PBKDF2",
+            salt,
+            iterations: 100_000,
+            hash: "SHA-256"
+        },
+        key,
+        256
+    );
+    const hashArray = new Uint8Array(hash);
+    return constantTimeEqual(storedHashArray, hashArray);
 }
 
 /**
