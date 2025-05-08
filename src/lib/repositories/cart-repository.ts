@@ -1,14 +1,12 @@
-import { PrismaClient, type Cart, type CartItem, type ProductVariant, type ProductImage, type Product } from '@prisma/client';
+import { type Cart, type CartItem, type ProductVariant, type ProductImage, type Product } from '@prisma/client';
 import { generateUUID } from '$lib/utils/uuid';
 import { type CartViewModel, type CartSummaryViewModel, CartStatus } from '$lib/models/cart';
 import { toProductVariantViewModel } from './product-repository';
 import { formatPrice } from '$lib/utils/price';
 import { CartError, VariantError, StockError } from '$lib/errors/shop-errors';
+import { prisma } from '$lib/server/db';
 
 // No cache implementation - we'll use direct database access for simplicity
-
-// Initialize Prisma client
-const prisma = new PrismaClient();
 
 // No cache - we'll use direct database access
 

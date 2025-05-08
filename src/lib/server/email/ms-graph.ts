@@ -2,6 +2,7 @@ import { env } from '$env/dynamic/private';
 import { Client } from '@microsoft/microsoft-graph-client';
 import { TokenCredentialAuthenticationProvider } from '@microsoft/microsoft-graph-client/authProviders/azureTokenCredentials';
 import { ClientSecretCredential } from '@azure/identity';
+import { readFileSync } from 'fs';
 
 interface EmailOptions {
     to: string[];
@@ -9,6 +10,11 @@ interface EmailOptions {
     body: string;
     from?: 'noreply' | 'support';
     replyTo?: string;
+    attachments?: Array<{
+        filename: string;
+        path: string;
+        cid?: string;
+    }>;
 }
 
 export class MSGraphMailService {
@@ -43,7 +49,8 @@ export class MSGraphMailService {
         subject,
         body,
         from = 'noreply',
-        replyTo
+        replyTo,
+        attachments
     }: EmailOptions): Promise<void> {
         const fromAddress = from === 'noreply' ?
             'noreply@loptech.cloud' :
@@ -65,6 +72,19 @@ export class MSGraphMailService {
                 replyTo: [{
                     emailAddress: { address: replyTo }
                 }]
+            }),
+            ...(attachments && {
+                attachments: attachments.map(attachment => {
+                    const fileBuffer = readFileSync(attachment.path);
+                    return {
+                        '@odata.type': '#microsoft.graph.fileAttachment',
+                        name: attachment.filename,
+                        contentBytes: fileBuffer.toString('base64'),
+                        contentId: attachment.cid,
+                        isInline: true,
+                        contentType: 'image/svg+xml'
+                    };
+                })
             })
         };
 

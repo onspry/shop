@@ -7,6 +7,11 @@ export async function sendEmail(
     options: {
         from?: 'noreply' | 'support';
         replyTo?: string;
+        attachments?: Array<{
+            filename: string;
+            path: string;
+            cid?: string;
+        }>;
     } = {}
 ) {
     const emailService = MSGraphMailService.getInstance();
@@ -18,7 +23,8 @@ export async function sendEmail(
             subject,
             body,
             from: options.from,
-            replyTo: options.replyTo
+            replyTo: options.replyTo,
+            attachments: options.attachments
         });
     } catch (error) {
         console.error('Error sending email:', error);

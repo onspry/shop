@@ -19,21 +19,19 @@
 		<p class="text-xl text-muted-foreground mb-4">
 			{m.order_confirmation_email_sent()}
 		</p>
-		
+
 		<Card class="max-w-md mx-auto">
 			<CardContent class="pt-6">
-				<p class="mb-4">
-					We've sent an email with your order details and confirmation number. 
-					You'll receive updates about your order status via email.
-				</p>
-				
+				<p class="mb-4">You'll receive updates about your order status via email.</p>
+
 				{#if user}
 					<p class="mb-4">
 						You can also view your order details and track its status in your account.
 					</p>
 				{:else}
 					<p class="mb-4">
-						For future orders, consider creating an account to easily track your orders and manage your purchases.
+						For future orders, consider creating an account to easily track your orders and manage
+						your purchases.
 					</p>
 				{/if}
 			</CardContent>

@@ -1,6 +1,8 @@
-import { PrismaClient, type User } from '@prisma/client';
+// import { PrismaClient } from '@prisma/client';
+import { type User } from '@prisma/client';
 import { type UserViewModel, type UserDetailViewModel, type UserAuthViewModel, type Provider, UserStatus } from '../models/user';
 import { hashPassword } from '$lib/server/auth/password';
+import { prisma } from '$lib/server/db';
 
 // Helper functions to map between Prisma models and view models
 function mapToUserViewModel(user: User): UserViewModel {
@@ -27,8 +29,6 @@ function mapToUserDetailViewModel(user: User): UserDetailViewModel {
     updatedAt: user.updatedAt
   };
 }
-
-const prisma = new PrismaClient();
 
 export const userRepository = {
   async getUserById(id: string): Promise<UserViewModel | null> {

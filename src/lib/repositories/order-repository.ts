@@ -1,13 +1,12 @@
-import { PrismaClient, type Order, type OrderItem, type OrderStatusHistory, type OrderAddress, type PaymentTransaction, type Refund } from '@prisma/client';
+import { type Order, type OrderItem, type OrderStatusHistory, type OrderAddress, type PaymentTransaction, type Refund } from '@prisma/client';
 import { TransactionType } from '$lib/models/inventory';
 import { OrderStatus, PaymentStatus } from '$lib/models/order';
 import { generateUUID } from '$lib/utils/uuid';
 import type { CreateOrderViewModel, OrderViewModel, OrderItemViewModel } from '$lib/models/order';
 import type { CartItemViewModel } from '$lib/models/cart';
 import { formatOrderNumber } from '$lib/utils/order';
-
-// Initialize Prisma client
-const prisma = new PrismaClient();
+import { sendOrderConfirmationEmail } from '$lib/server/email/order-confirmation';
+import { prisma } from '$lib/server/db';
 
 // Using OrderViewModel from models/order.ts
 
@@ -15,9 +14,6 @@ const prisma = new PrismaClient();
  * Validates an order item - strict validation with no fallbacks
  */
 export function isValidOrderItem(item: OrderItemViewModel): boolean {
-    // Log the validation check
-    console.log('Validating order item:', JSON.stringify(item, null, 2));
-
     // Strict validation for all required fields
     const isValid = Boolean(
         // Product ID must be valid
@@ -43,7 +39,6 @@ export function isValidOrderItem(item: OrderItemViewModel): boolean {
     );
 
     if (!isValid) {
-        console.error('Invalid order item:', item);
         // Log specific validation failures to help diagnose issues
         if (!item.productId || typeof item.productId !== 'string' || item.productId.trim() === '') {
             console.error('Invalid product ID');
@@ -65,7 +60,6 @@ export function isValidOrderItem(item: OrderItemViewModel): boolean {
         }
     }
 
-    console.log('Item valid:', isValid);
     return isValid;
 }
 
@@ -73,8 +67,6 @@ export function isValidOrderItem(item: OrderItemViewModel): boolean {
  * Maps cart item data to order item view model using the normalized structure
  */
 export function mapCartItemToOrderItem(cartItem: CartItemViewModel): OrderItemViewModel {
-    console.log('Mapping cart item to order item:', cartItem);
-
     // Get product information from the variant
     const productId = cartItem.variant.product?.id || cartItem.variant.productId;
     const productName = cartItem.variant.product?.name || cartItem.variant.name;
@@ -147,8 +139,8 @@ export class OrderRepository {
             throw new Error('Complete shipping address is required');
         }
 
-        // Ensure state is at least an empty string
-        if (data.shipping.address.state === undefined) {
+        // Ensure state is at least an empty string if not provided
+        if (data.shipping.address.state === undefined || data.shipping.address.state === null) {
             data.shipping.address.state = '';
         }
     }
@@ -163,9 +155,7 @@ export class OrderRepository {
         this.validate(data);
 
         const orderId = generateUUID();
-        console.log('Generated new order ID:', orderId);
         const totalAmount = data.subtotal + data.taxAmount + data.shipping.amount - (data.discountAmount || 0);
-        console.log('Calculated total amount:', totalAmount);
 
         try {
             // Use Prisma transaction
@@ -203,8 +193,6 @@ export class OrderRepository {
                         composites: item.composites ? JSON.parse(JSON.stringify(item.composites)) : []
                     }));
 
-                console.log('Order items after filtering:', orderItemsData);
-
                 // Only insert order items if there are any
                 if (orderItemsData.length > 0) {
                     try {
@@ -213,7 +201,6 @@ export class OrderRepository {
                             data: orderItemsData
                         });
                     } catch (error) {
-                        console.error('Error inserting order items:', error);
                         throw new Error('Failed to create order items. No valid product variant IDs found. Please check your cart items.');
                     }
                 } else {
@@ -229,12 +216,12 @@ export class OrderRepository {
                         firstName: data.shipping.address.firstName,
                         lastName: data.shipping.address.lastName,
                         address1: data.shipping.address.address1,
-                        address2: data.shipping.address.address2,
+                        address2: data.shipping.address.address2 || '',
                         city: data.shipping.address.city,
-                        state: data.shipping.address.state,
+                        state: data.shipping.address.state || '', // Ensure state is never null
                         postalCode: data.shipping.address.postalCode,
                         country: data.shipping.address.country,
-                        phone: data.shipping.address.phone
+                        phone: data.shipping.address.phone || ''
                     }
                 });
 
@@ -265,29 +252,29 @@ export class OrderRepository {
                 }
             });
 
-            console.log('Transaction completed successfully, fetching order view model');
             const orderViewModel = await this.getOrderById(orderId);
             if (!orderViewModel) {
-                console.error('Failed to get order view model after creation');
                 throw new Error('Failed to create order');
             }
-            console.log('Order view model retrieved successfully');
 
             // Get the full Order record from the database
-            console.log('Fetching full order record from database');
             const createdOrder = await prisma.order.findUnique({
                 where: { id: orderId }
             });
 
             if (!createdOrder) {
-                console.error('Failed to retrieve created order from database');
                 throw new Error('Failed to retrieve created order');
             }
 
-            console.log('Created order retrieved successfully, ID:', createdOrder.id);
+            // Send order confirmation email
+            try {
+                await sendOrderConfirmationEmail(orderViewModel);
+            } catch (emailError: unknown) {
+                // Log the error but don't fail the order creation
+            }
+
             return createdOrder;
         } catch (error) {
-            console.error('Error creating order:', error);
             throw error;
         }
     }
@@ -332,7 +319,6 @@ export class OrderRepository {
                         }
                     }
                 } catch (e) {
-                    console.error('Error handling composites:', e);
                     composites = [];
                 }
 
@@ -370,7 +356,6 @@ export class OrderRepository {
      */
     async getOrderById(id: string): Promise<OrderViewModel | null> {
         try {
-            console.log('Repository: Getting order by ID:', id);
             const result = await prisma.order.findUnique({
                 where: { id },
                 include: {
@@ -383,26 +368,18 @@ export class OrderRepository {
                 }
             }) as OrderQueryResult | null;
 
-            console.log('Repository: Order query result:', result ? 'Found' : 'Not found');
-
             if (!result) {
-                console.log('Repository: Order not found in database');
                 return null;
             }
 
             if (!result.items?.length || !result.addresses?.length) {
-                console.log('Repository: Order found but missing items or addresses');
                 return null;
             }
 
             const viewModel = this.mapToViewModel(result);
-            console.log('Repository: Mapped order to view model:', viewModel ? 'Success' : 'Failed');
-            console.log('Repository: Order ID in view model:', viewModel?.id);
-            console.log('Repository: Order number in view model:', viewModel?.orderNumber);
 
             return viewModel;
         } catch (error) {
-            console.error(`Error getting order ${id}:`, error);
             return null;
         }
     }
@@ -436,7 +413,6 @@ export class OrderRepository {
                 });
             });
         } catch (error) {
-            console.error(`Error updating order status for ${id}:`, error);
             throw new Error(`Failed to update order status: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
@@ -469,7 +445,6 @@ export class OrderRepository {
                 }
             });
         } catch (error) {
-            console.error(`Error creating payment transaction for order ${orderId}:`, error);
             throw new Error(`Failed to create payment transaction: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
@@ -524,7 +499,6 @@ export class OrderRepository {
                 });
             });
         } catch (error) {
-            console.error(`Error creating refund for order ${orderId}:`, error);
             throw new Error(`Failed to create refund: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
@@ -554,7 +528,6 @@ export class OrderRepository {
             const orders = results.map(result => this.mapToViewModel(result));
             return orders.filter((order): order is OrderViewModel => order !== null);
         } catch (error) {
-            console.error(`Error getting orders for user ${userId}:`, error);
             return [];
         }
     }
@@ -579,7 +552,6 @@ export class OrderRepository {
                 createdAt: item.createdAt.toISOString()
             }));
         } catch (error) {
-            console.error(`Error getting status history for order ${orderId}:`, error);
             return [];
         }
     }
@@ -609,7 +581,6 @@ export class OrderRepository {
             const orders = results.map(result => this.mapToViewModel(result));
             return orders.filter((order): order is OrderViewModel => order !== null);
         } catch (error) {
-            console.error(`Error getting orders with status ${status}:`, error);
             return [];
         }
     }
@@ -630,7 +601,6 @@ export class OrderRepository {
 
             return transactions;
         } catch (error) {
-            console.error(`Error getting payment transactions for order ${orderId}:`, error);
             return [];
         }
     }

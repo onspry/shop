@@ -1,10 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '$lib/server/db';
 import type { Product, ProductVariant, ProductImage } from '@prisma/client';
 import type { ProductViewModel, ProductVariantViewModel } from '../models/product';
 import type { CatalogueViewModel, ProductGroup } from '../models/catalogue';
 import { VariantError } from '$lib/errors/shop-errors';
-
-const prisma = new PrismaClient();
 
 // Helper function to determine stock status
 function getStockStatus(quantity: number): 'in_stock' | 'low_stock' | 'out_of_stock' {
