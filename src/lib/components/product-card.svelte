@@ -94,5 +94,6 @@
 		class="absolute inset-0 z-10"
 		aria-label={product_view_details({ name: product.name })}
 		onclick={handleViewDetails}
+		data-sveltekit-preload-data="hover"
 	></a>
 </div>

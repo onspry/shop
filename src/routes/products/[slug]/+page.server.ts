@@ -5,7 +5,21 @@ import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types';
 import { cartRepository } from '$lib/repositories/cart-repository';
 
-export const load: PageServerLoad = async ({ params, url }) => {
+// Configure caching
+export const config = {
+    isr: {
+        // Enable Incremental Static Regeneration
+        // Regenerate the page every 30 minutes
+        revalidate: 1800
+    }
+};
+
+export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
+    // Set cache headers for dynamic content
+    setHeaders({
+        'Cache-Control': 'public, max-age=1800, stale-while-revalidate=86400'
+    });
+
     const result = await productRepository.getProduct(params.slug);
 
     // If this is a keyboard, fetch compatible switches and keycaps

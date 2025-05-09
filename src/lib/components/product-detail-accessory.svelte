@@ -17,13 +17,13 @@
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
 	import { cart } from '$lib/stores/cart';
+	import { preloadData } from '$app/navigation';
 
 	let { product, variants, images } = $props<{
 		product: ProductViewModel;
 		variants: ProductVariantViewModel[];
 		images: ProductImageViewModel[];
 	}>();
-
 
 	// Derived data
 	const basePrice = $derived(
@@ -63,8 +63,6 @@
 	function getVariantAttribute(variant: ProductVariantViewModel, attribute: string): string {
 		return (variant.attributes?.[attribute] as string) || '';
 	}
-
-
 
 	// Add to cart functionality
 	function handleAddToCartResult(result: { type: string; status?: number; data?: any }) {
@@ -111,10 +109,10 @@
 	{:else}
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
 			<!-- Product Images -->
-			<div class="relative max-h-[calc(100vh-var(--header-height)-var(--footer-height)-4rem)] overflow-y-auto">
-				<ProductImageGallery
-					images={images}
-				/>
+			<div
+				class="relative max-h-[calc(100vh-var(--header-height)-var(--footer-height)-4rem)] overflow-y-auto"
+			>
+				<ProductImageGallery {images} />
 			</div>
 
 			<!-- Product Details -->
@@ -184,7 +182,9 @@
 					<!-- Quantity selector -->
 					<div class="flex items-center gap-3">
 						<span class="text-sm font-medium">{m.product_quantity()}</span>
-						<div class="flex items-center space-x-2 bg-muted/10 dark:bg-muted/5 rounded-md p-1.5 border border-border/50 dark:border-border">
+						<div
+							class="flex items-center space-x-2 bg-muted/10 dark:bg-muted/5 rounded-md p-1.5 border border-border/50 dark:border-border"
+						>
 							<Button
 								class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
 								variant="ghost"
@@ -226,7 +226,9 @@
 							isAddingToCart = true;
 
 							// Show loading toast
-							const toastId = toast.loading(`Adding ${product.name} to cart...`, { duration: 30000 });
+							const toastId = toast.loading(`Adding ${product.name} to cart...`, {
+								duration: 30000
+							});
 
 							return async ({ result }) => {
 								// Dismiss loading toast

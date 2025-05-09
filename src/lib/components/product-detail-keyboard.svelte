@@ -14,7 +14,7 @@
 	import { formatPrice } from '$lib/utils/price';
 	import { ProductCompatibilityService } from '$lib/utils/product-compatibility';
 	import { browser } from '$app/environment';
-	import { goto, pushState } from '$app/navigation';
+	import { goto, pushState, preloadData } from '$app/navigation';
 	import { ShoppingCart, Check, Minus, Plus } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 	import { enhance } from '$app/forms';
@@ -298,10 +298,10 @@
 	{:else}
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
 			<!-- Product Images -->
-			<div class="relative max-h-[calc(100vh-var(--header-height)-var(--footer-height)-4rem)] overflow-y-auto">
-				<ProductImageGallery
-					images={images}
-				/>
+			<div
+				class="relative max-h-[calc(100vh-var(--header-height)-var(--footer-height)-4rem)] overflow-y-auto"
+			>
+				<ProductImageGallery {images} />
 			</div>
 
 			<!-- Product Details -->
@@ -434,7 +434,9 @@
 						<!-- Quantity selector -->
 						<div class="flex items-center gap-3">
 							<span class="text-sm font-medium">{m.product_quantity()}</span>
-							<div class="flex items-center space-x-2 bg-muted/10 dark:bg-muted/5 rounded-md p-1.5 border border-border/50 dark:border-border">
+							<div
+								class="flex items-center space-x-2 bg-muted/10 dark:bg-muted/5 rounded-md p-1.5 border border-border/50 dark:border-border"
+							>
 								<Button
 									class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
 									variant="ghost"
@@ -474,7 +476,9 @@
 								isAddingToCart = true;
 
 								// Show loading toast
-								const toastId = toast.loading(`Adding ${product.name} to cart...`, { duration: 30000 });
+								const toastId = toast.loading(`Adding ${product.name} to cart...`, {
+									duration: 30000
+								});
 
 								return async ({ result }) => {
 									// Dismiss loading toast
@@ -499,13 +503,7 @@
 								<input type="hidden" name="composites[1][quantity]" value={quantity} />
 							{/if}
 
-							<Button
-								variant="default"
-								size="lg"
-								type="submit"
-								disabled={!canAddToCart || isAddingToCart}
-								class="w-full"
-							>
+							<Button type="submit" class="w-full" disabled={!canAddToCart || isAddingToCart}>
 								{#if isAddingToCart}
 									<span
 										class="h-5 w-5 block animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"
@@ -519,18 +517,22 @@
 									<span>{getButtonText()}</span>
 								{/if}
 							</Button>
-						</form>
 
-						{#if addedToCart}
-							<div class="flex justify-between gap-2 mt-2">
-								<Button variant="outline" class="flex-1" href="/cart">
-									<span>{m.view_cart()}</span>
-								</Button>
-								<Button variant="outline" class="flex-1" href="/checkout">
-									<span>{m.checkout()}</span>
-								</Button>
-							</div>
-						{/if}
+							{#if addedToCart}
+								<div class="flex justify-between gap-2 mt-2">
+									<a href="/cart" class="flex-1" data-sveltekit-preload-data="hover">
+										<Button variant="outline" class="w-full">
+											<span>{m.view_cart()}</span>
+										</Button>
+									</a>
+									<a href="/checkout" class="flex-1" data-sveltekit-preload-data="hover">
+										<Button variant="outline" class="w-full">
+											<span>{m.checkout()}</span>
+										</Button>
+									</a>
+								</div>
+							{/if}
+						</form>
 					</div>
 				</div>
 
