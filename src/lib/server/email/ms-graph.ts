@@ -4,12 +4,6 @@ import { TokenCredentialAuthenticationProvider } from '@microsoft/microsoft-grap
 import { ClientSecretCredential } from '@azure/identity';
 import { readFileSync } from 'fs';
 
-// Add debugging logs to verify environment variables
-console.log('[SERVER] MS Graph environment variables check:');
-console.log('- MS_GRAPH_TENANT_ID exists:', !!env.MS_GRAPH_TENANT_ID);
-console.log('- MS_GRAPH_CLIENT_ID exists:', !!env.MS_GRAPH_CLIENT_ID);
-console.log('- MS_GRAPH_CLIENT_SECRET exists:', !!env.MS_GRAPH_CLIENT_SECRET);
-
 interface EmailOptions {
     to: string[];
     subject: string;
