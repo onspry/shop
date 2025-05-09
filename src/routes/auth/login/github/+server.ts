@@ -3,6 +3,9 @@ import { generateState } from "arctic";
 import type { RequestEvent } from "./$types";
 
 export function GET(event: RequestEvent): Response {
+    console.log('[SERVER] GitHub login endpoint hit');
+    console.log('[SERVER] GitHub object initialized:', !!github);
+
     // Get the redirect URL from query parameters
     const redirectTo = event.url.searchParams.get('redirect') || '/';
 
@@ -12,6 +15,8 @@ export function GET(event: RequestEvent): Response {
     // Generate state for OAuth flow
     const state = generateState();
     const url = github.createAuthorizationURL(state, ["user:email"]);
+
+    console.log('[SERVER] GitHub authorization URL created successfully');
 
     // Set the GitHub OAuth state cookie
     event.cookies.set("github_oauth_state", state, {
