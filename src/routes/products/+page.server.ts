@@ -2,7 +2,7 @@ import type { PageServerLoad } from './$types';
 import { productRepository } from '$lib/repositories/product-repository';
 
 // Configure prerendering and caching
-export const prerender = true; // Enable prerendering for static content
+export const prerender = false; // Disable prerendering as we need access to URL search params
 export const config = {
     isr: {
         // Enable Incremental Static Regeneration

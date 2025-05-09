@@ -5,6 +5,9 @@ import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types';
 import { cartRepository } from '$lib/repositories/cart-repository';
 
+// Disable prerendering as we need access to URL search params
+export const prerender = false;
+
 // Configure caching
 export const config = {
     isr: {
