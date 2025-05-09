@@ -15,7 +15,8 @@ export async function GET(event: RequestEvent): Promise<Response> {
     const code = event.url.searchParams.get("code");
     const state = event.url.searchParams.get("state");
     const storedState = event.cookies.get("google_oauth_state") ?? null;
-    if (code === null || state === null || storedState === null) {
+    const codeVerifier = event.cookies.get("google_code_verifier") ?? null;
+    if (code === null || state === null || storedState === null || codeVerifier === null) {
         return new Response(null, {
             status: 400
         });
@@ -29,7 +30,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
     // Validate authorization code
     let tokens: OAuth2Tokens;
     try {
-        tokens = await google.validateAuthorizationCode(code);
+        tokens = await google.validateAuthorizationCode(code, codeVerifier);
     } catch {
         return new Response(null, {
             status: 400
@@ -96,6 +97,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
         // Clean up OAuth cookies
         event.cookies.delete('oauth_redirect', { path: '/' });
         event.cookies.delete('google_oauth_state', { path: '/' });
+        event.cookies.delete('google_code_verifier', { path: '/' });
 
         return new Response(null, {
             status: 303,
@@ -166,6 +168,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
     // Clean up OAuth cookies
     event.cookies.delete('oauth_redirect', { path: '/' });
     event.cookies.delete('google_oauth_state', { path: '/' });
+    event.cookies.delete('google_code_verifier', { path: '/' });
 
     return new Response(null, {
         status: 303,

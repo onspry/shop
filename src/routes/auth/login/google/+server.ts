@@ -11,15 +11,26 @@ export function GET(event: RequestEvent): Response {
 
     // Generate state for OAuth flow
     const state = generateState();
-    const url = google.createAuthorizationURL(state, [
-        "https://www.googleapis.com/auth/userinfo.email",
-        "https://www.googleapis.com/auth/userinfo.profile"
-    ]);
+    const codeVerifier = generateState(); // Generate a code verifier for PKCE
+    const url = google.createAuthorizationURL(
+        state,
+        codeVerifier,
+        ["https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"]
+    );
 
     console.log('[SERVER] Google authorization URL created successfully');
 
     // Set the Google OAuth state cookie
     event.cookies.set("google_oauth_state", state, {
+        httpOnly: true,
+        maxAge: 60 * 10, // 10 minutes
+        secure: import.meta.env.PROD,
+        path: "/",
+        sameSite: "lax"
+    });
+
+    // Store the code verifier for PKCE
+    event.cookies.set("google_code_verifier", codeVerifier, {
         httpOnly: true,
         maxAge: 60 * 10, // 10 minutes
         secure: import.meta.env.PROD,
