@@ -35,9 +35,8 @@
 		const product = data.product;
 		const variants = data.variants || [];
 		const images = data.images || [];
-		const basePrice = variants.length > 0
-			? Math.min(...variants.map((v: any) => Number(v.price)))
-			: 0;
+		const basePrice =
+			variants.length > 0 ? Math.min(...variants.map((v: any) => Number(v.price))) : 0;
 
 		return {
 			'@context': 'https://schema.org/',
@@ -80,7 +79,7 @@
 
 <div class="min-h-screen bg-background">
 	<div
-		class="container mx-auto px-4 py-4 transition-opacity duration-500"
+		class="container mx-auto transition-opacity duration-500"
 		class:opacity-0={!contentVisible}
 		class:opacity-100={contentVisible}
 	>

@@ -2,80 +2,97 @@
 	import { Button } from '$lib/components/ui/button';
 	import AppImage from '$lib/components/ui/app-image.svelte';
 	import type { ProductImageViewModel } from '$lib/models/product';
+	import * as Carousel from '$lib/components/ui/carousel';
+	import { ChevronLeft, ChevronRight } from 'lucide-svelte';
+	import type { EmblaCarouselType } from 'embla-carousel';
 
 	const props = $props<{
 		images: ProductImageViewModel[];
 	}>();
 
-	// Internal state for tracking the selected image
-	let displayIndex = $state(0);
+	// State for carousel API instance
+	let emblaApi = $state<EmblaCarouselType | undefined>();
 
-	// Calculate number of valid images
-	const validImageCount = $derived(props.images?.length || 0);
+	// Use $state for button disabled status
+	let canScrollPrev = $state(false);
+	let canScrollNext = $state(false);
 
-	// Function to handle image selection
-	function handleImageSelect(index: number) {
-		// Update local state
-		displayIndex = index;
+	// Effect to update scrollability when API changes or settles
+	$effect(() => {
+		if (!emblaApi) return;
+
+		const onSelect = () => {
+			// Update the state variables
+			canScrollPrev = emblaApi?.canScrollPrev() ?? false;
+			canScrollNext = emblaApi?.canScrollNext() ?? false;
+		};
+
+		emblaApi.on('select', onSelect);
+		emblaApi.on('reInit', onSelect);
+
+		// Initial check
+		onSelect();
+
+		// Cleanup listener on unmount or when emblaApi changes
+		return () => {
+			emblaApi?.off('select', onSelect);
+			emblaApi?.off('reInit', onSelect);
+		};
+	});
+
+	// Helper functions to scroll
+	function scrollPrev() {
+		emblaApi?.scrollPrev();
 	}
+
+	function scrollNext() {
+		emblaApi?.scrollNext();
+	}
+
+	const validImageCount = $derived(props.images?.length || 0);
 </script>
 
-{#if props.images?.length > 0}
-	{#if validImageCount > 1}
-		<!-- Multiple images: show thumbnails on the left -->
-		<div class="flex gap-4">
-			<div class="flex flex-col gap-3 w-24">
-				{#each props.images as image, index}
-					<Button
-						variant="ghost"
-						size="icon"
-						onclick={() => handleImageSelect(index)}
-						aria-label="View {image.alt}"
-						class="p-0 h-auto w-auto flex items-center justify-center hover:bg-transparent overflow-hidden transition-all duration-200"
-					>
-						<AppImage
-							src={image.url}
-							alt={image.alt}
-							width={90}
-							height={90}
-							thumbnailMode={true}
-							isSelected={displayIndex === index}
-						/>
-					</Button>
+{#if validImageCount > 0}
+	<div class="relative w-full max-w-2xl mx-auto">
+		<Carousel.Root
+			class="w-full"
+			setApi={(api) => {
+				emblaApi = api;
+			}}
+			opts={{
+				loop: true,
+				align: 'center'
+			}}
+		>
+			<Carousel.Content class="-ml-4">
+				{#each props.images as image, index (image.id)}
+					<Carousel.Item class="pl-4 flex justify-center items-center">
+						<div
+							class="flex items-center justify-center overflow-hidden rounded-lg min-h-[400px] max-h-[calc(100vh-var(--header-height)-var(--footer-height)-8rem)] aspect-square w-full"
+						>
+							<AppImage
+								src={image.url}
+								alt={image.alt}
+								width="100%"
+								height="auto"
+								aspectRatio="auto"
+								objectFit="contain"
+								className="h-full w-full"
+							/>
+						</div>
+					</Carousel.Item>
 				{/each}
-			</div>
-
-			<!-- Main image (with thumbnails) -->
-			<div class="flex-1">
-				<div class="flex items-center justify-center max-w-lg mx-auto overflow-hidden rounded-lg min-h-[400px] max-h-[calc(100vh-var(--header-height)-var(--footer-height)-8rem)]">
-					<AppImage
-						src={props.images[displayIndex].url}
-						alt={props.images[displayIndex].alt}
-						width="100%"
-						height="auto"
-						aspectRatio="auto"
-						objectFit="contain"
-					/>
-				</div>
-			</div>
-		</div>
-	{:else}
-		<!-- Single image: centered with no thumbnails -->
-		<div class="w-full">
-			<div class="flex items-center justify-center max-w-lg mx-auto overflow-hidden rounded-lg min-h-[400px] max-h-[calc(100vh-var(--header-height)-var(--footer-height)-8rem)]">
-				<AppImage
-					src={props.images[0].url}
-					alt={props.images[0].alt}
-					width="100%"
-					height="auto"
-					aspectRatio="auto"
-					objectFit="contain"
-				/>
-			</div>
-		</div>
-	{/if}
+			</Carousel.Content>
+			{#if validImageCount > 1}
+				<Carousel.Previous disabled={!canScrollPrev} aria-label="Previous Image" />
+				<Carousel.Next disabled={!canScrollNext} aria-label="Next Image" />
+			{/if}
+		</Carousel.Root>
+	</div>
 {:else}
-	<div class="aspect-square w-full max-w-lg mx-auto flex items-center justify-center rounded-lg bg-muted">
+	<div
+		class="aspect-square w-full max-w-lg mx-auto flex items-center justify-center rounded-lg bg-muted"
+	>
 		<span class="text-muted-foreground">No image available</span>
 	</div>
 {/if}
