@@ -18,15 +18,7 @@
 	import { paymentSchema } from '$lib/schemas/payment';
 	import * as m from '$lib/paraglide/messages';
 	import { formatPrice } from '$lib/utils/price';
-	import {
-		ShoppingBag,
-		User,
-		Truck,
-		Mail,
-		MapPin,
-		CreditCard,
-		Check
-	} from 'lucide-svelte';
+	import { ShoppingBag, User, Truck, Mail, MapPin, CreditCard, Check } from 'lucide-svelte';
 	import { AppImage } from '$lib/components/ui/app-image';
 	import type { PageData } from './$types';
 	import { browser } from '$app/environment';
@@ -41,7 +33,6 @@
 	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button';
 	import * as Form from '$lib/components/ui/form';
-
 
 	// Page data props
 	const { data } = $props<{ data: PageData }>();
@@ -140,7 +131,8 @@
 		emailValidated: $emailForm.email && $emailErrors.email === undefined,
 		get shippingValidated() {
 			// Get the address structure for the selected country
-			const countryStructure = addressStructures[$shippingForm.country] || addressStructures.DEFAULT;
+			const countryStructure =
+				addressStructures[$shippingForm.country] || addressStructures.DEFAULT;
 
 			// Check if state is required for this country
 			const stateRequired = countryStructure.fields.includes('state');
@@ -159,7 +151,9 @@
 			const stateFieldValid = !stateRequired || (stateRequired && $shippingForm.state);
 
 			// No validation errors
-			const noValidationErrors = Object.values($shippingErrors).every((error) => error === undefined);
+			const noValidationErrors = Object.values($shippingErrors).every(
+				(error) => error === undefined
+			);
 
 			return basicFieldsValid && stateFieldValid && noValidationErrors;
 		},
@@ -248,9 +242,8 @@
 
 		// Set payment form from store
 		if ($checkoutStore.paymentConfig) {
-
-		// Explicitly validate shipping form after setting values
-		await validateShippingForm();
+			// Explicitly validate shipping form after setting values
+			await validateShippingForm();
 			$paymentForm.cardNumber = $checkoutStore.paymentConfig.cardNumber || '';
 			$paymentForm.cardHolder = $checkoutStore.paymentConfig.cardHolder || '';
 			$paymentForm.expiryDate = $checkoutStore.paymentConfig.expiryDate || '';
@@ -263,10 +256,6 @@
 			await validateEmailForm();
 		}
 	});
-
-
-
-
 
 	// Shipping methods data
 	const shippingMethods = [
@@ -353,7 +342,6 @@
 		}
 	});
 
-
 	// Functions to navigate between steps
 	async function goToNextStep() {
 		window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -401,15 +389,12 @@
 		if (previousCountry !== value) {
 			// Clear the postal code value
 			// $shippingForm.postalCode = '';
-
 			// Update the store
 			// checkoutStore.updateShippingConfig({
 			// 	postalCode: ''
 			// });
-
 			// Clear any existing postal code validation errors
 			// $shippingErrors.postalCode = undefined;
-
 			// Don't focus or validate the postal code field on country change
 			// Let the user interact with it when they're ready
 		}
@@ -655,7 +640,10 @@
 							<Form.Field form={shippingSuperForm} name="firstName">
 								<Form.Control>
 									{#snippet children({ props })}
-										<Form.Label>{m.checkout_first_name()} <span class="text-red-600" aria-label="required">*</span></Form.Label>
+										<Form.Label
+											>{m.checkout_first_name()}
+											<span class="text-red-600" aria-label="required">*</span></Form.Label
+										>
 										<Input
 											{...props}
 											bind:value={$shippingForm.firstName}
@@ -676,7 +664,10 @@
 							<Form.Field form={shippingSuperForm} name="lastName">
 								<Form.Control>
 									{#snippet children({ props })}
-										<Form.Label>{m.checkout_last_name()} <span class="text-red-600" aria-label="required">*</span></Form.Label>
+										<Form.Label
+											>{m.checkout_last_name()}
+											<span class="text-red-600" aria-label="required">*</span></Form.Label
+										>
 										<Input
 											{...props}
 											bind:value={$shippingForm.lastName}
@@ -699,7 +690,10 @@
 						<Form.Field form={shippingSuperForm} name="addressLine1">
 							<Form.Control>
 								{#snippet children({ props })}
-									<Form.Label>{checkout.addressStructure.labels.addressLine1} <span class="text-red-600" aria-label="required">*</span></Form.Label>
+									<Form.Label
+										>{checkout.addressStructure.labels.addressLine1}
+										<span class="text-red-600" aria-label="required">*</span></Form.Label
+									>
 									<Input
 										{...props}
 										bind:value={$shippingForm.addressLine1}
@@ -740,7 +734,10 @@
 							<Form.Field form={shippingSuperForm} name="city">
 								<Form.Control>
 									{#snippet children({ props })}
-										<Form.Label>{checkout.addressStructure.labels.city} <span class="text-red-600" aria-label="required">*</span></Form.Label>
+										<Form.Label
+											>{checkout.addressStructure.labels.city}
+											<span class="text-red-600" aria-label="required">*</span></Form.Label
+										>
 										<Input
 											{...props}
 											bind:value={$shippingForm.city}
@@ -764,17 +761,18 @@
 										{#snippet children({ props })}
 											<Form.Label>
 												{checkout.addressStructure.labels.state ||
-												checkout.addressStructure.labels.prefecture ||
-												checkout.addressStructure.labels.province ||
-												checkout.addressStructure.labels.county} <span class="text-red-600" aria-label="required">*</span>
+													checkout.addressStructure.labels.prefecture ||
+													checkout.addressStructure.labels.province ||
+													checkout.addressStructure.labels.county}
+												<span class="text-red-600" aria-label="required">*</span>
 											</Form.Label>
 											<Input
 												{...props}
 												bind:value={$shippingForm.state}
 												placeholder={checkout.addressStructure.placeholders.state ||
-												checkout.addressStructure.placeholders.prefecture ||
-												checkout.addressStructure.placeholders.province ||
-												checkout.addressStructure.placeholders.county}
+													checkout.addressStructure.placeholders.prefecture ||
+													checkout.addressStructure.placeholders.province ||
+													checkout.addressStructure.placeholders.county}
 												oninput={async () => {
 													checkoutStore.updateShippingConfig({
 														state: $shippingForm.state
@@ -791,7 +789,10 @@
 							<Form.Field form={shippingSuperForm} name="postalCode">
 								<Form.Control>
 									{#snippet children({ props })}
-										<Form.Label>{checkout.addressStructure.labels.postalCode} <span class="text-red-600" aria-label="required">*</span></Form.Label>
+										<Form.Label
+											>{checkout.addressStructure.labels.postalCode}
+											<span class="text-red-600" aria-label="required">*</span></Form.Label
+										>
 										<Input
 											{...props}
 											bind:value={$shippingForm.postalCode}
@@ -1195,7 +1196,9 @@
 						<div class="flex items-center gap-2">
 							<ShoppingBag class="h-5 w-5" />
 							<span class="font-medium">{m.checkout_order_summary()}</span>
-							<span class="text-sm text-muted-foreground ml-1">({data.cart.items.length} {data.cart.items.length === 1 ? 'item' : 'items'})</span>
+							<span class="text-sm text-muted-foreground ml-1"
+								>({data.cart.items.length} {data.cart.items.length === 1 ? 'item' : 'items'})</span
+							>
 						</div>
 						<div class="flex items-center gap-2">
 							<span class="font-medium">{formatPrice(data.cart.total)}</span>
@@ -1239,16 +1242,18 @@
 											>
 												{item.quantity}
 											</div>
-											<div class="w-12 h-12 flex items-center justify-center overflow-hidden rounded-md">
+											<div
+												class="w-12 h-12 flex items-center justify-center overflow-hidden rounded-md"
+											>
 												<AppImage
-												src={item.imageUrl}
-												alt={item.name}
-												width={48}
-												height={48}
-												className="h-full w-full"
-												objectFit="cover"
-											/>
-										</div>
+													src={item.imageUrl}
+													alt={item.name}
+													width={48}
+													height={48}
+													className="h-full w-full"
+													objectFit="cover"
+												/>
+											</div>
 										</div>
 										<div class="flex-1">
 											<div class="flex justify-between items-start">
@@ -1411,9 +1416,16 @@
 					{/if}
 
 					<!-- Order Form -->
-					<form id="order-form" method="POST" action="?/placeOrder" class="pt-6 border-t" use:enhance={async () => {
+					<form
+						id="order-form"
+						method="POST"
+						action="?/placeOrder"
+						class="pt-6 border-t"
+						use:enhance={async () => {
 							// Show processing toast with longer duration
-							const processingToast = toast.loading('Processing your order...', { duration: 60000 });
+							const processingToast = toast.loading('Processing your order...', {
+								duration: 60000
+							});
 
 							return ({ result }) => {
 								// Dismiss the processing toast
@@ -1447,14 +1459,18 @@
 									}
 								} else if (result.type === 'failure' && result.data) {
 									// Show error message for failure
-									const errorMessage = typeof result.data.message === 'string' ? result.data.message : 'Failed to place order';
+									const errorMessage =
+										typeof result.data.message === 'string'
+											? result.data.message
+											: 'Failed to place order';
 									toast.error(errorMessage);
 								} else {
 									// Show generic error message
 									toast.error('An error occurred while processing your order');
 								}
 							};
-						}}>
+						}}
+					>
 						<!-- Hidden fields for order data -->
 						{#if $emailForm.email}
 							<input type="hidden" name="email" value={$emailForm.email} />
@@ -1473,7 +1489,11 @@
 						{/if}
 
 						{#if $checkoutStore.shippingCost}
-							<input type="hidden" name="shippingCost" value={$checkoutStore.shippingCost.toString()} />
+							<input
+								type="hidden"
+								name="shippingCost"
+								value={$checkoutStore.shippingCost.toString()}
+							/>
 						{/if}
 
 						{#if $paymentForm.cardNumber}
@@ -1489,25 +1509,23 @@
 
 							<!-- Cart items -->
 							{#if data.validOrderItems && data.validOrderItems.length > 0}
-								<input
-									type="hidden"
-									name="items"
-									value={JSON.stringify(data.validOrderItems)}
-								/>
+								<input type="hidden" name="items" value={JSON.stringify(data.validOrderItems)} />
 							{:else}
 								<!-- Fallback for when validOrderItems is not available -->
 								<input
 									type="hidden"
 									name="items"
-									value={JSON.stringify($cart.items.map(item => ({
-										productId: item.variant.product?.id || '',
-										variantId: item.variant.id,
-										quantity: item.quantity,
-										price: item.price,
-										unitPrice: item.price,
-										productName: item.variant.product?.name || item.variant.name,
-										variantName: item.variant.name
-									})))}
+									value={JSON.stringify(
+										$cart.items.map((item) => ({
+											productId: item.variant.product?.id || '',
+											variantId: item.variant.id,
+											quantity: item.quantity,
+											price: item.price,
+											unitPrice: item.price,
+											productName: item.variant.product?.name || item.variant.name,
+											variantName: item.variant.name
+										}))
+									)}
 								/>
 							{/if}
 						{/if}
@@ -1516,7 +1534,9 @@
 							type="submit"
 							class="w-full relative overflow-hidden group transition-all duration-300 hover:shadow-lg"
 							size="lg"
-							disabled={!checkout.emailValidated || !checkout.shippingValidated || !checkout.paymentValidated}
+							disabled={!checkout.emailValidated ||
+								!checkout.shippingValidated ||
+								!checkout.paymentValidated}
 						>
 							{m.checkout_place_order()}
 						</Button>

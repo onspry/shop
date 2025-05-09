@@ -34,6 +34,11 @@ declare module '$env/static/private' {
 
 	// Security
 	export const PWNED_PASSWORDS_API_URL: string;
+
+	// Facebook OAuth Configuration
+	export const FACEBOOK_CLIENT_ID: string;
+	export const FACEBOOK_CLIENT_SECRET: string;
+	export const FACEBOOK_CLIENT_REDIRECT_URI: string;
 }
 
 export { };

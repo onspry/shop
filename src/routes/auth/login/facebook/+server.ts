@@ -1,0 +1,51 @@
+import { facebook } from "$lib/server/auth/oauth";
+import { generateState } from "arctic";
+import type { RequestEvent } from "./$types";
+
+export function GET(event: RequestEvent): Response {
+    // Get the redirect URL from query parameters
+    const redirectTo = event.url.searchParams.get('redirect') || '/';
+
+    // Capture the current cart session ID
+    const cartSessionId = event.cookies.get('cart-session') || '';
+
+    // Generate state for OAuth flow
+    const state = generateState();
+    const url = facebook.createAuthorizationURL(state, ["email", "public_profile"]);
+
+    // Set the Facebook OAuth state cookie
+    event.cookies.set("facebook_oauth_state", state, {
+        httpOnly: true,
+        maxAge: 60 * 10, // 10 minutes
+        secure: import.meta.env.PROD,
+        path: "/",
+        sameSite: "lax"
+    });
+
+    // Store the redirect URL in a cookie
+    event.cookies.set("oauth_redirect", redirectTo, {
+        httpOnly: true,
+        maxAge: 60 * 10, // 10 minutes
+        secure: import.meta.env.PROD,
+        path: "/",
+        sameSite: "lax"
+    });
+
+    // Also save the current cart session ID in a temporary cookie
+    if (cartSessionId) {
+        event.cookies.set("preserved_cart_session", cartSessionId, {
+            httpOnly: true,
+            maxAge: 60 * 10, // 10 minutes
+            secure: import.meta.env.PROD,
+            path: "/",
+            sameSite: "lax"
+        });
+    }
+
+    return new Response(null, {
+        status: 302,
+        headers: {
+            Location: url.toString()
+        }
+    });
+} 
