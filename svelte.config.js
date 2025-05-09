@@ -20,6 +20,18 @@ const config = {
 		}),
 		files: {
 			assets: 'static'
+		},
+		prerender: {
+			handleHttpError: ({ path, message }) => {
+				// Skip URL searchParams errors on the products page during prerendering
+				if (path.startsWith('/products') && message.includes('searchParams')) {
+					console.warn(`Ignoring prerender error for ${path}: ${message}`);
+					return;
+				}
+				
+				// Throw other errors normally
+				throw new Error(message);
+			}
 		}
 	}
 };
