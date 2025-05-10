@@ -42,10 +42,9 @@
 					</SheetTrigger>
 					<SheetContent side="left" class="p-6">
 						<nav class="flex flex-col gap-4">
-							<a href="/about" class="text-base font-medium" on:click={() => (open = false)}
-								>About</a
+							<a href="/about" class="text-base font-medium" onclick={() => (open = false)}>About</a
 							>
-							<a href="/products" class="text-base font-medium" on:click={() => (open = false)}
+							<a href="/products" class="text-base font-medium" onclick={() => (open = false)}
 								>Products</a
 							>
 						</nav>
