@@ -23,10 +23,11 @@ declare module '$env/static/private' {
 	export const GOOGLE_CLIENT_SECRET: string;
 	export const GOOGLE_CLIENT_REDIRECT_URI: string;
 
-	// Microsoft Graph API Configuration
+	// Microsoft OAuth Configuration
 	export const MS_GRAPH_CLIENT_ID: string;
 	export const MS_GRAPH_CLIENT_SECRET: string;
 	export const MS_GRAPH_TENANT_ID: string;
+	export const MS_GRAPH_REDIRECT_URI: string;
 
 	// Email Addresses
 	export const EMAIL_NOREPLY: string;

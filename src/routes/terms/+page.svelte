@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
+	import * as m from '$lib/paraglide/messages/en.js';
+	const email = 'support@onspry.com';
+	const privacyUrl = '/privacy';
 	let contentVisible = $state(false);
 	onMount(() => {
 		const timer = setTimeout(() => {
@@ -18,81 +21,51 @@
 	<div class="text-only">
 		<div class="space-y-12">
 			<div class="space-y-4">
-				<h1 class="text-4xl font-medium">Terms of Service</h1>
+				<h1 class="text-4xl font-medium">{m.terms_title()}</h1>
 				<div class="prose prose-lg dark:prose-invert max-w-none">
-					<p>
-						Welcome to Onspry! By using our website and services, you agree to the following terms
-						and conditions. Please read them carefully.
-					</p>
+					{@html m.terms_intro()}
 				</div>
 			</div>
 			<div class="space-y-8">
-				<h2 class="text-2xl font-medium">1. User Accounts</h2>
+				<h2 class="text-2xl font-medium">{m.terms_user_accounts_title()}</h2>
 				<div class="prose prose-lg dark:prose-invert max-w-none">
-					<p>
-						You are responsible for maintaining the confidentiality of your account credentials and
-						for all activities that occur under your account. You agree to provide accurate and
-						complete information when creating an account.
-					</p>
+					{@html m.terms_user_accounts()}
 				</div>
 			</div>
 			<div class="space-y-8">
-				<h2 class="text-2xl font-medium">2. Privacy</h2>
+				<h2 class="text-2xl font-medium">{m.terms_privacy_title()}</h2>
 				<div class="prose prose-lg dark:prose-invert max-w-none">
-					<p>
-						Your privacy is important to us. Please review our
-						<a href="/privacy" class="underline hover:opacity-80 transition">Privacy Policy</a>
-						to understand how we collect, use, and protect your information.
-					</p>
+					{@html m.terms_privacy({ privacyUrl })}
 				</div>
 			</div>
 			<div class="space-y-8">
-				<h2 class="text-2xl font-medium">3. Acceptable Use</h2>
+				<h2 class="text-2xl font-medium">{m.terms_acceptable_use_title()}</h2>
 				<div class="prose prose-lg dark:prose-invert max-w-none">
-					<p>
-						You agree not to use our services for any unlawful or prohibited activities, including
-						but not limited to fraud, abuse, or violation of any applicable laws or regulations.
-					</p>
+					{@html m.terms_acceptable_use()}
 				</div>
 			</div>
 			<div class="space-y-8">
-				<h2 class="text-2xl font-medium">4. Orders and Payments</h2>
+				<h2 class="text-2xl font-medium">{m.terms_orders_payments_title()}</h2>
 				<div class="prose prose-lg dark:prose-invert max-w-none">
-					<p>
-						All orders are subject to acceptance and availability. We reserve the right to refuse or
-						cancel any order at our discretion. Payment information must be valid and authorized for
-						all purchases.
-					</p>
+					{@html m.terms_orders_payments()}
 				</div>
 			</div>
 			<div class="space-y-8">
-				<h2 class="text-2xl font-medium">5. Limitation of Liability</h2>
+				<h2 class="text-2xl font-medium">{m.terms_limitation_liability_title()}</h2>
 				<div class="prose prose-lg dark:prose-invert max-w-none">
-					<p>
-						Onspry is not liable for any indirect, incidental, or consequential damages arising from
-						your use of our services. Our total liability is limited to the amount paid by you for
-						the products or services in question.
-					</p>
+					{@html m.terms_limitation_liability()}
 				</div>
 			</div>
 			<div class="space-y-8">
-				<h2 class="text-2xl font-medium">6. Changes to Terms</h2>
+				<h2 class="text-2xl font-medium">{m.terms_changes_title()}</h2>
 				<div class="prose prose-lg dark:prose-invert max-w-none">
-					<p>
-						We may update these Terms of Service from time to time. Continued use of our services
-						constitutes acceptance of the revised terms.
-					</p>
+					{@html m.terms_changes()}
 				</div>
 			</div>
 			<div class="space-y-8">
-				<h2 class="text-2xl font-medium">7. Contact</h2>
+				<h2 class="text-2xl font-medium">{m.terms_contact_title()}</h2>
 				<div class="prose prose-lg dark:prose-invert max-w-none">
-					<p>
-						If you have any questions about these terms, please contact us at
-						<a href="mailto:support@onspry.com" class="underline hover:opacity-80 transition"
-							>support@onspry.com</a
-						>.
-					</p>
+					{@html m.terms_contact({ email })}
 				</div>
 			</div>
 			<div class="flex justify-center pt-8">

@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
+	import * as m from '$lib/paraglide/messages/en.js';
+	const email = 'support@onspry.com';
+	const gdprUrl = 'https://gdpr-info.eu/';
 	let contentVisible = $state(false);
 	onMount(() => {
 		const timer = setTimeout(() => {
@@ -18,24 +21,26 @@
 	<div class="text-only">
 		<div class="space-y-12">
 			<div class="space-y-4">
-				<h1 class="text-4xl font-medium">Privacy Policy</h1>
+				<h1 class="text-4xl font-medium">{m.privacy_title()}</h1>
 				<div class="prose prose-lg dark:prose-invert max-w-none">
-					<p>
-						This application collects your name, email address, and profile picture from Facebook
-						when you log in using Facebook OAuth. This information is used solely to create and
-						manage your account, personalize your experience, and enable e-commerce functionality.
-					</p>
-					<p>
-						We do not share your personal information with third parties except as required to
-						provide our services or comply with the law.
-					</p>
-					<p>
-						You may request deletion of your account and associated data at any time by contacting
-						us at <a href="mailto:support@onspry.com" class="underline hover:opacity-80 transition"
-							>support@onspry.com</a
-						>.
-					</p>
-					<p>For more information, please contact us at the email above.</p>
+					{@html m.privacy_intro()}
+					{@html m.privacy_no_share()}
+					{@html m.privacy_deletion_request({ email })}
+					{@html m.privacy_more_info()}
+				</div>
+			</div>
+			<div class="space-y-8">
+				<h2 class="text-2xl font-medium">{m.privacy_gdpr_rights_title()}</h2>
+				<div class="prose prose-lg dark:prose-invert max-w-none">
+					{@html m.privacy_gdpr_rights({ gdprUrl })}
+					{@html m.privacy_gdpr_exercise({ email })}
+				</div>
+			</div>
+			<div class="space-y-8">
+				<h2 class="text-2xl font-medium">{m.privacy_processing_title()}</h2>
+				<div class="prose prose-lg dark:prose-invert max-w-none">
+					{@html m.privacy_processing()}
+					{@html m.privacy_gdpr_more({ gdprUrl })}
 				</div>
 			</div>
 			<div class="flex justify-center pt-8">
