@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages.js';
+	import { localizeHref } from '$lib/paraglide/runtime';
 	import { authStore } from '$lib/stores/auth';
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
@@ -39,7 +40,9 @@
 
 	// Get the current path for redirection
 	const loginUrl = $derived(() => {
-		return currentPath === '/' ? '/auth/login' : `/auth/login?redirect=${currentPath.slice(1)}`;
+		return currentPath === '/'
+			? localizeHref('/auth/login')
+			: localizeHref(`/auth/login?redirect=${currentPath.slice(1)}`);
 	});
 </script>
 
@@ -72,20 +75,20 @@
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content class="w-48">
 				<DropdownMenu.Item>
-					<a href="/account" class="flex items-center w-full">
+					<a href={localizeHref('/account')} class="flex items-center w-full">
 						<UserIcon class="mr-2 h-4 w-4" />
 						{m.my_account()}
 					</a>
 				</DropdownMenu.Item>
 				<DropdownMenu.Item>
-					<a href="/orders" class="flex items-center w-full">
+					<a href={localizeHref('/orders')} class="flex items-center w-full">
 						<Package class="mr-2 h-4 w-4" />
 						{m.my_orders()}
 					</a>
 				</DropdownMenu.Item>
 				<DropdownMenu.Separator />
 				<DropdownMenu.Item>
-					<a href="/auth/logout" class="flex items-center w-full text-destructive">
+					<a href={localizeHref('/auth/logout')} class="flex items-center w-full text-destructive">
 						<LogOut class="mr-2 h-4 w-4" />
 						{m.sign_out()}
 					</a>

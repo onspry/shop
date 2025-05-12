@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localizeHref } from '$lib/paraglide/runtime';
 	import { m } from '$lib/paraglide/messages.js';
 
 	import AuthSection from './auth-section.svelte';
@@ -9,31 +10,25 @@
 
 	// Mobile menu state
 	let open = $state(false);
-
-	// Wrap message function to protect against undefined locale
-	function safeMessage(messageFn: (...args: any[]) => string, ...args: any[]): string {
-		try {
-			return messageFn(...args);
-		} catch (error) {
-			// If message function throws, return a fallback
-			return 'Onspry Shop';
-		}
-	}
 </script>
 
 <nav class="h-full w-full">
 	<div class="flex h-full w-full items-center justify-between">
 		<div class="flex items-center gap-8">
-			<a href="/" class="flex h-full items-center" aria-label={safeMessage(m.shop_title)}>
-				<div class="logo" aria-label={safeMessage(m.shop_title)}></div>
+			<a href={localizeHref('/')} class="flex h-full items-center" aria-label={m.shop_title()}>
+				<div class="logo" aria-label={m.shop_title()}></div>
 			</a>
 			<!-- Desktop nav -->
 			<div class="hidden md:flex items-center gap-6">
-				<a href="/about" class="text-sm font-medium hover:text-primary transition-colors">About</a>
+				<a
+					href={localizeHref('/about')}
+					class="text-sm font-medium hover:text-primary transition-colors">About</a
+				>
 			</div>
 			<div class="hidden md:flex items-center gap-6">
-				<a href="/products" class="text-sm font-medium hover:text-primary transition-colors"
-					>Products</a
+				<a
+					href={localizeHref('/products')}
+					class="text-sm font-medium hover:text-primary transition-colors">Products</a
 				>
 			</div>
 			<!-- Mobile hamburger -->
@@ -56,10 +51,15 @@
 					</SheetTrigger>
 					<SheetContent side="left" class="p-6">
 						<nav class="flex flex-col gap-4">
-							<a href="/about" class="text-base font-medium" onclick={() => (open = false)}>About</a
+							<a
+								href={localizeHref('/about')}
+								class="text-base font-medium"
+								onclick={() => (open = false)}>About</a
 							>
-							<a href="/products" class="text-base font-medium" onclick={() => (open = false)}
-								>Products</a
+							<a
+								href={localizeHref('/products')}
+								class="text-base font-medium"
+								onclick={() => (open = false)}>Products</a
 							>
 
 							<!-- Mobile language switcher placeholder -->

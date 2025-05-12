@@ -16,6 +16,7 @@
 		CardHeader,
 		CardTitle
 	} from '$lib/components/ui/card';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
 	// Using $props() instead of export let for Svelte 5
 	let { data } = $props();
@@ -110,9 +111,14 @@
 		</CardContent>
 
 		<CardFooter class="flex justify-center">
-			<a href="/auth/login" class="text-sm text-muted-foreground hover:text-primary">
-				Back to login
-			</a>
+			<div class="text-center mt-4">
+				<a
+					href={localizeHref('/auth/login')}
+					class="text-sm text-muted-foreground hover:text-primary"
+				>
+					{m.auth_back_to_login()}
+				</a>
+			</div>
 		</CardFooter>
 	</Card>
 </div>

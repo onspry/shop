@@ -6,6 +6,7 @@
 	import { AppImage } from '$lib/components/ui/app-image';
 	import { Button } from '$lib/components/ui/button';
 	import { Loader2 } from 'lucide-svelte';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
 	let { product, class: className = '' } = $props<{
 		product: ProductViewModel;
@@ -69,7 +70,7 @@
 				</span>
 			</div>
 			<Button
-				href="/products/{product?.slug || ''}"
+				href={localizeHref(`/products/${product?.slug || ''}`)}
 				variant="default"
 				size="sm"
 				class="h-8 px-3 transition-colors hover:bg-primary/90 flex items-center justify-center gap-2"
@@ -90,7 +91,7 @@
 
 	<!-- Link Overlay -->
 	<a
-		href="/products/{product?.slug || ''}"
+		href={localizeHref(`/products/${product?.slug || ''}`)}
 		class="absolute inset-0 z-10"
 		aria-label={product_view_details({ name: product.name })}
 		onclick={handleViewDetails}

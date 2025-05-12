@@ -7,6 +7,7 @@
 	import { goto } from '$app/navigation';
 	import * as m from '$lib/paraglide/messages';
 	import { onMount } from 'svelte';
+	import { localizeHref } from '$lib/paraglide/runtime';
 	// No need for toast import as it's handled in the cart-item component
 
 	// Get the cart data from the server
@@ -15,7 +16,6 @@
 	// Use the cart store directly
 	$effect(() => {
 		if (data?.cart) {
-			console.log('Updating cart store with server data:', data.cart);
 			cart.set(data.cart);
 		}
 	});
@@ -45,7 +45,11 @@
 	}
 </script>
 
-<div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-opacity duration-500" class:opacity-0={!contentVisible} class:opacity-100={contentVisible}>
+<div
+	class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-opacity duration-500"
+	class:opacity-0={!contentVisible}
+	class:opacity-100={contentVisible}
+>
 	{#if !$cart || !$cart.items || $cart.items.length === 0}
 		<!-- Empty Cart View - Full Width Layout -->
 		<div class="flex flex-col items-center justify-center py-24 px-4">
@@ -58,13 +62,11 @@
 				{m.cart_empty_message()}
 			</p>
 			<div class="flex flex-col sm:flex-row gap-4">
-				<Button href="/products" size="lg" class="px-8">
+				<Button href={localizeHref('/products')} size="lg" class="px-8">
 					{m.cart_browse_products()}
 					<ArrowRight class="ml-2 h-5 w-5" />
 				</Button>
-				<Button href="/" variant="outline" size="lg">
-					Return to Home
-				</Button>
+				<Button href={localizeHref('/')} variant="outline" size="lg">Return to Home</Button>
 			</div>
 		</div>
 	{:else}
@@ -106,56 +108,59 @@
 										{$cart.items.length === 1 ? 'item' : 'items'} in cart</span
 									>
 									<span
-										>{$cart.items.reduce((sum: number, item: typeof $cart.items[0]) => sum + item.quantity, 0)} units total</span
+										>{$cart.items.reduce(
+											(sum: number, item: (typeof $cart.items)[0]) => sum + item.quantity,
+											0
+										)} units total</span
 									>
 								</div>
 
-								{#if $cart.items.some((item: typeof $cart.items[0]) => item.variant.stockStatus === 'low_stock')}
+								{#if $cart.items.some((item: (typeof $cart.items)[0]) => item.variant.stockStatus === 'low_stock')}
 									<p class="text-warning mt-2">Some items are low in stock</p>
 								{/if}
 							</div>
 
 							<!-- Price Breakdown -->
 							<div class="space-y-4 border-t pt-6">
+								<div class="flex justify-between text-base">
+									<span class="text-muted-foreground">{m.cart_tax()}</span>
+									<span class="text-muted-foreground">{m.cart_calculated_at_next_step()}</span>
+								</div>
 
-							<div class="flex justify-between text-base">
-								<span class="text-muted-foreground">{m.cart_tax()}</span>
-								<span class="text-muted-foreground">{m.cart_calculated_at_next_step()}</span>
+								<div class="flex justify-between text-xl font-semibold pt-4 mt-4 border-t">
+									<span>{m.cart_total()}</span>
+									<span>{formatPrice($cart.total)}</span>
+								</div>
 							</div>
 
-							<div class="flex justify-between text-xl font-semibold pt-4 mt-4 border-t">
-								<span>{m.cart_total()}</span>
-								<span>{formatPrice($cart.total)}</span>
+							<!-- Discount code form -->
+
+							<!-- Checkout button -->
+							<div class="border-t pt-6">
+								<Button class="w-full" size="lg" onclick={handleCheckout} disabled={isCheckingOut}>
+									{#if isCheckingOut}
+										<span
+											class="h-5 w-5 block animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"
+										></span>
+										<span class="ml-2">{m.loading()}</span>
+									{:else}
+										{m.cart_proceed_to_checkout()}
+										<ArrowRight class="ml-2 h-4 w-4" />
+									{/if}
+								</Button>
+								<p class="text-center text-xs text-muted-foreground/60 mt-2">
+									{m.cart_secure_transaction()}
+								</p>
 							</div>
-						</div>
 
-						<!-- Discount code form -->
-
-
-						<!-- Checkout button -->
-						<div class="border-t pt-6">
-							<Button class="w-full" size="lg" onclick={handleCheckout} disabled={isCheckingOut}>
-								{#if isCheckingOut}
-									<span class="h-5 w-5 block animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"></span>
-									<span class="ml-2">{m.loading()}</span>
-								{:else}
-									{m.cart_proceed_to_checkout()}
-									<ArrowRight class="ml-2 h-4 w-4" />
-								{/if}
-							</Button>
-							<p class="text-center text-xs text-muted-foreground/60 mt-2">
-								{m.cart_secure_transaction()}
-							</p>
-						</div>
-
-						<!-- Terms Agreement -->
-						<div class="text-xs text-muted-foreground/60 text-center space-y-1.5 border-t pt-6">
-							<p>{m.cart_terms_agreement()}</p>
+							<!-- Terms Agreement -->
+							<div class="text-xs text-muted-foreground/60 text-center space-y-1.5 border-t pt-6">
+								<p>{m.cart_terms_agreement()}</p>
+							</div>
 						</div>
 					</div>
-				</div>
-			{/if}
+				{/if}
+			</div>
 		</div>
-	</div>
-{/if}
+	{/if}
 </div>

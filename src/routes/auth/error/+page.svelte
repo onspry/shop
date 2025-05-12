@@ -11,6 +11,7 @@
 	} from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { AlertTriangle } from 'lucide-svelte';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
 	const { error, email, provider } = data;
 	const formatProvider = (p: string | null) => (p ? p.charAt(0).toUpperCase() + p.slice(1) : '');
@@ -44,10 +45,10 @@
 			</CardContent>
 
 			<CardFooter class="flex flex-col gap-2">
-				<Button variant="default" class="w-full" href="/auth/login">
+				<Button variant="default" class="w-full" href={localizeHref('/auth/login')}>
 					{m.auth_error_return_to_login()}
 				</Button>
-				<Button variant="outline" class="w-full" href="/">
+				<Button variant="outline" class="w-full" href={localizeHref('/')}>
 					{m.auth_error_go_to_homepage()}
 				</Button>
 			</CardFooter>
@@ -63,7 +64,7 @@
 			</CardHeader>
 
 			<CardFooter>
-				<Button variant="default" class="w-full" href="/auth/login">
+				<Button variant="default" class="w-full" href={localizeHref('/auth/login')}>
 					{m.auth_error_try_again()}
 				</Button>
 			</CardFooter>

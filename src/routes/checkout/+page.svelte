@@ -23,6 +23,7 @@
 	import type { PageData } from './$types';
 	import { browser } from '$app/environment';
 	import { enhance } from '$app/forms';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
 	import { countries, addressStructures } from '$lib/config/address-structures';
 	import { checkoutStore } from '$lib/stores/checkout';
@@ -520,8 +521,9 @@
 						<div class="flex items-center justify-between mb-4">
 							<div class="text-sm text-muted-foreground">
 								Already have an account?
-								<a href="/auth/login?redirect=/checkout" class="text-primary hover:underline ml-1"
-									>Log in</a
+								<a
+									href={localizeHref('/auth/login?redirect=/checkout')}
+									class="text-primary hover:underline ml-1">Log in</a
 								>
 							</div>
 						</div>

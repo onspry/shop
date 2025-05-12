@@ -366,5 +366,10 @@
 	"terms_changes_title": "6. Changes to Terms",
 	"terms_changes": "We may update these Terms of Service from time to time. Continued use of our services constitutes acceptance of the revised terms.",
 	"terms_contact_title": "7. Contact",
-	"terms_contact": "If you have any questions about these terms, please contact us at <a href=\"mailto:{email}\" class=\"text-orange-500 hover:text-orange-600 transition-colors\">{email}</a>."
+	"terms_contact": "If you have any questions about these terms, please contact us at <a href=\"mailto:{email}\" class=\"text-orange-500 hover:text-orange-600 transition-colors\">{email}</a>.",
+	"have_account": "Already have an account?",
+	"auth_remember_me": "Remember me",
+	"auth_back_to_login": "Back to login",
+	"auth_login": "Login",
+	"auth_forgot_password_try_again": "Try again with a different email"
 }

@@ -3,6 +3,8 @@
 	import { onMount } from 'svelte';
 	import { XCircle } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { page } from '$app/state';
+	import { localizeHref } from '$lib/paraglide/runtime';
 	let contentVisible = $state(false);
 	onMount(() => {
 		const timer = setTimeout(() => {
@@ -25,5 +27,5 @@
 	<p class="text-muted-foreground mb-8 text-center max-w-md text-lg">
 		{error?.message ?? 'An unexpected error occurred. Please try again later.'}
 	</p>
-	<Button href="/" variant="default">Return to Home</Button>
+	<Button href={localizeHref('/')} variant="default">Return to Home</Button>
 </div>

@@ -26,8 +26,16 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 };
 
 // Paraglide middleware
-const paraglideHandle: Handle = ({ event, resolve }) =>
-	paraglideMiddleware(event.request, ({ request: localizedRequest, locale }) => {
+const paraglideHandle: Handle = ({ event, resolve }) => {
+	// Skip language processing for static assets and favicon requests
+	const path = new URL(event.request.url).pathname;
+	const isStaticAsset = path.match(/\.(ico|png|jpg|jpeg|gif|svg|webp|mp4|webm|ogg|mp3|wav|pdf|txt|xml|json|woff|woff2|ttf|eot)$/i);
+
+	if (isStaticAsset) {
+		return resolve(event);
+	}
+
+	return paraglideMiddleware(event.request, ({ request: localizedRequest, locale }) => {
 		event.request = localizedRequest;
 
 		// Always use 'en' as fallback if locale is undefined
@@ -48,6 +56,7 @@ const paraglideHandle: Handle = ({ event, resolve }) =>
 			}
 		});
 	});
+};
 
 /**
  * The handle hook is required for:

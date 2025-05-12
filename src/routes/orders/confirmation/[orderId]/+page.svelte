@@ -7,6 +7,7 @@
 	import { formatDateTime, formatEstimatedDelivery } from '$lib/utils/date';
 	import { CheckCircle, Package, Truck, ShoppingBag, ArrowRight, CreditCard } from 'lucide-svelte';
 	import * as m from '$lib/paraglide/messages';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
 	// Get the order data from the server
 	export let data: PageData;
@@ -14,8 +15,6 @@
 
 	// Calculate estimated delivery date (7 days from order date)
 	const estimatedDelivery = formatEstimatedDelivery(order.createdAt, 7);
-
-
 </script>
 
 <div class="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -171,7 +170,8 @@
 				<CardContent>
 					<div class="space-y-2">
 						<p class="font-medium">
-							{order.shippingAddress.firstName} {order.shippingAddress.lastName}
+							{order.shippingAddress.firstName}
+							{order.shippingAddress.lastName}
 						</p>
 						<p>{order.shippingAddress.address1}</p>
 						{#if order.shippingAddress.address2}
@@ -188,17 +188,16 @@
 					</div>
 				</CardContent>
 			</Card>
-
 		</div>
 	</div>
 
 	<!-- Action Buttons -->
 	<div class="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
-		<Button variant="outline" href="/orders" class="flex items-center gap-2">
+		<Button variant="outline" href={localizeHref('/orders')} class="flex items-center gap-2">
 			{m.order_view_all()}
 			<ArrowRight class="h-4 w-4" />
 		</Button>
-		<Button href="/products" class="flex items-center gap-2">
+		<Button href={localizeHref('/products')} class="flex items-center gap-2">
 			{m.order_continue_shopping()}
 			<ShoppingBag class="h-4 w-4" />
 		</Button>

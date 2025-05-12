@@ -13,6 +13,7 @@
 		CardHeader,
 		CardTitle
 	} from '$lib/components/ui/card';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -97,7 +98,7 @@
 		</CardContent>
 
 		<CardFooter class="flex justify-center">
-			<a href="/settings" class="text-sm text-muted-foreground hover:text-primary">
+			<a href={localizeHref('/settings')} class="text-sm text-muted-foreground hover:text-primary">
 				{m.verify_email_change_email_link()}
 			</a>
 		</CardFooter>

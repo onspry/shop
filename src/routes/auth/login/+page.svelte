@@ -17,6 +17,7 @@
 	} from '$lib/components/ui/card';
 	import LoadingSpinner from '$lib/components/loading-spinner.svelte';
 	import { Provider } from '$lib/models/user.js';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
 	// Using $props() instead of export let for Svelte 5
 	let { data } = $props();
@@ -140,17 +141,17 @@
 					use:enhance
 				>
 					{#if $message}
-					<div class="text-sm text-destructive">
-						{#if typeof $message === 'string'}
-							{$message}
-						{:else if typeof $message === 'object'}
-							{#each Object.entries($message) as [field, error]}
-								<p>{error}</p>
-							{/each}
-						{:else}
-							An error occurred during login
-						{/if}
-					</div>
+						<div class="text-sm text-destructive">
+							{#if typeof $message === 'string'}
+								{$message}
+							{:else if typeof $message === 'object'}
+								{#each Object.entries($message) as [field, error]}
+									<p>{error}</p>
+								{/each}
+							{:else}
+								An error occurred during login
+							{/if}
+						</div>
 					{/if}
 					<div class="grid gap-2">
 						<Label for="email">{m.checkout_email()}</Label>
@@ -183,10 +184,14 @@
 						{#if $errors.password}
 							<p class="text-sm text-destructive">{$errors.password}</p>
 						{/if}
-					</div>				
+					</div>
 
-					<div class="text-sm">
-						<a href="/auth/forgot-password" class="text-muted-foreground hover:text-primary">
+					<div class="flex items-center justify-between">
+						<Label for="remember">{m.auth_remember_me()}</Label>
+						<a
+							href={localizeHref('/auth/forgot-password')}
+							class="text-muted-foreground hover:text-primary"
+						>
 							{m.auth_forgot_password()}
 						</a>
 					</div>
@@ -209,7 +214,9 @@
 			<p class="text-sm text-muted-foreground">
 				Don't have an account?
 				<a
-					href={`/auth/register${redirectTo !== '/' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`}
+					href={localizeHref(
+						`/auth/register${redirectTo !== '/' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`
+					)}
 					class="font-medium hover:text-primary"
 				>
 					Sign up

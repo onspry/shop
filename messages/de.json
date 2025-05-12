@@ -366,5 +366,10 @@
 	"terms_changes_title": "6. Änderungen der Bedingungen",
 	"terms_changes": "Wir können diese Nutzungsbedingungen von Zeit zu Zeit aktualisieren. Die fortgesetzte Nutzung unserer Dienste stellt die Annahme der überarbeiteten Bedingungen dar.",
 	"terms_contact_title": "7. Kontakt",
-	"terms_contact": "Wenn Sie Fragen zu diesen Bedingungen haben, kontaktieren Sie uns bitte unter <a href=\"mailto:{email}\" class=\"text-orange-500 hover:text-orange-600 transition-colors\">{email}</a>."
+	"terms_contact": "Wenn Sie Fragen zu diesen Bedingungen haben, kontaktieren Sie uns bitte unter <a href=\"mailto:{email}\" class=\"text-orange-500 hover:text-orange-600 transition-colors\">{email}</a>.",
+	"have_account": "Haben Sie bereits ein Konto?",
+	"auth_remember_me": "Angemeldet bleiben",
+	"auth_back_to_login": "Zurück zur Anmeldung",
+	"auth_login": "Anmelden",
+	"auth_forgot_password_try_again": "Mit einer anderen E-Mail-Adresse versuchen"
 }

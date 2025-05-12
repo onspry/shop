@@ -19,6 +19,7 @@
 	import { toast } from 'svelte-sonner';
 	import { enhance } from '$app/forms';
 	import { cart } from '$lib/stores/cart';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
 	// Props
 	let {
@@ -224,7 +225,7 @@
 			toast.success(`${product.name} added to your cart!`, {
 				action: {
 					label: 'View Cart',
-					onClick: () => goto('/cart')
+					onClick: () => goto(localizeHref('/cart'))
 				},
 				duration: 3000 // Shorter duration for success toast
 			});
@@ -508,10 +509,14 @@
 
 						{#if addedToCart}
 							<div class="flex justify-between gap-3 mt-3">
-								<a href="/cart" class="flex-1" data-sveltekit-preload-data="hover">
+								<a href={localizeHref('/cart')} class="flex-1" data-sveltekit-preload-data="hover">
 									<Button variant="outline" class="w-full">{m.view_cart()}</Button>
 								</a>
-								<a href="/checkout" class="flex-1" data-sveltekit-preload-data="hover">
+								<a
+									href={localizeHref('/checkout')}
+									class="flex-1"
+									data-sveltekit-preload-data="hover"
+								>
 									<Button variant="outline" class="w-full">{m.checkout()}</Button>
 								</a>
 							</div>

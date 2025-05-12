@@ -4,6 +4,7 @@
 	import { CheckCircle, ShoppingBag, ArrowRight } from 'lucide-svelte';
 	import * as m from '$lib/paraglide/messages';
 	import { userStore } from '$lib/stores/auth';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
 	// Get user status
 	const user = $derived($userStore);
@@ -41,17 +42,21 @@
 	<!-- Action Buttons -->
 	<div class="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
 		{#if user}
-			<Button variant="outline" href="/orders" class="flex items-center gap-2">
+			<Button variant="outline" href={localizeHref('/orders')} class="flex items-center gap-2">
 				{m.order_view_all()}
 				<ArrowRight class="h-4 w-4" />
 			</Button>
 		{:else}
-			<Button variant="outline" href="/auth/register" class="flex items-center gap-2">
+			<Button
+				variant="outline"
+				href={localizeHref('/auth/register')}
+				class="flex items-center gap-2"
+			>
 				Create Account
 				<ArrowRight class="h-4 w-4" />
 			</Button>
 		{/if}
-		<Button href="/products" class="flex items-center gap-2">
+		<Button href={localizeHref('/products')} class="flex items-center gap-2">
 			{m.order_continue_shopping()}
 			<ShoppingBag class="h-4 w-4" />
 		</Button>

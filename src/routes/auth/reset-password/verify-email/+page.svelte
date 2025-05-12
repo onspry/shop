@@ -15,6 +15,7 @@
 		CardHeader,
 		CardTitle
 	} from '$lib/components/ui/card';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
 	// Using $props() instead of export let for Svelte 5
 	let { data } = $props();
@@ -84,9 +85,14 @@
 		</CardContent>
 
 		<CardFooter class="flex justify-center">
-			<a href="/auth/forgot-password" class="text-sm text-muted-foreground hover:text-primary">
-				Try again with a different email
-			</a>
+			<div class="text-center mt-4">
+				<a
+					href={localizeHref('/auth/forgot-password')}
+					class="text-sm text-muted-foreground hover:text-primary"
+				>
+					{m.auth_forgot_password_try_again()}
+				</a>
+			</div>
 		</CardFooter>
 	</Card>
 </div>

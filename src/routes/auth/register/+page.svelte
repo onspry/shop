@@ -2,7 +2,7 @@
 	import { superForm } from 'sveltekit-superforms';
 	import { zod } from 'sveltekit-superforms/adapters';
 	import { registerSchema } from '$lib/schemas/auth';
-	import * as m from '$lib/paraglide/messages.js';
+	import { m } from '$lib/paraglide/messages.js';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -16,6 +16,7 @@
 	} from '$lib/components/ui/card';
 	import LoadingSpinner from '$lib/components/loading-spinner.svelte';
 	import PasswordStrengthIndicator from '$lib/components/password-strength-indicator.svelte';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
 	// Using $props() instead of export let for Svelte 5
 	let { data } = $props();
@@ -32,7 +33,7 @@
 >
 	<Card class="w-full max-w-md">
 		<CardHeader>
-			<CardTitle>Create an account</CardTitle>
+			<CardTitle>{m.checkout_create_account()}</CardTitle>
 			<CardDescription>Fill in your details to create a new account.</CardDescription>
 		</CardHeader>
 
@@ -128,10 +129,12 @@
 		</CardContent>
 
 		<CardFooter>
-			<p class="text-sm text-muted-foreground">
-				Already have an account?
-				<a href="/auth/login" class="font-medium hover:text-primary ml-1">{m.sign_in()}</a>
-			</p>
+			<div class="text-sm text-center">
+				{m.have_account()}
+				<a href={localizeHref('/auth/login')} class="font-medium hover:text-primary ml-1"
+					>{m.sign_in()}</a
+				>
+			</div>
 		</CardFooter>
 	</Card>
 </div>
