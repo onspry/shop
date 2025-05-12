@@ -19,7 +19,8 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => {
             path: '/',
             httpOnly: true,
             sameSite: 'strict',
-            maxAge: 60 * 60 * 24 * 30 // 30 days
+            maxAge: 60 * 60 * 24 * 30, // 30 days
+            domain: '' // Explicitly set empty domain for same-origin only
         });
     }
 
@@ -45,12 +46,16 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => {
             path: '/',
             httpOnly: true,
             sameSite: 'strict',
-            maxAge: 60 * 60 * 24 * 30 // 30 days
+            maxAge: 60 * 60 * 24 * 30, // 30 days
+            domain: '' // Explicitly set empty domain for same-origin only
         });
     }
 
     return {
         user,
-        cart: cartData
+        cart: cartData,
+        paraglide: {
+            lang: locals.paraglide?.lang || 'en'
+        }
     };
 };

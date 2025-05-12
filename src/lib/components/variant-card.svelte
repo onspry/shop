@@ -1,10 +1,10 @@
 <script lang="ts">
 	import type { ProductVariantViewModel } from '$lib/models/product';
 	import { Card } from '$lib/components/ui/card';
-	import * as m from '$lib/paraglide/messages/en.js';
+	import * as m from '$lib/paraglide/messages.js';
 	import { formatPrice } from '$lib/utils/price';
 	import { Check } from 'lucide-svelte';
-import { AppImage } from '$lib/components/ui/app-image';
+	import { AppImage } from '$lib/components/ui/app-image';
 	import { fade } from 'svelte/transition';
 
 	let { variant, isSelected, onClick, showPrice, disabled } = $props<{
@@ -65,7 +65,9 @@ import { AppImage } from '$lib/components/ui/app-image';
 
 		<!-- Variant Visual -->
 		<div class="mb-3 flex justify-center">
-			<div class="relative w-16 h-16 overflow-hidden rounded-md group flex items-center justify-center">
+			<div
+				class="relative w-16 h-16 overflow-hidden rounded-md group flex items-center justify-center"
+			>
 				<AppImage
 					src={variantImageUrl}
 					alt={variant.name}

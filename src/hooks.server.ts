@@ -1,7 +1,7 @@
 import { sequence } from '@sveltejs/kit/hooks';
-import { i18n } from '$lib/i18n';
 import type { Handle } from '@sveltejs/kit';
 import { validateSessionToken, setSessionTokenCookie, deleteSessionTokenCookie, sessionCookieName } from "$lib/server/auth/session";
+import { paraglideMiddleware } from '$lib/paraglide/server';
 
 const handleAuth: Handle = async ({ event, resolve }) => {
 	const sessionToken = event.cookies.get(sessionCookieName);
@@ -25,5 +25,34 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
-const handleParaglide: Handle = i18n.handle();
-export const handle: Handle = sequence(handleAuth, handleParaglide);
+// Paraglide middleware
+const paraglideHandle: Handle = ({ event, resolve }) =>
+	paraglideMiddleware(event.request, ({ request: localizedRequest, locale }) => {
+		event.request = localizedRequest;
+
+		// Always use 'en' as fallback if locale is undefined
+		const safeLocale = locale || 'en';
+
+		// Add locale to event.locals to make it accessible in server-side rendering
+		event.locals.paraglide = {
+			locale: safeLocale,
+			lang: safeLocale,
+			textDirection: 'ltr'
+		};
+
+		return resolve(event, {
+			transformPageChunk: ({ html }) => {
+				return html
+					.replace('%lang%', safeLocale)
+					.replace('%paraglide.textDirection%', 'ltr'); // All supported languages use left-to-right
+			}
+		});
+	});
+
+/**
+ * The handle hook is required for:
+ * 1. Setting the paraglide_lang cookie when language changes
+ * 2. Adding language info to event.locals.paraglide
+ * 3. Setting the lang and dir attributes on the HTML element
+ */
+export const handle: Handle = sequence(handleAuth, paraglideHandle);

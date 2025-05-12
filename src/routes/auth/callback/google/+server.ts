@@ -82,7 +82,8 @@ export async function GET(event: RequestEvent): Promise<Response> {
             httpOnly: true,
             sameSite: 'lax',
             secure: process.env.NODE_ENV === 'production',
-            expires: session.expiresAt
+            expires: session.expiresAt,
+            domain: ''
         });
 
         // Set the cart session cookie
@@ -91,7 +92,8 @@ export async function GET(event: RequestEvent): Promise<Response> {
             httpOnly: true,
             sameSite: 'lax',
             secure: process.env.NODE_ENV === 'production',
-            maxAge: 60 * 60 * 24 * 30 // 30 days
+            maxAge: 60 * 60 * 24 * 30, // 30 days
+            domain: ''
         });
 
         // Clean up OAuth cookies
@@ -153,7 +155,8 @@ export async function GET(event: RequestEvent): Promise<Response> {
         httpOnly: true,
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production',
-        expires: session.expiresAt
+        expires: session.expiresAt,
+        domain: ''
     });
 
     // Set the cart session cookie
@@ -162,7 +165,8 @@ export async function GET(event: RequestEvent): Promise<Response> {
         httpOnly: true,
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 24 * 30 // 30 days
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+        domain: ''
     });
 
     // Clean up OAuth cookies

@@ -82,20 +82,22 @@ export async function sendVerificationEmail(email: string, code: string): Promis
 export function setEmailVerificationRequestCookie(event: RequestEvent, request: EmailVerificationRequest): void {
     event.cookies.set("email_verification", request.id, {
         httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 10, // 10 minutes
+        domain: '', // Explicitly set empty domain for same-origin only
         path: "/",
-        secure: import.meta.env.PROD,
-        sameSite: "lax",
-        expires: request.expiresAt
+        sameSite: "lax"
     });
 }
 
 export function deleteEmailVerificationRequestCookie(event: RequestEvent): void {
     event.cookies.set("email_verification", "", {
         httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        expires: new Date(0),
+        domain: '', // Explicitly set empty domain for same-origin only
         path: "/",
-        secure: import.meta.env.PROD,
-        sameSite: "lax",
-        maxAge: 0
+        sameSite: "lax"
     });
 }
 

@@ -1,20 +1,31 @@
 <script lang="ts">
-	import * as m from '$lib/paraglide/messages.js';
+	import { m } from '$lib/paraglide/messages.js';
+
 	import AuthSection from './auth-section.svelte';
 	import DarkmodeToggle from './darkmode-toggle.svelte';
+	import LanguageSwitcher from './language-switcher.svelte';
 	import CartIcon from './cart-icon.svelte';
 	import { Sheet, SheetTrigger, SheetContent } from '../components/ui/sheet';
-	import Button from '../components/ui/button/button.svelte';
+
+	// Mobile menu state
 	let open = $state(false);
-	// No reactive state is required for this simple nav component.
-	// Text content uses localization keys (e.g., $t('nav_home')) for multilingual support.
+
+	// Wrap message function to protect against undefined locale
+	function safeMessage(messageFn: (...args: any[]) => string, ...args: any[]): string {
+		try {
+			return messageFn(...args);
+		} catch (error) {
+			// If message function throws, return a fallback
+			return 'Onspry Shop';
+		}
+	}
 </script>
 
 <nav class="h-full w-full">
 	<div class="flex h-full w-full items-center justify-between">
 		<div class="flex items-center gap-8">
-			<a href="/" class="flex h-full items-center" aria-label={m.shop_title()}>
-				<div class="logo" aria-label={m.shop_title()}></div>
+			<a href="/" class="flex h-full items-center" aria-label={safeMessage(m.shop_title)}>
+				<div class="logo" aria-label={safeMessage(m.shop_title)}></div>
 			</a>
 			<!-- Desktop nav -->
 			<div class="hidden md:flex items-center gap-6">
@@ -29,7 +40,10 @@
 			<div class="md:hidden">
 				<Sheet bind:open>
 					<SheetTrigger>
-						<Button variant="ghost" size="icon" aria-label="Open menu">
+						<div
+							class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 w-10 p-0 hover:bg-accent hover:text-accent-foreground"
+							aria-label="Open menu"
+						>
 							<svg
 								width="24"
 								height="24"
@@ -38,7 +52,7 @@
 								stroke-width="2"
 								viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" /></svg
 							>
-						</Button>
+						</div>
 					</SheetTrigger>
 					<SheetContent side="left" class="p-6">
 						<nav class="flex flex-col gap-4">
@@ -47,6 +61,12 @@
 							<a href="/products" class="text-base font-medium" onclick={() => (open = false)}
 								>Products</a
 							>
+
+							<!-- Mobile language switcher placeholder -->
+							<div class="mt-4 pt-4 border-t border-border">
+								<p class="text-sm text-muted-foreground mb-2">Language</p>
+								<LanguageSwitcher isMobile={true} />
+							</div>
 						</nav>
 					</SheetContent>
 				</Sheet>
@@ -54,6 +74,7 @@
 		</div>
 		<div class="flex items-center gap-4">
 			<CartIcon />
+			<LanguageSwitcher />
 			<DarkmodeToggle />
 			<AuthSection />
 		</div>

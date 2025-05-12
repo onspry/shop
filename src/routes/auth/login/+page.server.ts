@@ -101,7 +101,8 @@ export const actions: Actions = {
                 path: '/',
                 httpOnly: true,
                 sameSite: 'strict',
-                maxAge: 60 * 60 * 24 * 30 // 30 days
+                maxAge: 60 * 60 * 24 * 30, // 30 days
+                domain: '' // Explicitly set empty domain for same-origin only
             });
         }
 

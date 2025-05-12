@@ -76,14 +76,16 @@ export async function GET(event: RequestEvent): Promise<Response> {
             httpOnly: true,
             sameSite: 'lax',
             secure: process.env.NODE_ENV === 'production',
-            expires: session.expiresAt
+            expires: session.expiresAt,
+            domain: ''
         });
         event.cookies.set('cart-session', cartSessionId, {
             path: '/',
             httpOnly: true,
             sameSite: 'lax',
             secure: process.env.NODE_ENV === 'production',
-            maxAge: 60 * 60 * 24 * 30 // 30 days
+            maxAge: 60 * 60 * 24 * 30, // 30 days
+            domain: ''
         });
         event.cookies.delete('oauth_redirect', { path: '/' });
         event.cookies.delete('facebook_oauth_state', { path: '/' });
@@ -140,14 +142,16 @@ export async function GET(event: RequestEvent): Promise<Response> {
         httpOnly: true,
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production',
-        expires: session.expiresAt
+        expires: session.expiresAt,
+        domain: ''
     });
     event.cookies.set('cart-session', cartSessionId, {
         path: '/',
         httpOnly: true,
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 24 * 30 // 30 days
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+        domain: ''
     });
     event.cookies.delete('oauth_redirect', { path: '/' });
     event.cookies.delete('facebook_oauth_state', { path: '/' });

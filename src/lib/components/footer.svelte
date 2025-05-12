@@ -6,7 +6,7 @@
 
 <div class="flex h-full w-full items-center justify-between">
 	<p class="text-sm text-muted-foreground">
-		&copy; {currentYear} Onspry. {m.footer_text()}
+		&copy; {currentYear} Onspry. {m.footer_text({ year: currentYear })}
 	</p>
 	<nav class="flex gap-4 text-sm text-muted-foreground">
 		<a href="/privacy" class="hover:underline hover:text-foreground">Privacy</a>

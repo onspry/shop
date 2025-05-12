@@ -1,18 +1,18 @@
 <script lang="ts">
-	import * as m from '$lib/paraglide/messages.js';
+	import { keyboard_name } from '$lib/paraglide/messages/_index.js';
 	import { AppImage } from '$lib/components/ui/app-image';
 </script>
 
 <div class="relative w-full overflow-hidden">
 	<div class="flex flex-col items-center justify-center py-12 w-full">
 		<h1 class="font-onest text-6xl font-light text-primary md:text-8xl mb-8">
-			{m.keyboard_name()}
+			{keyboard_name()}
 		</h1>
 
 		<div class="w-full relative">
 			<AppImage
 				src="/images/products/thypoono/main.jpg"
-				alt={m.keyboard_name()}
+				alt={keyboard_name()}
 				width="100%"
 				aspectRatio="16/9"
 				className="w-full rounded-lg dark:opacity-90"

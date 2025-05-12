@@ -1,12 +1,22 @@
 <script lang="ts">
 	import { ShoppingCart } from 'lucide-svelte/icons';
 	import { cart } from '$lib/stores/cart';
-	import * as m from '$lib/paraglide/messages';
+	import * as m from '$lib/paraglide/messages.js';
 
 	// Simple state, with no derived reactivity
 	let currentCount = $state(0);
 	let shouldAnimate = $state(false);
 	let initialized = $state(false);
+
+	// Wrap message function to protect against undefined locale
+	function safeMessage(messageFn: (...args: any[]) => string, ...args: any[]): string {
+		try {
+			return messageFn(...args);
+		} catch (error) {
+			// If message function throws, return a fallback
+			return 'Cart';
+		}
+	}
 
 	// Update the count when the cart store changes
 	$effect(() => {
@@ -33,7 +43,7 @@
 	});
 </script>
 
-<a href="/cart" class="relative" aria-label={m.nav_cart()}>
+<a href="/cart" class="relative" aria-label={safeMessage(m.nav_cart)}>
 	<ShoppingCart strokeWidth={1.5} size={24} />
 
 	{#if currentCount > 0}

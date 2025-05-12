@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { sendEmail } from './send-email';
 import type { OrderViewModel } from '$lib/models/order';
+import { formatPrice } from '$lib/utils/price';
 
 const templatePath = join(process.cwd(), 'src/lib/server/email/templates/order-confirmation.html');
 
@@ -45,14 +46,14 @@ export async function sendOrderConfirmationEmail(order: OrderViewModel): Promise
             <div class="order-item">
                 <p><strong>${item.name}</strong> - ${item.variantName}</p>
                 <p>Quantity: ${item.quantity}</p>
-                <p>Price: $${item.unitPrice.toFixed(2)}</p>
-                <p>Total: $${item.totalPrice.toFixed(2)}</p>
+                <p>Price: ${formatPrice(item.unitPrice)}</p>
+                <p>Total: ${formatPrice(item.totalPrice)}</p>
             </div>
         `).join('');
 
         // Format the discount amount if present
         const discountAmountHtml = order.discountAmount ?
-            `<p><strong>Discount:</strong> -$${order.discountAmount.toFixed(2)}</p>` : '';
+            `<p><strong>Discount:</strong> -${formatPrice(order.discountAmount)}</p>` : '';
 
         // Format the shipping address with validation
         const shippingAddressHtml = `
@@ -69,11 +70,11 @@ export async function sendOrderConfirmationEmail(order: OrderViewModel): Promise
             .replace('{orderNumber}', order.orderNumber)
             .replace('{orderDate}', new Date(order.createdAt).toLocaleDateString())
             .replace('{orderItems}', orderItemsHtml)
-            .replace('{subtotal}', order.subtotal.toFixed(2))
-            .replace('{shippingAmount}', order.shippingAmount.toFixed(2))
-            .replace('{taxAmount}', order.taxAmount.toFixed(2))
+            .replace('{subtotal}', formatPrice(order.subtotal))
+            .replace('{shippingAmount}', formatPrice(order.shippingAmount))
+            .replace('{taxAmount}', formatPrice(order.taxAmount))
             .replace('{discountAmount}', discountAmountHtml)
-            .replace('{total}', order.total.toFixed(2))
+            .replace('{total}', formatPrice(order.total))
             .replace('{shippingAddress}', shippingAddressHtml)
             .replace('{orderTrackingUrl}', `/orders/${order.id}`)
             .replace('{currentYear}', new Date().getFullYear().toString());

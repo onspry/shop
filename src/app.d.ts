@@ -1,10 +1,20 @@
 /// <reference types="@sveltejs/kit" />
+
 declare global {
 	namespace App {
 		interface Locals {
 			user: import('$lib/server/auth/auth.server').SessionValidationResult['user'];
 			session: import('$lib/server/auth/auth.server').SessionValidationResult['session'];
+			paraglide: {
+				locale: "en" | "de" | "fr" | "cn";
+				lang: "en" | "de" | "fr" | "cn";
+				textDirection?: "ltr" | "rtl";
+			};
 		}
+
+		// interface PageData {}
+		// interface Error {}
+		// interface Platform {}
 	}
 }
 

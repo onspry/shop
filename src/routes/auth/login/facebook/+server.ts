@@ -16,10 +16,11 @@ export function GET(event: RequestEvent): Response {
     // Set the Facebook OAuth state cookie
     event.cookies.set("facebook_oauth_state", state, {
         httpOnly: true,
-        maxAge: 60 * 10, // 10 minutes
-        secure: import.meta.env.PROD,
+        secure: process.env.NODE_ENV === 'production',
         path: "/",
-        sameSite: "lax"
+        maxAge: 60 * 10, // 10 minutes
+        sameSite: "lax",
+        domain: '' // Explicitly set empty domain for same-origin only
     });
 
     // Store the redirect URL in a cookie
@@ -28,7 +29,8 @@ export function GET(event: RequestEvent): Response {
         maxAge: 60 * 10, // 10 minutes
         secure: import.meta.env.PROD,
         path: "/",
-        sameSite: "lax"
+        sameSite: "lax",
+        domain: '' // Explicitly set empty domain for same-origin only
     });
 
     // Also save the current cart session ID in a temporary cookie
@@ -38,7 +40,8 @@ export function GET(event: RequestEvent): Response {
             maxAge: 60 * 10, // 10 minutes
             secure: import.meta.env.PROD,
             path: "/",
-            sameSite: "lax"
+            sameSite: "lax",
+            domain: '' // Explicitly set empty domain for same-origin only
         });
     }
 

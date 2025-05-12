@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
-	import * as m from '$lib/paraglide/messages/en.js';
+	import * as m from '$lib/paraglide/messages.js';
 	const email = 'support@onspry.com';
 	const gdprUrl = 'https://gdpr-info.eu/';
 	let contentVisible = $state(false);

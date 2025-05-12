@@ -1,6 +1,6 @@
 <script lang="ts">
-	import * as m from '$lib/paraglide/messages.js';
-	import { userStore, authStore } from '$lib/stores/auth';
+	import { m } from '$lib/paraglide/messages.js';
+	import { authStore } from '$lib/stores/auth';
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Avatar from '$lib/components/ui/avatar';
@@ -58,14 +58,14 @@
 					{/if}
 					<Avatar.Image
 						src={$authStore.user.image ?? ''}
-						alt={$authStore.user.firstname ?? ''}
+						alt={$authStore.user.firstName ?? ''}
 						onload={handleImageLoad}
 						onerror={handleImageError}
 						class={!imageLoaded ? 'opacity-0' : 'opacity-100'}
 					/>
 					{#if imageError || !$authStore.user.image}
 						<Avatar.Fallback>
-							{$authStore.user.firstname?.[0]?.toUpperCase() ?? 'U'}
+							{$authStore.user.firstName?.[0]?.toUpperCase() ?? 'U'}
 						</Avatar.Fallback>
 					{/if}
 				</Avatar.Root>

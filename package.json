@@ -24,7 +24,8 @@
 		"db:seed": "tsx scripts/seed.ts",
 		"db:seed:postgres": "node --experimental-specifier-resolution=node scripts/db/seed-postgres.js",
 		"prisma:seed": "node --experimental-specifier-resolution=node prisma/seed.js",
-		"db:init": "prisma migrate reset --force && npm run prisma:seed"
+		"db:init": "prisma migrate reset --force && npm run prisma:seed",
+		"paraglide": "npx inlang paraglide source"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
@@ -81,7 +82,7 @@
 		"@fontsource-variable/onest": "^5.1.1",
 		"@fontsource/inter": "^5.1.1",
 		"@fontsource/onest": "^5.1.1",
-		"@inlang/paraglide-sveltekit": "^0.15.5",
+		"@inlang/paraglide-js": "^2.0.12",
 		"@libsql/client": "^0.14.0",
 		"@melt-ui/svelte": "^0.86.3",
 		"@microsoft/microsoft-graph-client": "^3.0.7",

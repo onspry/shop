@@ -117,7 +117,8 @@ export function setSessionTokenCookie(cookies: Cookies, token: string, expiresAt
         path: '/',
         httpOnly: true,
         sameSite: 'lax' as const,
-        secure: process.env.NODE_ENV === 'production'
+        secure: process.env.NODE_ENV === 'production',
+        domain: ''
     };
 
     cookies.set(sessionCookieName, token, cookieValue);

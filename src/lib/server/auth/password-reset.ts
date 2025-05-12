@@ -134,25 +134,27 @@ export async function validatePasswordResetSessionRequest(event: RequestEvent): 
     return result;
 }
 
-export function setPasswordResetSessionTokenCookie(event: RequestEvent, token: string, expiresAt: Date): void {
+export async function storePasswordResetToken(event: RequestEvent, token: string): Promise<void> {
     console.log("[Password Reset] Setting session cookie");
     event.cookies.set(PASSWORD_RESET_COOKIE_NAME, token, {
-        expires: expiresAt,
-        sameSite: "lax",
         httpOnly: true,
-        path: "/", // Ensure the cookie is available for all paths
-        secure: !import.meta.env.DEV
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 10, // 10 minutes
+        domain: '', // Explicitly set empty domain for same-origin only
+        path: "/",
+        sameSite: "lax"
     });
 }
 
 export function deletePasswordResetSessionTokenCookie(event: RequestEvent): void {
     console.log("[Password Reset] Deleting session cookie");
     event.cookies.set(PASSWORD_RESET_COOKIE_NAME, "", {
-        maxAge: 0,
-        sameSite: "lax",
         httpOnly: true,
-        path: "/", // Ensure the cookie is deleted from all paths
-        secure: !import.meta.env.DEV
+        secure: process.env.NODE_ENV === 'production',
+        expires: new Date(0),
+        domain: '', // Explicitly set empty domain for same-origin only
+        path: "/",
+        sameSite: "lax"
     });
 }
 

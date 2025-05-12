@@ -8,7 +8,7 @@ declare global {
 
 // Prevent multiple instances of Prisma Client in development
 export const prisma = global.prisma || new PrismaClient({
-    log: dev ? ['query', 'error', 'warn'] : ['error']
+    log: dev ? ['error', 'warn'] : ['error']
 });
 
 if (dev) {
