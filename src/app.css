@@ -229,6 +229,38 @@ html.fonts-failed {
       height: 24px;
     }
   }
+  
+  /* List styling for content pages */
+  .prose ul {
+    list-style-type: none;
+    padding-left: 2rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .prose ul li {
+    position: relative;
+    padding-left: 0;
+    margin-bottom: 1rem;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  
+  .prose ul li::before {
+    content: "";
+    position: absolute;
+    left: -1.5rem;
+    top: 0.5em;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: hsl(var(--primary));
+  }
+  
+  .prose ul li strong {
+    color: hsl(var(--primary));
+    font-weight: 600;
+  }
 }
 
 /* Error indicator animation */

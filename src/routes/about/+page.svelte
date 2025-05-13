@@ -4,9 +4,14 @@
 	import * as m from '$lib/paraglide/messages';
 
 	// Get data from the server using the new runes syntax
-	const { content } = $props();
+	const props = $props();
 
-	// Content visibility control
+	// The content is structured in the data property
+	const { data } = props;
+	const title = data?.title || 'About Us';
+	const intro = data?.intro || '';
+	const sections = data?.sections || [];
+
 	let contentVisible = $state(false);
 
 	// Set timeout to prevent flash of content
@@ -25,12 +30,30 @@
 	class:opacity-100={contentVisible}
 >
 	<div class="text-only">
-		<!-- Render the dynamically loaded Markdown content -->
 		<div class="space-y-12">
-			<div class="prose prose-lg dark:prose-invert max-w-none">
-				{@html content}
+			<!-- Main Title Section -->
+			<div class="space-y-4">
+				<h1 class="text-4xl font-medium">{title}</h1>
+
+				<!-- Intro Content -->
+				{#if intro}
+					<div class="prose prose-lg dark:prose-invert max-w-none">
+						{@html intro}
+					</div>
+				{/if}
 			</div>
 
+			<!-- Content Sections -->
+			{#each sections as section}
+				<div class="space-y-8">
+					<h2 class="text-2xl font-medium">{section.title}</h2>
+					<div class="prose prose-lg dark:prose-invert max-w-none">
+						{@html section.content}
+					</div>
+				</div>
+			{/each}
+
+			<!-- Back Button -->
 			<div class="flex justify-center pt-8">
 				<Button variant="outline" onclick={() => window.history.back()}>{m.button_back()}</Button>
 			</div>

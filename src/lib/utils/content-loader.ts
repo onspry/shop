@@ -40,10 +40,8 @@ export async function loadContent(page: string, locale: Locale = baseLocale): Pr
             }
         }
 
-        // If no content is found, return an empty string
         return { html: '' };
-    } catch (error) {
-        console.error(`Error loading content for ${page} in ${locale}:`, error);
+    } catch {
         return { html: '' };
     }
 } 

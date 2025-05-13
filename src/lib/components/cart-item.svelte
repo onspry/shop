@@ -189,7 +189,6 @@
 								if (result.type === 'success') {
 									// Update the cart store with the returned data
 									if (result.data?.cart) {
-										console.log('[CART] Received updated cart data:', result.data.cart);
 										safeUpdateCart(result.data.cart);
 									} else {
 										console.warn('[CART] No cart data received in result:', result);

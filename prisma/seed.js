@@ -441,7 +441,6 @@ async function main() {
       ]
     });
 
-    console.log('Database seeded successfully!');
   } catch (error) {
     console.error('Error seeding database:', error);
     throw error;
