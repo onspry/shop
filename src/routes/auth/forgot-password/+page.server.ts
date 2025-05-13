@@ -3,7 +3,7 @@ import {
     createPasswordResetSession,
     invalidateUserPasswordResetSessions,
     sendPasswordResetEmail,
-    setPasswordResetSessionTokenCookie,
+    storePasswordResetToken,
     PASSWORD_RESET_COOKIE_NAME
 } from "$lib/server/auth/password-reset"
 import { generateSessionToken } from "$lib/server/auth/session";
@@ -56,7 +56,7 @@ export const actions: Actions = {
             await sendPasswordResetEmail(session.email, session.code);
 
             // Set the cookie with the proper path
-            setPasswordResetSessionTokenCookie(event, sessionToken, session.expiresAt);
+            storePasswordResetToken(event, sessionToken);
 
             // Debug cookie
             const cookieValue = event.cookies.get(PASSWORD_RESET_COOKIE_NAME);

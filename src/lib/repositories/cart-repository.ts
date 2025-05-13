@@ -193,7 +193,10 @@ export class CartRepository {
             // in a more optimized way with the initial query
 
             // Return the cart data directly
-            return cartData as CartWithItems;
+            return {
+                ...cartData,
+                // Map any other properties that need transformation
+            } as CartWithItems;
         } catch (error) {
             console.error('Error fetching cart with items:', error);
             return null;
