@@ -6,6 +6,7 @@
 	import Autoplay from 'embla-carousel-autoplay';
 	import type { AutoplayType } from 'embla-carousel-autoplay';
 	import { onMount } from 'svelte';
+	import * as m from '$lib/paraglide/messages';
 
 	let { data } = $props<{ data: { catalogue: CatalogueViewModel } }>();
 
@@ -34,9 +35,13 @@
 	}
 
 	// Get products for the layout, falling back if specific categories aren't found
-	const mainProduct = $derived(getProductByCategory('KEYBOARD') || getFallbackProduct(0));
-	const topAccessory = $derived(getProductByCategory('SWITCH') || getFallbackProduct(1));
-	const bottomAccessory = $derived(getProductByCategory('KEYCAP') || getFallbackProduct(2));
+	const mainProduct = $derived(
+		getProductByCategory(m.category_keyboard()) || getFallbackProduct(0)
+	);
+	const topAccessory = $derived(getProductByCategory(m.category_switch()) || getFallbackProduct(1));
+	const bottomAccessory = $derived(
+		getProductByCategory(m.category_keycap()) || getFallbackProduct(2)
+	);
 
 	// Get all accessories for the carousel
 	let accessories = $state<ProductViewModel[]>([]);
@@ -65,7 +70,7 @@
 	// Carousel options for extremely smooth, continuous movement
 	const carouselOptions = {
 		loop: true,
-		align: "start" as const, // Start alignment for more predictable movement
+		align: 'start' as const, // Start alignment for more predictable movement
 		skipSnaps: false, // Don't skip snap points for more predictable movement
 		dragFree: true, // Enable free dragging for smoother transitions
 		startIndex: 0,
@@ -75,8 +80,6 @@
 		speed: 0.1 // Very slow speed factor
 	};
 </script>
-
-
 
 <div
 	class="transition-opacity duration-500"
@@ -131,31 +134,26 @@
 
 	<!-- Accessories Carousel -->
 	<div class="mt-8 mb-6 md:mt-12">
-		<h2 class="text-xl md:text-2xl font-bold mb-3 md:mb-4">More Accessories</h2>
-		<div
-			class="w-full"
-			role="region"
-			aria-label="Accessories carousel"
-		>
+		<h2 class="text-xl md:text-2xl font-bold mb-3 md:mb-4">{m.product_more_accessories()}</h2>
+		<div class="w-full" role="region" aria-label={m.aria_accessories_carousel()}>
 			<Carousel.Root
 				plugins={[createAutoplayPlugin()]}
 				opts={carouselOptions}
 				class="w-full overflow-hidden"
 			>
-			<Carousel.Content class="-ml-4 md:-ml-6 flex transition-transform duration-30000 ease-linear">
-				{#each accessories as product (product.id)}
-					<Carousel.Item class="pl-4 md:pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 transition-opacity duration-1000">
-						<div class="p-2 h-[350px]">
-							<ProductCard {product} class="h-full" />
-						</div>
-					</Carousel.Item>
-				{/each}
-			</Carousel.Content>
-			<div class="flex justify-center items-center mt-4">
-				<div class="text-sm text-muted-foreground">
-					Continuous scrolling
-				</div>
-			</div>
+				<Carousel.Content
+					class="-ml-4 md:-ml-6 flex transition-transform duration-30000 ease-linear"
+				>
+					{#each accessories as product (product.id)}
+						<Carousel.Item
+							class="pl-4 md:pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 transition-opacity duration-1000"
+						>
+							<div class="p-2 h-[350px]">
+								<ProductCard {product} class="h-full" />
+							</div>
+						</Carousel.Item>
+					{/each}
+				</Carousel.Content>
 			</Carousel.Root>
 		</div>
 	</div>

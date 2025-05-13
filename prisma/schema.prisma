@@ -93,7 +93,8 @@ model Product {
   slug             String    @unique
   category         String
   name             String
-  description      String
+  description      String    // Keep as fallback
+  descriptions     Json      @default("{}") // Multilingual descriptions
   features         String[]  @default([])
   specifications   Json      @default("{}")
   isAccessory      Boolean   @default(false) @map("is_accessory")

@@ -10,7 +10,11 @@
 		&copy; {currentYear} Onspry. {m.footer_text({ year: currentYear })}
 	</p>
 	<nav class="flex gap-4 text-sm text-muted-foreground">
-		<a href={localizeHref('/privacy')} class="hover:underline hover:text-foreground">Privacy</a>
-		<a href={localizeHref('/terms')} class="hover:underline hover:text-foreground">Terms</a>
+		<a href={localizeHref('/privacy')} class="hover:underline hover:text-foreground"
+			>{m.footer_privacy()}</a
+		>
+		<a href={localizeHref('/terms')} class="hover:underline hover:text-foreground"
+			>{m.footer_terms()}</a
+		>
 	</nav>
 </div>

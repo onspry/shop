@@ -2,6 +2,7 @@ import type { PageServerLoad } from './$types';
 import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types';
 import { cartRepository } from '$lib/repositories/cart-repository';
+import * as m from '$lib/paraglide/messages';
 
 export const load: PageServerLoad = async ({ cookies, locals }) => {
     // Get session or user ID
@@ -43,7 +44,7 @@ export const load: PageServerLoad = async ({ cookies, locals }) => {
                 total: 0,
                 itemCount: 0
             },
-            error: 'Failed to load cart'
+            error: m.error_add_to_cart_failed
         };
     }
 };
@@ -58,7 +59,7 @@ export const actions: Actions = {
         const quantity = parseInt(formData.get('quantity')?.toString() || '1', 10);
 
         if (!productVariantId) {
-            return fail(400, { message: 'Product variant ID is required' });
+            return fail(400, { message: m.error_product_variant_required });
         }
 
         try {
@@ -66,7 +67,7 @@ export const actions: Actions = {
             const userId = locals.user?.id;
 
             if (!sessionId && !userId) {
-                return fail(400, { message: 'No session or user found' });
+                return fail(400, { message: m.error_no_session });
             }
 
             // Extract composites from form data
@@ -96,7 +97,7 @@ export const actions: Actions = {
             return { success: true };
         } catch (error) {
             console.error('Error adding item to cart:', error);
-            return fail(500, { message: 'Failed to add item to cart' });
+            return fail(500, { message: m.error_add_to_cart_failed });
         }
     },
 
@@ -109,7 +110,7 @@ export const actions: Actions = {
         const quantity = parseInt(formData.get('quantity')?.toString() || '1', 10);
 
         if (!cartItemId) {
-            return fail(400, { message: 'Cart item ID is required' });
+            return fail(400, { message: m.error_cart_item_id_required });
         }
 
         try {
@@ -126,7 +127,7 @@ export const actions: Actions = {
             return { success: true, cart: updatedCart };
         } catch (error) {
             console.error('Error updating cart item:', error);
-            return fail(500, { message: 'Failed to update cart item' });
+            return fail(500, { message: m.error_update_cart_failed });
         }
     },
 
@@ -138,7 +139,7 @@ export const actions: Actions = {
         const cartItemId = formData.get('cartItemId')?.toString();
 
         if (!cartItemId) {
-            return fail(400, { message: 'Cart item ID is required' });
+            return fail(400, { message: m.error_cart_item_id_required });
         }
 
         try {
@@ -154,7 +155,7 @@ export const actions: Actions = {
             return { success: true, cart: updatedCart };
         } catch (error) {
             console.error('Error removing cart item:', error);
-            return fail(500, { message: 'Failed to remove cart item' });
+            return fail(500, { message: m.error_remove_cart_failed });
         }
     },
 
@@ -166,7 +167,7 @@ export const actions: Actions = {
         const discountCode = formData.get('discountCode')?.toString();
 
         if (!discountCode) {
-            return fail(400, { message: 'Discount code is required' });
+            return fail(400, { message: m.error_discount_code_required });
         }
 
         try {
@@ -174,7 +175,7 @@ export const actions: Actions = {
             const userId = locals.user?.id;
 
             if (!sessionId && !userId) {
-                return fail(400, { message: 'No session or user found' });
+                return fail(400, { message: m.error_no_session });
             }
 
             // Get cart
@@ -195,7 +196,7 @@ export const actions: Actions = {
                 return fail(400, { message: error.message });
             }
 
-            return fail(500, { message: 'Failed to apply discount' });
+            return fail(500, { message: m.error_apply_discount_failed });
         }
     },
 
@@ -208,7 +209,7 @@ export const actions: Actions = {
             const userId = locals.user?.id;
 
             if (!sessionId && !userId) {
-                return fail(400, { message: 'No session or user found' });
+                return fail(400, { message: m.error_no_session });
             }
 
             // Get cart
@@ -223,7 +224,7 @@ export const actions: Actions = {
             return { success: true, cart: updatedCart };
         } catch (error) {
             console.error('Error removing discount:', error);
-            return fail(500, { message: 'Failed to remove discount' });
+            return fail(500, { message: m.error_remove_discount_failed });
         }
     },
 
@@ -236,7 +237,7 @@ export const actions: Actions = {
             const userId = locals.user?.id;
 
             if (!sessionId && !userId) {
-                return fail(400, { message: 'No session or user found' });
+                return fail(400, { message: m.error_no_session });
             }
 
             // Get cart
@@ -251,7 +252,7 @@ export const actions: Actions = {
             return { success: true, cart: updatedCart };
         } catch (error) {
             console.error('Error clearing cart:', error);
-            return fail(500, { message: 'Failed to clear cart' });
+            return fail(500, { message: m.error_clear_cart_failed });
         }
     }
 };

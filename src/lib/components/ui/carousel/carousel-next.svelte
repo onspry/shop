@@ -4,6 +4,7 @@
 	import { getEmblaContext } from './context.js';
 	import { cn } from '$lib/utils.js';
 	import { Button, type Props } from '$lib/components/ui/button/index.js';
+	import * as m from '$lib/paraglide/messages';
 
 	let {
 		ref = $bindable(null),
@@ -33,6 +34,6 @@
 		{...restProps}
 	>
 		<ArrowRight class="h-6 w-6" />
-		<span class="sr-only">Next slide</span>
+		<span class="sr-only">{m.sr_next_slide()}</span>
 	</Button>
 {/if}

@@ -23,16 +23,15 @@
 
 		<Card class="max-w-md mx-auto">
 			<CardContent class="pt-6">
-				<p class="mb-4">You'll receive updates about your order status via email.</p>
+				<p class="mb-4">{m.order_email_updates()}</p>
 
 				{#if user}
 					<p class="mb-4">
-						You can also view your order details and track its status in your account.
+						{m.order_view_in_account()}
 					</p>
 				{:else}
 					<p class="mb-4">
-						For future orders, consider creating an account to easily track your orders and manage
-						your purchases.
+						{m.order_create_account_suggestion()}
 					</p>
 				{/if}
 			</CardContent>
@@ -52,7 +51,7 @@
 				href={localizeHref('/auth/register')}
 				class="flex items-center gap-2"
 			>
-				Create Account
+				{m.create_account()}
 				<ArrowRight class="h-4 w-4" />
 			</Button>
 		{/if}

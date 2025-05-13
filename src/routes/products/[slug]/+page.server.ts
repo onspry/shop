@@ -4,6 +4,7 @@ import type { PageServerLoad } from './$types';
 import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types';
 import { cartRepository } from '$lib/repositories/cart-repository';
+import * as m from '$lib/paraglide/messages';
 
 // Disable prerendering as we need access to URL search params
 export const prerender = false;
@@ -62,11 +63,11 @@ export const actions: Actions = {
 
         // Validate input
         if (!productVariantId) {
-            return fail(400, { message: 'Product variant ID is required' });
+            return fail(400, { message: m.error_product_variant_required });
         }
 
         if (quantity <= 0) {
-            return fail(400, { message: 'Quantity must be greater than 0' });
+            return fail(400, { message: m.error_quantity_positive });
         }
 
         try {
@@ -75,7 +76,7 @@ export const actions: Actions = {
 
             // If somehow there's no session ID, return an error
             if (!sessionId && !userId) {
-                return fail(400, { message: 'No cart session available. Please refresh the page and try again.' });
+                return fail(400, { message: m.error_no_cart_session });
             }
 
             // Extract composites from form data

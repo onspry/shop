@@ -3,6 +3,7 @@
 	import Sun from 'lucide-svelte/icons/sun';
 	import Moon from 'lucide-svelte/icons/moon';
 	import { theme } from '$lib/stores/theme';
+	import * as m from '$lib/paraglide/messages';
 
 	// Subscribe to theme changes and update the DOM
 	$effect(() => {
@@ -18,5 +19,5 @@
 	<Moon
 		class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
 	/>
-	<span class="sr-only">Toggle theme</span>
+	<span class="sr-only">{m.sr_toggle_theme()}</span>
 </Button>

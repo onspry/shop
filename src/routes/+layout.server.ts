@@ -1,6 +1,7 @@
 import type { LayoutServerLoad } from './$types';
 import { generateUUID } from '$lib/utils/uuid';
 import { cartRepository } from '$lib/repositories/cart-repository';
+import * as m from '$lib/paraglide/messages';
 
 /**
  * Layout server load function
@@ -18,7 +19,7 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => {
         cookies.set('cart-session', sessionId, {
             path: '/',
             httpOnly: true,
-            sameSite: 'strict',
+            sameSite: m.cookie_same_site() as "strict" | "lax" | "none",
             maxAge: 60 * 60 * 24 * 30, // 30 days
             domain: '' // Explicitly set empty domain for same-origin only
         });
@@ -45,7 +46,7 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => {
         cookies.set('cart-session', sessionId, {
             path: '/',
             httpOnly: true,
-            sameSite: 'strict',
+            sameSite: m.cookie_same_site() as "strict" | "lax" | "none",
             maxAge: 60 * 60 * 24 * 30, // 30 days
             domain: '' // Explicitly set empty domain for same-origin only
         });

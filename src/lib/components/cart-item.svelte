@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { CartItemViewModel } from '$lib/models/cart';
 	import { Trash2, Minus, Plus } from 'lucide-svelte';
-import { AppImage } from '$lib/components/ui/app-image';
+	import { AppImage } from '$lib/components/ui/app-image';
 	import { formatPrice } from '$lib/utils/price';
 	import * as m from '$lib/paraglide/messages';
 	import { Button } from '$lib/components/ui/button';
@@ -9,10 +9,7 @@ import { AppImage } from '$lib/components/ui/app-image';
 	import { toast } from 'svelte-sonner';
 	import { cart } from '$lib/stores/cart';
 
-	let {
-		item,
-		disabled = false
-	} = $props<{
+	let { item, disabled = false } = $props<{
 		item: CartItemViewModel;
 		disabled?: boolean;
 	}>();
@@ -41,8 +38,6 @@ import { AppImage } from '$lib/components/ui/app-image';
 	const price = $derived(currentItem?.price || 0);
 	const variantName = $derived(currentItem?.variant?.name || 'Product');
 
-
-
 	let isUpdating = $state(false);
 
 	// Function to show remove confirmation
@@ -50,7 +45,7 @@ import { AppImage } from '$lib/components/ui/app-image';
 		if (disabled || isUpdating) return;
 		showRemoveConfirm = true;
 		// Auto-hide confirmation after 3 seconds if not clicked
-		setTimeout(() => showRemoveConfirm = false, 3000);
+		setTimeout(() => (showRemoveConfirm = false), 3000);
 	}
 
 	// Cancel remove action (used in button click handler)
@@ -69,9 +64,13 @@ import { AppImage } from '$lib/components/ui/app-image';
 </script>
 
 <div class="relative">
-	<div class="flex bg-background rounded-lg p-4 hover:shadow-md transition-all duration-200 border border-transparent hover:border-border">
+	<div
+		class="flex bg-background rounded-lg p-4 hover:shadow-md transition-all duration-200 border border-transparent hover:border-border"
+	>
 		<!-- Product Image with hover zoom -->
-		<div class="w-32 h-32 flex-shrink-0 relative overflow-hidden rounded-md group flex items-center justify-center">
+		<div
+			class="w-32 h-32 flex-shrink-0 relative overflow-hidden rounded-md group flex items-center justify-center"
+		>
 			<AppImage
 				src={currentItem.imageUrl}
 				alt={variantName}
@@ -86,8 +85,6 @@ import { AppImage } from '$lib/components/ui/app-image';
 			<div class="flex justify-between">
 				<div>
 					<h3 class="font-medium text-base">{variantName}</h3>
-
-
 
 					<!-- Composite Items -->
 					{#if currentItem.composites && currentItem.composites.length > 0}
@@ -105,9 +102,11 @@ import { AppImage } from '$lib/components/ui/app-image';
 
 					<!-- Stock Status -->
 					{#if currentItem.variant.stockStatus === 'low_stock'}
-						<p class="text-xs text-warning mt-1">Only {currentItem.variant.stock_quantity} left in stock</p>
+						<p class="text-xs text-warning mt-1">
+							{m.stock_only_left({ count: currentItem.variant.stock_quantity })}
+						</p>
 					{:else if currentItem.variant.stockStatus === 'in_stock'}
-						<p class="text-xs text-green-600 mt-1">In Stock</p>
+						<p class="text-xs text-green-600 mt-1">{m.stock_in_stock()}</p>
 					{/if}
 				</div>
 
@@ -129,7 +128,10 @@ import { AppImage } from '$lib/components/ui/app-image';
 											if (result.data?.cart) {
 												safeUpdateCart(result.data.cart);
 											}
-											toast.success(`${itemName} removed from cart`, { id: toastId, duration: 3000 });
+											toast.success(`${itemName} removed from cart`, {
+												id: toastId,
+												duration: 3000
+											});
 										} else {
 											toast.error(`Failed to remove ${itemName}`, { id: toastId });
 										}
@@ -147,7 +149,7 @@ import { AppImage } from '$lib/components/ui/app-image';
 										disabled={disabled || isUpdating}
 										aria-label="Cancel removal"
 									>
-										<span class="text-xs">Cancel</span>
+										<span class="text-xs">{m.action_cancel()}</span>
 									</Button>
 									<Button
 										class="p-2 rounded-md hover:bg-muted text-muted-foreground transition-colors disabled:opacity-50"
@@ -156,7 +158,7 @@ import { AppImage } from '$lib/components/ui/app-image';
 										disabled={disabled || isUpdating}
 										aria-label="Confirm removal"
 									>
-										<span class="text-xs font-medium">Confirm</span>
+										<span class="text-xs font-medium">{m.action_confirm()}</span>
 									</Button>
 								</div>
 								<input type="hidden" name="cartItemId" value={currentItem.id} />
@@ -178,7 +180,9 @@ import { AppImage } from '$lib/components/ui/app-image';
 
 			<div class="mt-4 flex justify-between items-center">
 				<!-- Improved Quantity Controls with Server Actions -->
-				<div class="flex items-center space-x-2 bg-muted/10 dark:bg-muted/5 rounded-md p-1.5 border border-border/50 dark:border-border">
+				<div
+					class="flex items-center space-x-2 bg-muted/10 dark:bg-muted/5 rounded-md p-1.5 border border-border/50 dark:border-border"
+				>
 					<form
 						method="POST"
 						action="?/updateItem"

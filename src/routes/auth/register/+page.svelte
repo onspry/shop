@@ -2,7 +2,7 @@
 	import { superForm } from 'sveltekit-superforms';
 	import { zod } from 'sveltekit-superforms/adapters';
 	import { registerSchema } from '$lib/schemas/auth';
-	import { m } from '$lib/paraglide/messages.js';
+	import * as m from '$lib/paraglide/messages.js';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -34,14 +34,14 @@
 	<Card class="w-full max-w-md">
 		<CardHeader>
 			<CardTitle>{m.checkout_create_account()}</CardTitle>
-			<CardDescription>Fill in your details to create a new account.</CardDescription>
+			<CardDescription>{m.register_description()}</CardDescription>
 		</CardHeader>
 
 		<CardContent>
 			<form method="post" class="space-y-4" use:enhance>
 				<div class="grid gap-4 grid-cols-2">
 					<div class="grid gap-2">
-						<Label for="firstName">First name</Label>
+						<Label for="firstName">{m.checkout_first_name()}</Label>
 						<Input
 							id="firstName"
 							name="firstName"
@@ -55,7 +55,7 @@
 					</div>
 
 					<div class="grid gap-2">
-						<Label for="lastName">Last name</Label>
+						<Label for="lastName">{m.checkout_last_name()}</Label>
 						<Input
 							id="lastName"
 							name="lastName"
@@ -70,7 +70,7 @@
 				</div>
 
 				<div class="grid gap-2">
-					<Label for="email">Email</Label>
+					<Label for="email">{m.checkout_email()}</Label>
 					<Input
 						type="email"
 						id="email"
@@ -86,7 +86,7 @@
 				</div>
 
 				<div class="grid gap-2">
-					<Label for="password">Password</Label>
+					<Label for="password">{m.password()}</Label>
 					<Input
 						type="password"
 						id="password"
@@ -114,7 +114,7 @@
 								<p>{error}</p>
 							{/each}
 						{:else}
-							An error occurred during registration
+							{m.error_during_registration()}
 						{/if}
 					</div>
 				{/if}
@@ -123,7 +123,7 @@
 					{#if $submitting}
 						<LoadingSpinner size={16} className="mr-2" />
 					{/if}
-					Create Account
+					{m.create_account()}
 				</Button>
 			</form>
 		</CardContent>

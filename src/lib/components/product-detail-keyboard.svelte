@@ -323,7 +323,8 @@
 				<!-- Keyboard Variants (Model Selection) -->
 				<div class="space-y-4">
 					<h2 class="text-xl font-semibold">
-						Modèle. <span class="font-normal text-gray-500">Quel modèle vous faut-il ?</span>
+						{m.product_model()}.
+						<span class="font-normal text-gray-500">{m.product_which_model()}</span>
 					</h2>
 					<div class="grid grid-cols-1 gap-3">
 						{#each variants || [] as variant}
@@ -337,15 +338,14 @@
 						{/each}
 					</div>
 					<p class="mt-3 text-sm text-gray-500">
-						Besoin d'aide pour choisir un modèle ? Découvrez les différences en termes de taille
-						d'écran et d'autonomie de la batterie.
+						{m.product_model_help()}
 					</p>
 				</div>
 
 				<!-- Switch Options -->
 				{#if compatibleSwitches.length > 0}
 					<div class="space-y-4">
-						<h2 class="text-xl font-semibold">Compatible Switches</h2>
+						<h2 class="text-xl font-semibold">{m.product_compatible_switches()}</h2>
 						<div class="grid grid-cols-1 gap-3">
 							{#each compatibleSwitches as switchVariant}
 								<VariantCard
@@ -363,7 +363,7 @@
 						class="flex flex-col items-center justify-center p-6 bg-muted/50 rounded-lg border border-dashed"
 					>
 						<p class="text-muted-foreground text-center text-sm">
-							No compatible switches found for this keyboard variant.
+							{m.product_no_compatible_switches()}
 						</p>
 					</div>
 				{/if}
@@ -371,7 +371,7 @@
 				<!-- Keycap Options -->
 				{#if compatibleKeycaps.length > 0}
 					<div class="space-y-4">
-						<h2 class="text-xl font-semibold">Compatible Keycaps</h2>
+						<h2 class="text-xl font-semibold">{m.product_compatible_keycaps()}</h2>
 						<div class="grid grid-cols-1 gap-3">
 							{#each compatibleKeycaps as keycapVariant}
 								<VariantCard
@@ -389,7 +389,7 @@
 						class="flex flex-col items-center justify-center p-6 bg-muted/50 rounded-lg border border-dashed"
 					>
 						<p class="text-muted-foreground text-center text-sm">
-							No compatible keycaps found for this switch type.
+							{m.product_no_compatible_keycaps()}
 						</p>
 					</div>
 				{/if}
@@ -398,26 +398,26 @@
 				{#if selectedVariant}
 					<div class="pt-6 border-t">
 						<div class="bg-muted/50 p-4 rounded-md border">
-							<h3 class="text-md font-semibold mb-3">Configuration Summary</h3>
+							<h3 class="text-md font-semibold mb-3">{m.product_configuration_summary()}</h3>
 							<div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-								<div>Layout:</div>
+								<div>{m.layout()}:</div>
 								<div>{getVariantAttribute(selectedVariant, 'layout', 'N/A')}</div>
-								<div>Keyboard Variant:</div>
+								<div>{m.keyboard_variant()}:</div>
 								<div>{getVariantAttribute(selectedVariant, 'keyboard_variant', 'N/A')}</div>
 								{#if selectedSwitch}
-									<div>Switch Type:</div>
+									<div>{m.switch_type()}:</div>
 									<div>{getVariantAttribute(selectedSwitch, 'type', 'N/A')}</div>
-									<div>Actuation Force:</div>
+									<div>{m.actuation_force()}:</div>
 									<div>{getVariantAttribute(selectedSwitch, 'actuation_force', 'N/A')}</div>
-									<div>Feel:</div>
+									<div>{m.feel()}:</div>
 									<div>{getVariantAttribute(selectedSwitch, 'feel', 'N/A')}</div>
 								{/if}
 								{#if selectedKeycap}
-									<div>Legend Type:</div>
+									<div>{m.legend_type()}:</div>
 									<div>{getVariantAttribute(selectedKeycap, 'legend_type', 'N/A')}</div>
-									<div>Material:</div>
+									<div>{m.material()}:</div>
 									<div>{getVariantAttribute(selectedKeycap, 'material', 'N/A')}</div>
-									<div>Color:</div>
+									<div>{m.color()}:</div>
 									<div>{getVariantAttribute(selectedKeycap, 'color', 'N/A')}</div>
 								{/if}
 							</div>
@@ -438,7 +438,7 @@
 								class="h-7 w-7"
 								onclick={() => quantity > 1 && (quantity -= 1)}
 								disabled={quantity <= 1 || isAddingToCart}
-								aria-label="Decrease quantity"><Minus class="h-4 w-4" /></Button
+								aria-label={m.decrease_quantity()}><Minus class="h-4 w-4" /></Button
 							>
 							<span class="w-8 text-center text-sm font-medium tabular-nums">{quantity}</span>
 							<Button
@@ -447,7 +447,7 @@
 								class="h-7 w-7"
 								onclick={() => (quantity += 1)}
 								disabled={isAddingToCart}
-								aria-label="Increase quantity"><Plus class="h-4 w-4" /></Button
+								aria-label={m.increase_quantity()}><Plus class="h-4 w-4" /></Button
 							>
 						</div>
 					</div>
@@ -497,10 +497,10 @@
 								<span
 									class="h-5 w-5 block animate-spin rounded-full border-2 border-primary-foreground border-t-transparent mr-2"
 								></span>
-								<span>Adding...</span>
+								<span>{m.adding()}</span>
 							{:else if addedToCart}
 								<Check class="h-5 w-5 mr-2" />
-								<span>Added to Cart</span>
+								<span>{m.added_to_cart()}</span>
 							{:else}
 								<ShoppingCart class="h-5 w-5 mr-2" />
 								<span>{getButtonText()}</span>

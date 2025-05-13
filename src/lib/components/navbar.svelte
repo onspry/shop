@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { localizeHref } from '$lib/paraglide/runtime';
-	import { m } from '$lib/paraglide/messages.js';
+	import * as m from '$lib/paraglide/messages.js';
 
 	import AuthSection from './auth-section.svelte';
 	import DarkmodeToggle from './darkmode-toggle.svelte';
@@ -22,13 +22,13 @@
 			<div class="hidden md:flex items-center gap-6">
 				<a
 					href={localizeHref('/about')}
-					class="text-sm font-medium hover:text-primary transition-colors">About</a
+					class="text-sm font-medium hover:text-primary transition-colors">{m.navbar_about()}</a
 				>
 			</div>
 			<div class="hidden md:flex items-center gap-6">
 				<a
 					href={localizeHref('/products')}
-					class="text-sm font-medium hover:text-primary transition-colors">Products</a
+					class="text-sm font-medium hover:text-primary transition-colors">{m.navbar_products()}</a
 				>
 			</div>
 			<!-- Mobile hamburger -->
@@ -37,7 +37,7 @@
 					<SheetTrigger>
 						<div
 							class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 w-10 p-0 hover:bg-accent hover:text-accent-foreground"
-							aria-label="Open menu"
+							aria-label={m.open_menu()}
 						>
 							<svg
 								width="24"
@@ -54,17 +54,17 @@
 							<a
 								href={localizeHref('/about')}
 								class="text-base font-medium"
-								onclick={() => (open = false)}>About</a
+								onclick={() => (open = false)}>{m.navbar_about()}</a
 							>
 							<a
 								href={localizeHref('/products')}
 								class="text-base font-medium"
-								onclick={() => (open = false)}>Products</a
+								onclick={() => (open = false)}>{m.navbar_products()}</a
 							>
 
 							<!-- Mobile language switcher placeholder -->
 							<div class="mt-4 pt-4 border-t border-border">
-								<p class="text-sm text-muted-foreground mb-2">Language</p>
+								<p class="text-sm text-muted-foreground mb-2">{m.navbar_language()}</p>
 								<LanguageSwitcher isMobile={true} />
 							</div>
 						</nav>

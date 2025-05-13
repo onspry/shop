@@ -16,6 +16,7 @@
 	import { Zap, Wrench, Sparkles, ChevronsDown } from 'lucide-svelte/icons';
 	import Hero from '$lib/components/hero.svelte';
 	import { onMount } from 'svelte';
+	import * as m from '$lib/paraglide/messages';
 
 	// Content visibility control
 	let contentVisible = $state(false);
@@ -40,18 +41,18 @@
 	// Key features of the keyboard
 	const features = [
 		{
-			title: 'Split Design',
-			description: 'Ergonomic comfort for extended typing sessions',
+			title: m.split_design(),
+			description: m.split_design_description(),
 			icon: Zap
 		},
 		{
-			title: 'Customizable',
-			description: 'Hot-swappable switches for your perfect feel',
+			title: m.customizable(),
+			description: m.customizable_description(),
 			icon: Wrench
 		},
 		{
-			title: 'Handschmeichler',
-			description: 'Comfort with zero compromise',
+			title: m.handschmeichler(),
+			description: m.handschmeichler_description(),
 			icon: Sparkles
 		}
 	];
@@ -73,7 +74,7 @@
 					onkeydown={(e) => e.key === 'Enter' && scrollToFeatures()}
 					role="button"
 					tabindex="0"
-					aria-label="Scroll to features"
+					aria-label={m.scroll_to_features()}
 				>
 					<ChevronsDown class="h-12 w-12 animate-bounce" />
 				</div>

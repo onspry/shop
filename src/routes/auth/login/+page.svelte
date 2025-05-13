@@ -89,8 +89,8 @@
 >
 	<Card class="w-full max-w-md">
 		<CardHeader>
-			<CardTitle>Welcome Back</CardTitle>
-			<CardDescription>Sign in to your account</CardDescription>
+			<CardTitle>{m.welcome_back()}</CardTitle>
+			<CardDescription>{m.sign_in_to_account()}</CardDescription>
 		</CardHeader>
 		<CardContent class="space-y-4">
 			<div class="grid gap-4">
@@ -109,7 +109,7 @@
 									{@html provider.logo}
 								</div>
 							{/if}
-							<span>Continue with {provider.name}</span>
+							<span>{m.continue_with({ provider: provider.name })}</span>
 						</div>
 					</Button>
 				{/each}
@@ -120,7 +120,7 @@
 					<Separator class="w-full" />
 				</div>
 				<div class="relative flex justify-center text-xs uppercase">
-					<span class="bg-background px-2 text-muted-foreground">Or continue with</span>
+					<span class="bg-background px-2 text-muted-foreground">{m.or_continue_with()}</span>
 				</div>
 			</div>
 
@@ -131,7 +131,7 @@
 					onclick={() => toggleEmailForm(true)}
 					disabled={loadingProvider !== null}
 				>
-					Email & Password
+					{m.email_password()}
 				</Button>
 			{:else}
 				<form
@@ -149,7 +149,7 @@
 									<p>{error}</p>
 								{/each}
 							{:else}
-								An error occurred during login
+								{m.error_during_login()}
 							{/if}
 						</div>
 					{/if}
@@ -160,7 +160,7 @@
 							name="email"
 							type="email"
 							bind:value={$form.email}
-							placeholder="name@example.com"
+							placeholder={m.email_placeholder()}
 							required
 							aria-invalid={$errors.email?.[0] ? 'true' : undefined}
 							disabled={$submitting || loadingProvider !== null}
@@ -212,14 +212,14 @@
 		</CardContent>
 		<CardFooter>
 			<p class="text-sm text-muted-foreground">
-				Don't have an account?
+				{m.dont_have_account()}
 				<a
 					href={localizeHref(
 						`/auth/register${redirectTo !== '/' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`
 					)}
 					class="font-medium hover:text-primary"
 				>
-					Sign up
+					{m.sign_up()}
 				</a>
 			</p>
 		</CardFooter>

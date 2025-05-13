@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Eye, EyeOff } from 'lucide-svelte/icons';
 	import { Button } from './ui/button';
+	import * as m from '$lib/paraglide/messages';
 
 	// Using $props() for Svelte 5 with oninput callback
 	let { value, id, name, placeholder, autocomplete, ariaInvalid, disabled, oninput } = $props<{
@@ -45,7 +46,7 @@
 		class="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground hover:text-foreground"
 		onclick={toggleVisibility}
 		tabindex={-1}
-		aria-label={showPassword ? 'Hide password' : 'Show password'}
+		aria-label={showPassword ? m.aria_hide_password() : m.aria_show_password()}
 	>
 		{#if showPassword}
 			<EyeOff class="h-4 w-4" />

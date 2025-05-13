@@ -66,7 +66,7 @@
 					{m.cart_browse_products()}
 					<ArrowRight class="ml-2 h-5 w-5" />
 				</Button>
-				<Button href={localizeHref('/')} variant="outline" size="lg">Return to Home</Button>
+				<Button href={localizeHref('/')} variant="outline" size="lg">{m.return_to_home()}</Button>
 			</div>
 		</div>
 	{:else}
@@ -105,18 +105,21 @@
 								<div class="flex justify-between mb-1">
 									<span
 										>{$cart.items.length}
-										{$cart.items.length === 1 ? 'item' : 'items'} in cart</span
+										{$cart.items.length === 1
+											? m.cart_item_count_singular()
+											: m.cart_item_count_plural()}</span
 									>
 									<span
 										>{$cart.items.reduce(
 											(sum: number, item: (typeof $cart.items)[0]) => sum + item.quantity,
 											0
-										)} units total</span
+										)}
+										{m.cart_units_total()}</span
 									>
 								</div>
 
 								{#if $cart.items.some((item: (typeof $cart.items)[0]) => item.variant.stockStatus === 'low_stock')}
-									<p class="text-warning mt-2">Some items are low in stock</p>
+									<p class="text-warning mt-2">{m.cart_low_stock_warning()}</p>
 								{/if}
 							</div>
 

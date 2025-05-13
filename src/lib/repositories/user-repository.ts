@@ -1,4 +1,3 @@
-// import { PrismaClient } from '@prisma/client';
 import { type User } from '@prisma/client';
 import { type UserViewModel, type UserDetailViewModel, type UserAuthViewModel, type Provider, UserStatus } from '../models/user';
 import { hashPassword } from '$lib/server/auth/password';

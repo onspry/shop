@@ -97,7 +97,17 @@
 				{#each Object.entries(variant.attributes) as [key, value]}
 					{#if !['compatibleWith', 'compatibility', 'image_url'].includes(key) && typeof value === 'string'}
 						<div class="grid grid-cols-2 gap-1">
-							<span class="text-muted-foreground capitalize">{key.replace(/_/g, ' ')}:</span>
+							<span class="text-muted-foreground capitalize">
+								{#if key === 'compatible_with'}
+									{m.variant_attribute_compatible_with()}
+								{:else if key === 'compatibility'}
+									{m.variant_attribute_compatibility()}
+								{:else if key === 'image_url'}
+									{m.variant_attribute_image_url()}
+								{:else}
+									{key.replace(/_/g, ' ')}
+								{/if}:
+							</span>
 							<span>{value}</span>
 						</div>
 					{/if}

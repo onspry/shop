@@ -44,7 +44,7 @@
 				</div>
 			</div>
 			<div class="flex justify-center pt-8">
-				<Button variant="outline" onclick={() => window.history.back()}>Back</Button>
+				<Button variant="outline" onclick={() => window.history.back()}>{m.button_back()}</Button>
 			</div>
 		</div>
 	</div>

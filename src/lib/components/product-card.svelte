@@ -1,7 +1,7 @@
 <!-- ProductCard.svelte -->
 <script lang="ts">
 	import type { ProductViewModel, ProductVariantViewModel } from '$lib/models/product';
-	import { product_starting_at, product_view_details } from '$lib/paraglide/messages';
+	import * as m from '$lib/paraglide/messages';
 	import { formatPrice } from '$lib/utils/price';
 	import { AppImage } from '$lib/components/ui/app-image';
 	import { Button } from '$lib/components/ui/button';
@@ -62,7 +62,7 @@
 			<div class="flex items-baseline gap-2">
 				{#if hasMultipleVariants}
 					<span class="text-xs text-muted-foreground">
-						{product_starting_at()}
+						{m.product_starting_at()}
 					</span>
 				{/if}
 				<span class="text-xl font-bold text-foreground">
@@ -81,9 +81,9 @@
 					<span
 						class="h-5 w-5 block animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"
 					></span>
-					<span>View Details...</span>
+					<span>{m.product_view_details()}</span>
 				{:else}
-					{product_view_details({ name: product.name })}
+					{m.product_view_details()}
 				{/if}
 			</Button>
 		</div>
@@ -93,7 +93,7 @@
 	<a
 		href={localizeHref(`/products/${product?.slug || ''}`)}
 		class="absolute inset-0 z-10"
-		aria-label={product_view_details({ name: product.name })}
+		aria-label={m.product_view_details({ name: product.name })}
 		onclick={handleViewDetails}
 		data-sveltekit-preload-data="hover"
 	></a>

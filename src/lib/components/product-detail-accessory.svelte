@@ -86,7 +86,7 @@
 			});
 		} else {
 			// Handle error cases
-			const errorMessage = result.data?.message || 'Could not add item to cart. Please try again.';
+			const errorMessage = result.data?.message || m.cart_add_error();
 			toast.error(errorMessage);
 		}
 
@@ -135,7 +135,7 @@
 
 					<!-- Accessory Configuration Options -->
 					<div class="space-y-4">
-						<h2 class="text-xl font-semibold">{product.category} Options</h2>
+						<h2 class="text-xl font-semibold">{product.category} {m.options()}</h2>
 						<div class="grid grid-cols-1 gap-3">
 							{#each variants || [] as variant}
 								<VariantCard
@@ -151,25 +151,25 @@
 
 					{#if selectedVariant}
 						<div class="bg-muted/50 p-4 rounded-md border">
-							<h3 class="text-md font-semibold mb-3">Selected Option</h3>
+							<h3 class="text-md font-semibold mb-3">{m.product_selected_option()}</h3>
 							<div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
 								{#if product.category === 'SWITCH'}
-									<div>Type:</div>
+									<div>{m.switch_type()}:</div>
 									<div>{getVariantAttribute(selectedVariant, 'type') || 'N/A'}</div>
 
-									<div>Actuation Force:</div>
+									<div>{m.actuation_force()}:</div>
 									<div>{getVariantAttribute(selectedVariant, 'actuation_force') || 'N/A'}</div>
 
-									<div>Feel:</div>
+									<div>{m.feel()}:</div>
 									<div>{getVariantAttribute(selectedVariant, 'feel') || 'N/A'}</div>
 								{:else if product.category === 'KEYCAP'}
-									<div>Legend Type:</div>
+									<div>{m.legend_type()}:</div>
 									<div>{getVariantAttribute(selectedVariant, 'legend_type') || 'N/A'}</div>
 
-									<div>Material:</div>
+									<div>{m.material()}:</div>
 									<div>{getVariantAttribute(selectedVariant, 'material') || 'N/A'}</div>
 
-									<div>Color:</div>
+									<div>{m.color()}:</div>
 									<div>{getVariantAttribute(selectedVariant, 'color') || 'N/A'}</div>
 								{/if}
 							</div>
@@ -190,7 +190,7 @@
 									class="h-7 w-7"
 									onclick={() => quantity > 1 && (quantity -= 1)}
 									disabled={quantity <= 1 || isAddingToCart}
-									aria-label="Decrease quantity"><Minus class="h-4 w-4" /></Button
+									aria-label={m.decrease_quantity()}><Minus class="h-4 w-4" /></Button
 								>
 								<span class="w-8 text-center text-sm font-medium tabular-nums">{quantity}</span>
 								<Button
@@ -199,7 +199,7 @@
 									class="h-7 w-7"
 									onclick={() => (quantity += 1)}
 									disabled={isAddingToCart}
-									aria-label="Increase quantity"><Plus class="h-4 w-4" /></Button
+									aria-label={m.increase_quantity()}><Plus class="h-4 w-4" /></Button
 								>
 							</div>
 						</div>
@@ -246,10 +246,10 @@
 									<span
 										class="h-5 w-5 block animate-spin rounded-full border-2 border-primary-foreground border-t-transparent mr-2"
 									></span>
-									<span>Adding...</span>
+									<span>{m.adding()}</span>
 								{:else if addedToCart}
 									<Check class="h-5 w-5 mr-2" />
-									<span>Added to Cart</span>
+									<span>{m.added_to_cart()}</span>
 								{:else if selectedVariant?.stockStatus === 'out_of_stock'}
 									<span>{m.product_out_of_stock()}</span>
 								{:else}

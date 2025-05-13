@@ -5,6 +5,7 @@
 	import * as Carousel from '$lib/components/ui/carousel';
 	import { ChevronLeft, ChevronRight } from 'lucide-svelte';
 	import type { EmblaCarouselType } from 'embla-carousel';
+	import * as m from '$lib/paraglide/messages';
 
 	const props = $props<{
 		images: ProductImageViewModel[];
@@ -93,6 +94,6 @@
 	<div
 		class="aspect-square w-full max-w-lg mx-auto flex items-center justify-center rounded-lg bg-muted"
 	>
-		<span class="text-muted-foreground">No image available</span>
+		<span class="text-muted-foreground">{m.product_no_image()}</span>
 	</div>
 {/if}

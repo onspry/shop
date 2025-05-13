@@ -11,6 +11,7 @@
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
+	import * as m from '$lib/paraglide/messages';
 
 	// Props
 	let { isMobile = false } = $props();
@@ -19,12 +20,20 @@
 	type AvailableLocale = (typeof locales)[number];
 
 	// Language display names mapped to locales
-	const languageNames = {
-		en: 'English',
-		de: 'Deutsch',
-		fr: 'Français',
-		cn: '中文'
-	};
+	function getLanguageName(lang: string) {
+		switch (lang) {
+			case 'en':
+				return m.language_english();
+			case 'de':
+				return m.language_german();
+			case 'fr':
+				return m.language_french();
+			case 'cn':
+				return m.language_chinese();
+			default:
+				return lang;
+		}
+	}
 
 	// Language flag emoji (optional)
 	const languageFlags = {
@@ -108,7 +117,7 @@
 				class="justify-start"
 				data-active={currentLanguage === lang}
 			>
-				<span>{languageNames[lang]}</span>
+				<span>{getLanguageName(lang)}</span>
 			</Button>
 		{/each}
 	</div>
@@ -118,10 +127,10 @@
 		<DropdownMenuTrigger>
 			<div
 				class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 w-10 p-0 hover:bg-accent hover:text-accent-foreground"
-				aria-label="Change language"
+				aria-label={m.sr_change_language()}
 			>
 				<Globe class="h-[1.2rem] w-[1.2rem]" />
-				<span class="sr-only">Change language</span>
+				<span class="sr-only">{m.sr_change_language()}</span>
 			</div>
 		</DropdownMenuTrigger>
 		<DropdownMenuContent align="end">
@@ -150,7 +159,7 @@
 					{:else}
 						<div class="w-4"></div>
 					{/if}
-					{languageNames[lang]}
+					{getLanguageName(lang)}
 				</DropdownMenuItem>
 			{/each}
 		</DropdownMenuContent>

@@ -371,5 +371,51 @@
 	"auth_remember_me": "Angemeldet bleiben",
 	"auth_back_to_login": "Zurück zur Anmeldung",
 	"auth_login": "Anmelden",
-	"auth_forgot_password_try_again": "Mit einer anderen E-Mail-Adresse versuchen"
+	"auth_forgot_password_try_again": "Mit einer anderen E-Mail-Adresse versuchen",
+	"payment_information": "Zahlungsinformationen",
+	"card_number": "Kartennummer",
+	"cardholder_name": "Name des Karteninhabers",
+	"back_to_contact": "Zurück zu Kontakt",
+	"continue_to_payment": "Weiter zur Zahlung",
+	"back_to_shipping": "Zurück zum Versand",
+	"card_number_placeholder": "1234 5678 9012 3456",
+	"cardholder_placeholder": "Max Mustermann",
+	"order_success": "Bestellung erfolgreich aufgegeben!",
+	"order_failure": "Bestellung konnte nicht aufgegeben werden",
+	"order_generic_error": "Bei der Bearbeitung Ihrer Bestellung ist ein Fehler aufgetreten",
+	"signed_in_as": "Angemeldet als",
+	"email_confirmation_text": "Wir senden Ihre Bestellbestätigung hierhin",
+	"save_payment_method_text": "Diese Zahlungsmethode für zukünftige Einkäufe speichern",
+	"payment_security_text": "Ihre Zahlungsinformationen werden sicher verarbeitet und verschlüsselt. Wir speichern Ihre vollständigen Kartendaten nicht auf unseren Servern.",
+	"items_count": [
+		{
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
+			"match": {
+				"countPlural=one": "{count} Artikel",
+				"countPlural=other": "{count} Artikel"
+			}
+		}
+	],
+	"settings_change_password_title": "Passwort ändern",
+	"settings_change_password_description": "Aktualisieren Sie Ihr Konto-Passwort",
+	"settings_current_password_label": "Aktuelles Passwort",
+	"settings_new_password_label": "Neues Passwort",
+	"settings_update_password_button": "Passwort aktualisieren",
+	"settings_change_email_title": "E-Mail ändern",
+	"settings_change_email_description": "Aktualisieren Sie Ihre E-Mail-Adresse",
+	"settings_new_email_label": "Neue E-Mail",
+	"settings_update_email_button": "E-Mail aktualisieren",
+	"privacy_data_deletion_message": "Wir werden Ihre Anfrage bearbeiten und Ihre Daten innerhalb von 30 Tagen aus unseren Systemen löschen.",
+	"sr_change_language": "Sprache ändern",
+	"sr_next_slide": "Nächste Folie",
+	"sr_previous_slide": "Vorherige Folie",
+	"sr_close": "Schließen",
+	"sr_toggle_theme": "Thema umschalten",
+	"required_field": "erforderlich"
 }

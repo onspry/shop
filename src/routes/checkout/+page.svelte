@@ -512,7 +512,7 @@
 							<div class="bg-muted p-4 rounded-lg flex-1">
 								<div class="flex items-center gap-2 mb-2">
 									<User class="h-5 w-5 text-primary" />
-									<p class="font-medium">Signed in as</p>
+									<p class="font-medium">{m.signed_in_as()}</p>
 								</div>
 								<p class="text-muted-foreground">{data.user.email}</p>
 							</div>
@@ -520,10 +520,10 @@
 					{:else}
 						<div class="flex items-center justify-between mb-4">
 							<div class="text-sm text-muted-foreground">
-								Already have an account?
+								{m.have_account()}
 								<a
 									href={localizeHref('/auth/login?redirect=/checkout')}
-									class="text-primary hover:underline ml-1">Log in</a
+									class="text-primary hover:underline ml-1">{m.checkout_log_in()}</a
 								>
 							</div>
 						</div>
@@ -532,12 +532,12 @@
 							<Form.Field form={emailSuperForm} name="email">
 								<Form.Control>
 									{#snippet children({ props })}
-										<Form.Label>Email</Form.Label>
+										<Form.Label>{m.checkout_email()}</Form.Label>
 										<Input
 											{...props}
 											type="email"
 											bind:value={$emailForm.email}
-											placeholder="Email"
+											placeholder={m.email_placeholder()}
 											aria-invalid={$emailErrors.email ? 'true' : undefined}
 											{...$emailConstraints.email}
 											oninput={async (e: any) => {
@@ -547,7 +547,7 @@
 										/>
 									{/snippet}
 								</Form.Control>
-								<Form.Description>We'll send your order confirmation here</Form.Description>
+								<Form.Description>{m.email_confirmation_text()}</Form.Description>
 								<Form.FieldErrors />
 							</Form.Field>
 						</form>
@@ -564,7 +564,7 @@
 								disabled={!checkout.emailValidated}
 							>
 								<span class="flex items-center gap-2">
-									Continue to Shipping
+									{m.checkout_continue_to_shipping()}
 									<svg
 										xmlns="http://www.w3.org/2000/svg"
 										class="h-5 w-5"
@@ -644,7 +644,8 @@
 									{#snippet children({ props })}
 										<Form.Label
 											>{m.checkout_first_name()}
-											<span class="text-red-600" aria-label="required">*</span></Form.Label
+											<span class="text-red-600" aria-label={m.required_field()}>*</span
+											></Form.Label
 										>
 										<Input
 											{...props}
@@ -668,7 +669,8 @@
 									{#snippet children({ props })}
 										<Form.Label
 											>{m.checkout_last_name()}
-											<span class="text-red-600" aria-label="required">*</span></Form.Label
+											<span class="text-red-600" aria-label={m.required_field()}>*</span
+											></Form.Label
 										>
 										<Input
 											{...props}
@@ -694,7 +696,7 @@
 								{#snippet children({ props })}
 									<Form.Label
 										>{checkout.addressStructure.labels.addressLine1}
-										<span class="text-red-600" aria-label="required">*</span></Form.Label
+										<span class="text-red-600" aria-label={m.required_field()}>*</span></Form.Label
 									>
 									<Input
 										{...props}
@@ -738,7 +740,8 @@
 									{#snippet children({ props })}
 										<Form.Label
 											>{checkout.addressStructure.labels.city}
-											<span class="text-red-600" aria-label="required">*</span></Form.Label
+											<span class="text-red-600" aria-label={m.required_field()}>*</span
+											></Form.Label
 										>
 										<Input
 											{...props}
@@ -766,7 +769,7 @@
 													checkout.addressStructure.labels.prefecture ||
 													checkout.addressStructure.labels.province ||
 													checkout.addressStructure.labels.county}
-												<span class="text-red-600" aria-label="required">*</span>
+												<span class="text-red-600" aria-label={m.required_field()}>*</span>
 											</Form.Label>
 											<Input
 												{...props}
@@ -793,7 +796,8 @@
 									{#snippet children({ props })}
 										<Form.Label
 											>{checkout.addressStructure.labels.postalCode}
-											<span class="text-red-600" aria-label="required">*</span></Form.Label
+											<span class="text-red-600" aria-label={m.required_field()}>*</span
+											></Form.Label
 										>
 										<Input
 											{...props}
@@ -887,12 +891,12 @@
 										clip-rule="evenodd"
 									/>
 								</svg>
-								Back to Contact
+								{m.back_to_contact()}
 							</span>
 						</Button>
 						<Button class="md:w-auto" onclick={goToNextStep} disabled={!checkout.shippingValidated}>
 							<span class="flex items-center gap-2">
-								Continue to Payment
+								{m.continue_to_payment()}
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									class="h-5 w-5"
@@ -916,7 +920,7 @@
 				<div class="flex items-center justify-between w-full mb-6">
 					<h2 class="text-2xl font-semibold flex items-center gap-2">
 						<CreditCard class="h-5 w-5" />
-						Payment Information
+						{m.payment_information()}
 						{#if formErrors.payment}
 							<span
 								class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-destructive ml-2 error-indicator"
@@ -969,12 +973,12 @@
 						<Form.Field form={paymentSuperForm} name="cardNumber">
 							<Form.Control>
 								{#snippet children({ props })}
-									<Form.Label>Card Number</Form.Label>
+									<Form.Label>{m.card_number()}</Form.Label>
 									<div class="relative">
 										<Input
 											{...props}
 											bind:value={$paymentForm.cardNumber}
-											placeholder="1234 5678 9012 3456"
+											placeholder={m.card_number_placeholder()}
 											style="padding-right: 2.5rem;"
 											maxlength={19}
 											onblur={async () => {
@@ -1009,11 +1013,11 @@
 						<Form.Field form={paymentSuperForm} name="cardHolder">
 							<Form.Control>
 								{#snippet children({ props })}
-									<Form.Label>Cardholder Name</Form.Label>
+									<Form.Label>{m.cardholder_name()}</Form.Label>
 									<Input
 										{...props}
 										bind:value={$paymentForm.cardHolder}
-										placeholder="John Doe"
+										placeholder={m.cardholder_placeholder()}
 										onblur={async () => {
 											await validatePayment('cardHolder');
 										}}
@@ -1033,7 +1037,7 @@
 							<Form.Field form={paymentSuperForm} name="expiryDate">
 								<Form.Control>
 									{#snippet children({ props })}
-										<Form.Label>Expiry Date</Form.Label>
+										<Form.Label>{m.checkout_expiry_date()}</Form.Label>
 										<Input
 											{...props}
 											bind:value={$paymentForm.expiryDate}
@@ -1067,7 +1071,7 @@
 							<Form.Field form={paymentSuperForm} name="cvv">
 								<Form.Control>
 									{#snippet children({ props })}
-										<Form.Label>CVV</Form.Label>
+										<Form.Label>{m.checkout_cvv()}</Form.Label>
 										<Input
 											{...props}
 											bind:value={$paymentForm.cvv}
@@ -1109,7 +1113,7 @@
 											/>
 										</svg>
 									</div>
-									<span class="text-sm font-medium">Secure Payment</span>
+									<span class="text-sm font-medium">{m.checkout_secure_payment()}</span>
 								</div>
 								<div class="flex items-center">
 									<div class="mr-2 p-1 bg-blue-100 rounded-full">
@@ -1126,12 +1130,11 @@
 											/>
 										</svg>
 									</div>
-									<span class="text-sm font-medium">Encrypted Data</span>
+									<span class="text-sm font-medium">{m.checkout_encrypted_data()}</span>
 								</div>
 							</div>
 							<p class="text-xs text-muted-foreground">
-								Your payment information is securely processed and encrypted. We do not store your
-								full card details on our servers.
+								{m.payment_security_text()}
 							</p>
 						</div>
 
@@ -1149,7 +1152,7 @@
 								class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
 							/>
 							<label for="savePaymentMethod" class="text-sm text-muted-foreground">
-								Save this payment method for future purchases
+								{m.save_payment_method_text()}
 							</label>
 						</div>
 					</div>
@@ -1172,7 +1175,7 @@
 										clip-rule="evenodd"
 									/>
 								</svg>
-								Back to Shipping
+								{m.back_to_shipping()}
 							</span>
 						</Button>
 					</div>
@@ -1199,7 +1202,7 @@
 							<ShoppingBag class="h-5 w-5" />
 							<span class="font-medium">{m.checkout_order_summary()}</span>
 							<span class="text-sm text-muted-foreground ml-1"
-								>({data.cart.items.length} {data.cart.items.length === 1 ? 'item' : 'items'})</span
+								>({m.items_count({ count: data.cart.items.length })})</span
 							>
 						</div>
 						<div class="flex items-center gap-2">
@@ -1410,8 +1413,8 @@
 									•••• •••• •••• {$paymentForm.cardNumber.slice(-4)}
 								</div>
 								<div class="flex justify-between items-center text-sm">
-									<span class="text-primary-foreground/80">{$paymentForm.cardHolder}</span>
-									<span class="text-primary-foreground/80">{$paymentForm.expiryDate}</span>
+									<span class="text-primary-foreground/80">{m.checkout_card_holder()}</span>
+									<span class="text-primary-foreground/80">{m.checkout_expires()}</span>
 								</div>
 							</div>
 						</div>
@@ -1425,7 +1428,7 @@
 						class="pt-6 border-t"
 						use:enhance={async () => {
 							// Show processing toast with longer duration
-							const processingToast = toast.loading('Processing your order...', {
+							const processingToast = toast.loading(m.order_processing_message(), {
 								duration: 60000
 							});
 
@@ -1441,7 +1444,7 @@
 
 									if (orderId) {
 										// Show success message
-										toast.success('Order placed successfully!', { duration: 3000 });
+										toast.success(m.order_success(), { duration: 3000 });
 
 										// Reset checkout store
 										checkoutStore.reset();
@@ -1464,11 +1467,11 @@
 									const errorMessage =
 										typeof result.data.message === 'string'
 											? result.data.message
-											: 'Failed to place order';
+											: m.order_failure();
 									toast.error(errorMessage);
 								} else {
 									// Show generic error message
-									toast.error('An error occurred while processing your order');
+									toast.error(m.order_generic_error());
 								}
 							};
 						}}
