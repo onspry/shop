@@ -4,8 +4,8 @@ export interface ProductViewModel {
     name: string;
     description: string;
     category: string;
-    features: string[];
-    specifications: Record<string, unknown>;
+    features: string[]; // Localized for current language
+    specifications: Record<string, unknown>; // Localized for current language
     images: ProductImageViewModel[];
     variants: ProductVariantViewModel[];
     isAccessory: boolean;

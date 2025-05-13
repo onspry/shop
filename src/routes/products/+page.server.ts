@@ -11,11 +11,12 @@ export const config = {
     }
 };
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ url, locals }) => {
     const page = parseInt(url.searchParams.get('page') || '1', 10);
     const pageSize = parseInt(url.searchParams.get('size') || '12', 10);
+    const locale = locals.paraglide?.lang || 'en';
 
-    const catalogue = await productRepository.getCatalogue(page, pageSize);
+    const catalogue = await productRepository.getCatalogue(page, pageSize, locale);
 
     return {
         catalogue

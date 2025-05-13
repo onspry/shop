@@ -4,6 +4,7 @@ generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
   output        = "../node_modules/.prisma/client"
+  engineType    = "binary" // Use binary engine for better performance
 }
 
 // Seed configuration
@@ -93,10 +94,10 @@ model Product {
   slug             String    @unique
   category         String
   name             String
-  description      String    // Keep as fallback
-  descriptions     Json      @default("{}") // Multilingual descriptions
-  features         String[]  @default([])
-  specifications   Json      @default("{}")
+  // Multilingual content as JSON fields
+  descriptions     Json      @default("{}") // Multilingual descriptions: { "en": "text", "de": "text" }
+  features         Json      @default("{}") // Multilingual features: { "en": ["feature1", "feature2"], "de": ["feature1", "feature2"] }
+  specifications   Json      @default("{}") // Multilingual specs: { "en": { "key": "value" }, "de": { "key": "value" } }
   isAccessory      Boolean   @default(false) @map("is_accessory")
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")

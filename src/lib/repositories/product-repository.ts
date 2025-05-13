@@ -3,6 +3,8 @@ import type { Product, ProductVariant, ProductImage } from '@prisma/client';
 import type { ProductViewModel, ProductVariantViewModel } from '../models/product';
 import type { CatalogueViewModel, ProductGroup } from '../models/catalogue';
 import { VariantError } from '$lib/errors/shop-errors';
+import { getLocalizedValue, type Locale } from '$lib/utils/localization';
+import type { LocalizedValue } from '$lib/types/localization';
 
 // Helper function to determine stock status
 function getStockStatus(quantity: number): 'in_stock' | 'low_stock' | 'out_of_stock' {
@@ -31,14 +33,28 @@ export function toProductVariantViewModel(variant: ProductVariant): ProductVaria
 function toProductViewModel(product: Product & {
     variants: ProductVariant[];
     images: ProductImage[];
-}): ProductViewModel {
+}, locale: Locale = 'en'): ProductViewModel {
+    // Get localized description
+    const localizedDescription = getLocalizedValue(
+        product.descriptions as unknown as Record<string, LocalizedValue>,
+        locale
+    ) as string;
+
+    // Handle features - ensure it's a string array
+    const rawFeatures = getLocalizedValue(product.features as unknown as Record<string, LocalizedValue>, locale);
+    const features = Array.isArray(rawFeatures) ? rawFeatures : [];
+
+    // Handle specifications - ensure it's a Record<string, unknown>
+    const rawSpecs = getLocalizedValue(product.specifications as unknown as Record<string, LocalizedValue>, locale);
+    const specifications = typeof rawSpecs === 'object' && rawSpecs !== null ? rawSpecs as Record<string, unknown> : {};
+
     return {
         id: product.id,
         name: product.name,
-        description: product.description,
+        description: localizedDescription || product.description, // Use localized description or fall back to legacy field
         category: product.category,
-        features: product.features || [],
-        specifications: product.specifications as Record<string, unknown>,
+        features,
+        specifications,
         images: product.images.map(img => ({
             id: img.id,
             url: img.url,
@@ -56,7 +72,7 @@ function toProductViewModel(product: Product & {
 
 // Repository methods
 export const productRepository = {
-    async getProducts(category?: string, page: number = 1, pageSize: number = 50): Promise<{
+    async getProducts(category?: string, page: number = 1, pageSize: number = 50, locale: Locale = 'en'): Promise<{
         products: ProductViewModel[];
         total: number;
     }> {
@@ -79,7 +95,7 @@ export const productRepository = {
             ]);
 
             return {
-                products: products.map(toProductViewModel),
+                products: products.map(p => toProductViewModel(p, locale)),
                 total
             };
         } catch (error) {
@@ -88,34 +104,7 @@ export const productRepository = {
         }
     },
 
-    async getCatalogue(page: number = 1, pageSize: number = 50): Promise<CatalogueViewModel> {
-        try {
-            // 1. Get products and total count
-            const { products, total } = await this.getProducts(undefined, page, pageSize);
-
-            // 2. Group products by category
-            const productGroups = products.reduce((acc, product) => {
-                if (!acc[product.category]) {
-                    acc[product.category] = [];
-                }
-                acc[product.category].push(product);
-                return acc;
-            }, {} as Record<string, ProductViewModel[]>);
-
-            const groups: ProductGroup[] = Object.entries(productGroups).map(([category, products]) => ({
-                category,
-                products
-            }));
-
-            // 3. Call the transformation helper with grouped data and total
-            return this.toCatalogueViewModel(groups, total);
-        } catch (error) {
-            console.error('Error getting catalogue:', error);
-            throw new Error('Failed to retrieve catalogue');
-        }
-    },
-
-    async getProduct(slug: string): Promise<{
+    async getProduct(slug: string, locale: Locale = 'en'): Promise<{
         product: ProductViewModel;
         defaultVariantId: string | null;
     }> {
@@ -136,7 +125,7 @@ export const productRepository = {
                 throw new Error('Product not found');
             }
 
-            const productViewModel = toProductViewModel(product);
+            const productViewModel = toProductViewModel(product, locale);
             const defaultVariantId = product.variants.length > 0 ? product.variants[0].id : null;
 
             return {
@@ -145,7 +134,6 @@ export const productRepository = {
             };
         } catch (error) {
             console.error(`Error getting product ${slug}:`, error);
-            // Re-throw the original error if it's a 'Product not found' error
             if (error instanceof Error && error.message === 'Product not found') {
                 throw error;
             }
@@ -156,7 +144,8 @@ export const productRepository = {
     async getProductsByCategory(
         category: string,
         page: number = 1,
-        pageSize: number = 50
+        pageSize: number = 50,
+        locale: Locale = 'en'
     ): Promise<{
         products: ProductViewModel[];
         total: number;
@@ -180,14 +169,98 @@ export const productRepository = {
             ]);
 
             return {
-                products: products.map(toProductViewModel),
+                products: products.map(p => toProductViewModel(p, locale)),
                 total
             };
-
         } catch (error) {
             console.error(`Error getting products for category ${category}:`, error);
             throw new Error('Failed to retrieve products by category');
         }
+    },
+
+    async searchProducts(
+        query: string,
+        page: number = 1,
+        pageSize: number = 50,
+        locale: Locale = 'en'
+    ): Promise<{
+        products: ProductViewModel[];
+        total: number;
+    }> {
+        try {
+            const skip = (page - 1) * pageSize;
+            const [products, total] = await Promise.all([
+                prisma.product.findMany({
+                    where: {
+                        OR: [
+                            { name: { contains: query, mode: 'insensitive' } },
+                            { description: { contains: query, mode: 'insensitive' } },
+                            { category: { contains: query, mode: 'insensitive' } }
+                        ]
+                    },
+                    include: {
+                        variants: true,
+                        images: true
+                    },
+                    skip,
+                    take: pageSize,
+                    orderBy: { name: 'asc' }
+                }),
+                prisma.product.count({
+                    where: {
+                        OR: [
+                            { name: { contains: query, mode: 'insensitive' } },
+                            { description: { contains: query, mode: 'insensitive' } },
+                            { category: { contains: query, mode: 'insensitive' } }
+                        ]
+                    }
+                })
+            ]);
+
+            return {
+                products: products.map(p => toProductViewModel(p, locale)),
+                total
+            };
+        } catch (error) {
+            console.error(`Error searching products for query "${query}":`, error);
+            throw new Error('Failed to search products');
+        }
+    },
+
+    async getCatalogue(page: number = 1, pageSize: number = 50, locale: Locale = 'en'): Promise<CatalogueViewModel> {
+        try {
+            // 1. Get products and total count
+            const { products, total } = await this.getProducts(undefined, page, pageSize, locale);
+
+            // 2. Group products by category
+            const productGroups = products.reduce((acc, product) => {
+                if (!acc[product.category]) {
+                    acc[product.category] = [];
+                }
+                acc[product.category].push(product);
+                return acc;
+            }, {} as Record<string, ProductViewModel[]>);
+
+            const groups: ProductGroup[] = Object.entries(productGroups).map(([category, products]) => ({
+                category,
+                products
+            }));
+
+            // 3. Call the transformation helper with grouped data and total
+            return this.toCatalogueViewModel(groups, total);
+        } catch (error) {
+            console.error('Error getting catalogue:', error);
+            throw new Error('Failed to retrieve catalogue');
+        }
+    },
+
+    // Helper function to transform grouped products to catalogue view
+    toCatalogueViewModel(productGroups: ProductGroup[], totalProducts: number): CatalogueViewModel {
+        return {
+            productGroups,
+            totalProducts,
+            categories: productGroups.map(group => group.category)
+        };
     },
 
     async updateVariantStock(variantId: string, quantity: number): Promise<void> {
@@ -420,79 +493,24 @@ export const productRepository = {
         }
     },
 
-    async searchProducts(
-        query: string,
-        page: number = 1,
-        pageSize: number = 50
-    ): Promise<{
-        products: ProductViewModel[];
-        total: number;
-    }> {
-        try {
-            const skip = (page - 1) * pageSize;
-            const [products, total] = await Promise.all([
-                prisma.product.findMany({
-                    where: {
-                        OR: [
-                            { name: { contains: query, mode: 'insensitive' } },
-                            { description: { contains: query, mode: 'insensitive' } },
-                            { category: { contains: query, mode: 'insensitive' } }
-                        ]
-                    },
-                    include: {
-                        variants: true,
-                        images: true
-                    },
-                    skip,
-                    take: pageSize,
-                    orderBy: { name: 'asc' }
-                }),
-                prisma.product.count({
-                    where: {
-                        OR: [
-                            { name: { contains: query, mode: 'insensitive' } },
-                            { description: { contains: query, mode: 'insensitive' } },
-                            { category: { contains: query, mode: 'insensitive' } }
-                        ]
-                    }
-                })
-            ]);
-
-            return {
-                products: products.map(toProductViewModel),
-                total
-            };
-        } catch (error) {
-            console.error(`Error searching products for query "${query}":`, error);
-            throw new Error('Failed to search products');
-        }
-    },
-
-    async getFeaturedProducts(limit: number = 10): Promise<ProductViewModel[]> {
+    async getFeaturedProducts(limit: number = 10, locale: Locale = 'en'): Promise<ProductViewModel[]> {
         try {
             const products = await prisma.product.findMany({
+                take: limit,
                 include: {
                     variants: true,
                     images: true
                 },
-                take: limit,
-                orderBy: { createdAt: 'desc' }
+                orderBy: {
+                    createdAt: 'desc'
+                }
             });
 
-            return products.map(toProductViewModel);
+            return products.map(p => toProductViewModel(p, locale));
         } catch (error) {
             console.error('Error getting featured products:', error);
             throw new Error('Failed to retrieve featured products');
         }
-    },
-
-    // Helper function to transform grouped products to catalogue view
-    toCatalogueViewModel(productGroups: ProductGroup[], totalProducts: number): CatalogueViewModel {
-        return {
-            productGroups,
-            totalProducts,
-            categories: productGroups.map(group => group.category)
-        };
     },
 
     /**

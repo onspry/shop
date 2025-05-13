@@ -100,11 +100,37 @@
 			compatibleKeycaps = [];
 			return;
 		}
-		compatibleKeycaps = ProductCompatibilityService.filterCompatibleProducts(
+
+		// First try standard compatibility filtering through the service
+		let filteredKeycaps = ProductCompatibilityService.filterCompatibleProducts(
 			product,
 			selectedSwitch,
 			keycaps
 		).flatMap((k) => k.variants);
+
+		// If we have no results, and we have keycaps available, check the stemType attribute directly
+		// This is a fallback for multilingual content that might not be properly structured
+		if (filteredKeycaps.length === 0 && keycaps.length > 0) {
+			const switchStemType = getVariantAttribute(selectedSwitch, 'stemType', '');
+			if (switchStemType) {
+				// Get all keycap variants that support this stem type
+				filteredKeycaps = keycaps
+					.flatMap((k: ProductViewModel) => k.variants)
+					.filter((keycapVariant: ProductVariantViewModel) => {
+						const keycapStemTypes = getVariantAttribute<string | string[]>(
+							keycapVariant,
+							'stemType',
+							[]
+						);
+						if (Array.isArray(keycapStemTypes)) {
+							return keycapStemTypes.includes(switchStemType);
+						}
+						return keycapStemTypes === switchStemType;
+					});
+			}
+		}
+
+		compatibleKeycaps = filteredKeycaps;
 	});
 
 	$effect(() => {

@@ -18,21 +18,24 @@ export const config = {
     }
 };
 
-export const load: PageServerLoad = async ({ params, url, setHeaders }) => {
+export const load: PageServerLoad = async ({ params, url, setHeaders, locals }) => {
     // Set cache headers for dynamic content
     setHeaders({
         'Cache-Control': 'public, max-age=1800, stale-while-revalidate=86400'
     });
 
-    const result = await productRepository.getProduct(params.slug);
+    // Get locale from locals or fall back to 'en'
+    const locale = locals.paraglide?.lang || 'en';
+
+    const result = await productRepository.getProduct(params.slug, locale);
 
     // If this is a keyboard, fetch compatible switches and keycaps
     let switches: ProductViewModel[] = [];
     let keycaps: ProductViewModel[] = [];
     if (result.product.category === 'KEYBOARD') {
-        const switchesResult = await productRepository.getProductsByCategory('SWITCH');
+        const switchesResult = await productRepository.getProductsByCategory('SWITCH', 1, 50, locale);
         switches = switchesResult.products;
-        const keycapsResult = await productRepository.getProductsByCategory('KEYCAP');
+        const keycapsResult = await productRepository.getProductsByCategory('KEYCAP', 1, 50, locale);
         keycaps = keycapsResult.products;
     }
 
