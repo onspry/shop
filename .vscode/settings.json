@@ -1,2 +1,17 @@
 {
+	"css.lint.unknownAtRules": "ignore",
+	"editor.quickSuggestions": {
+		"strings": true
+	},
+	"emmet.includeLanguages": {
+		"postcss": "css",
+		"svelte": "html"
+	},
+	"files.associations": {
+		"*.css": "postcss"
+	},
+	"tailwindCSS.experimental.configFile": "tailwind.config.ts",
+	"tailwindCSS.includeLanguages": {
+		"svelte": "html"
+	}
 }
