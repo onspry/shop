@@ -205,6 +205,19 @@ html.fonts-failed {
     margin-left: auto;
     margin-right: auto;
   }
+  
+  /* Style links in containers orange without affecting layout */
+  .container a {
+    color: hsl(var(--primary));
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+  }
+  
+  .container a:hover {
+    color: hsl(var(--primary) / 0.8);
+  }
+  
   /* Layout container for consistent spacing */
   .layout-container {
     width: 100%;
