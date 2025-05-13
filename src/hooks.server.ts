@@ -48,6 +48,16 @@ const paraglideHandle: Handle = ({ event, resolve }) => {
 			textDirection: 'ltr'
 		};
 
+		// // Set cookie to remember the user's language preference
+		// if (event.cookies) {
+		// 	event.cookies.set('PARAGLIDE_LOCALE', safeLocale, {
+		// 		path: '/',
+		// 		httpOnly: false, // Allow client-side access
+		// 		maxAge: 60 * 60 * 24 * 365, // 1 year
+		// 		sameSite: 'lax'
+		// 	});
+		// }
+
 		return resolve(event, {
 			transformPageChunk: ({ html }) => {
 				return html

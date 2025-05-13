@@ -51,7 +51,7 @@ function toProductViewModel(product: Product & {
     return {
         id: product.id,
         name: product.name,
-        description: localizedDescription || product.description, // Use localized description or fall back to legacy field
+        description: localizedDescription, // Use localized description or fall back to legacy field
         category: product.category,
         features,
         specifications,
@@ -194,7 +194,6 @@ export const productRepository = {
                     where: {
                         OR: [
                             { name: { contains: query, mode: 'insensitive' } },
-                            { description: { contains: query, mode: 'insensitive' } },
                             { category: { contains: query, mode: 'insensitive' } }
                         ]
                     },
@@ -210,7 +209,6 @@ export const productRepository = {
                     where: {
                         OR: [
                             { name: { contains: query, mode: 'insensitive' } },
-                            { description: { contains: query, mode: 'insensitive' } },
                             { category: { contains: query, mode: 'insensitive' } }
                         ]
                     }

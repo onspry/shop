@@ -82,6 +82,6 @@
 		"@oslojs/encoding": "^1.1.0",
 		"@prisma/client": "^6.7.0",
 		"arctic": "^3.3.0",
-		"light": "^2.0.0-alpha.26"
+		"marked": "^15.0.11"
 	}
 }

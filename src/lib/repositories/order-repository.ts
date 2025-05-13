@@ -7,6 +7,7 @@ import type { CartItemViewModel } from '$lib/models/cart';
 import { formatOrderNumber } from '$lib/utils/order';
 import { sendOrderConfirmationEmail } from '$lib/server/email/order-confirmation';
 import { prisma } from '$lib/server/db';
+import { Prisma } from '@prisma/client';
 
 // Using OrderViewModel from models/order.ts
 
@@ -157,126 +158,124 @@ export class OrderRepository {
         const orderId = generateUUID();
         const totalAmount = data.subtotal + data.taxAmount + data.shipping.amount - (data.discountAmount || 0);
 
-        try {
-            // Use Prisma transaction
-            await prisma.$transaction(async (tx) => {
-                // Create order
-                await tx.order.create({
-                    data: {
-                        id: orderId,
-                        userId: data.userId,
-                        cartId: data.cartId,
-                        status: OrderStatus.PENDING_PAYMENT,
-                        email: data.shipping.address.email,
-                        firstName: data.shipping.address.firstName,
-                        lastName: data.shipping.address.lastName,
-                        subtotal: data.subtotal,
-                        discountAmount: data.discountAmount || 0,
-                        total: totalAmount,
-                        stripePaymentIntentId: data.payment.intentId
-                    }
-                });
-
-                // Create order items
-                const orderItemsData = data.items
-                    .filter(isValidOrderItem)
-                    .map(item => ({
-                        id: generateUUID(),
-                        orderId,
-                        productId: item.productId,
-                        variantId: item.variantId,
-                        quantity: item.quantity,
-                        price: item.unitPrice,
-                        name: item.productName || 'Product',
-                        variantName: item.variantName || 'Variant',
-                        // Prisma expects a JSON value for the composites field
-                        composites: item.composites ? JSON.parse(JSON.stringify(item.composites)) : []
-                    }));
-
-                // Only insert order items if there are any
-                if (orderItemsData.length > 0) {
-                    try {
-                        // Insert the order items - we've already validated them
-                        await tx.orderItem.createMany({
-                            data: orderItemsData
-                        });
-                    } catch (error) {
-                        throw new Error('Failed to create order items. No valid product variant IDs found. Please check your cart items.');
-                    }
-                } else {
-                    throw new Error('Order must have at least one item');
-                }
-
-                // Create shipping address
-                await tx.orderAddress.create({
-                    data: {
-                        id: generateUUID(),
-                        orderId,
-                        type: 'shipping',
-                        firstName: data.shipping.address.firstName,
-                        lastName: data.shipping.address.lastName,
-                        address1: data.shipping.address.address1,
-                        address2: data.shipping.address.address2 || '',
-                        city: data.shipping.address.city,
-                        state: data.shipping.address.state || '', // Ensure state is never null
-                        postalCode: data.shipping.address.postalCode,
-                        country: data.shipping.address.country,
-                        phone: data.shipping.address.phone || ''
-                    }
-                });
-
-                // Create initial status history
-                await tx.orderStatusHistory.create({
-                    data: {
-                        id: generateUUID(),
-                        orderId,
-                        status: OrderStatus.PENDING_PAYMENT,
-                        note: 'Order created'
-                    }
-                });
-
-                // Update inventory
-                for (const item of data.items) {
-                    if (item.variantId) {
-                        await tx.inventoryTransaction.create({
-                            data: {
-                                id: generateUUID(),
-                                variantId: item.variantId,
-                                orderId,
-                                type: TransactionType.ORDER,
-                                quantity: -item.quantity,
-                                note: `Order ${orderId}`
-                            }
-                        });
-                    }
+        // Use Prisma transaction
+        await prisma.$transaction(async (tx) => {
+            // Create order
+            await tx.order.create({
+                data: {
+                    id: orderId,
+                    userId: data.userId,
+                    cartId: data.cartId,
+                    status: OrderStatus.PENDING_PAYMENT,
+                    email: data.shipping.address.email,
+                    firstName: data.shipping.address.firstName,
+                    lastName: data.shipping.address.lastName,
+                    subtotal: data.subtotal,
+                    discountAmount: data.discountAmount || 0,
+                    total: totalAmount,
+                    stripePaymentIntentId: data.payment.intentId
                 }
             });
 
-            const orderViewModel = await this.getOrderById(orderId);
-            if (!orderViewModel) {
-                throw new Error('Failed to create order');
+            // Create order items
+            const orderItemsData = data.items
+                .filter(isValidOrderItem)
+                .map(item => ({
+                    id: generateUUID(),
+                    orderId,
+                    productId: item.productId,
+                    variantId: item.variantId,
+                    quantity: item.quantity,
+                    price: item.unitPrice,
+                    name: item.productName || 'Product',
+                    variantName: item.variantName || 'Variant',
+                    // Prisma expects a JSON value for the composites field
+                    composites: item.composites ? JSON.parse(JSON.stringify(item.composites)) : []
+                }));
+
+            // Only insert order items if there are any
+            if (orderItemsData.length > 0) {
+                try {
+                    // Insert the order items - we've already validated them
+                    await tx.orderItem.createMany({
+                        data: orderItemsData
+                    });
+                } catch {
+                    throw new Error('Failed to create order items. No valid product variant IDs found. Please check your cart items.');
+                }
+            } else {
+                throw new Error('Order must have at least one item');
             }
 
-            // Get the full Order record from the database
-            const createdOrder = await prisma.order.findUnique({
-                where: { id: orderId }
+            // Create shipping address
+            await tx.orderAddress.create({
+                data: {
+                    id: generateUUID(),
+                    orderId,
+                    type: 'shipping',
+                    firstName: data.shipping.address.firstName,
+                    lastName: data.shipping.address.lastName,
+                    address1: data.shipping.address.address1,
+                    address2: data.shipping.address.address2 || '',
+                    city: data.shipping.address.city,
+                    state: data.shipping.address.state || '', // Ensure state is never null
+                    postalCode: data.shipping.address.postalCode,
+                    country: data.shipping.address.country,
+                    phone: data.shipping.address.phone || ''
+                }
             });
 
-            if (!createdOrder) {
-                throw new Error('Failed to retrieve created order');
-            }
+            // Create initial status history
+            await tx.orderStatusHistory.create({
+                data: {
+                    id: generateUUID(),
+                    orderId,
+                    status: OrderStatus.PENDING_PAYMENT,
+                    note: 'Order created'
+                }
+            });
 
-            // Send order confirmation email
-            try {
-                await sendOrderConfirmationEmail(orderViewModel);
-            } catch (emailError: unknown) {
-                // Log the error but don't fail the order creation
+            // Update inventory
+            for (const item of data.items) {
+                if (item.variantId) {
+                    await tx.inventoryTransaction.create({
+                        data: {
+                            id: generateUUID(),
+                            variantId: item.variantId,
+                            orderId,
+                            type: TransactionType.ORDER,
+                            quantity: -item.quantity,
+                            note: `Order ${orderId}`
+                        }
+                    });
+                }
             }
+        });
 
-            return createdOrder;
-        } catch (error) {
-            throw error;
+        const orderViewModel = await this.getOrderById(orderId);
+        if (!orderViewModel) {
+            throw new Error('Failed to create order');
         }
+
+        // Get the full Order record from the database
+        const createdOrder = await prisma.order.findUnique({
+            where: { id: orderId }
+        });
+
+        if (!createdOrder) {
+            throw new Error('Failed to retrieve created order');
+        }
+
+        // Send order confirmation email
+        try {
+            await sendOrderConfirmationEmail(orderViewModel);
+        } catch (error) {
+            // Log the error but don't fail the order creation
+            console.error('Failed to send order confirmation email', error);
+        }
+
+        return createdOrder;
+
     }
 
     /**
@@ -313,13 +312,14 @@ export class OrderRepository {
                         composites = item.composites;
                     } else if (typeof item.composites === 'object' && item.composites !== null) {
                         // If it's an object (like Prisma's JsonValue), convert it to an array if possible
-                        const jsonValue = item.composites as any;
-                        if (jsonValue.length !== undefined) {
-                            composites = Array.from(jsonValue);
+                        const jsonValue = item.composites as Prisma.JsonValue;
+                        if (jsonValue && typeof jsonValue === 'object' && 'length' in jsonValue) {
+                            composites = Array.from(jsonValue as unknown[]);
                         }
                     }
                 } catch (e) {
                     composites = [];
+                    console.error('Failed to parse composites:', e);
                 }
 
                 return {
@@ -380,6 +380,7 @@ export class OrderRepository {
 
             return viewModel;
         } catch (error) {
+            console.error('Failed to get order by ID:', error);
             return null;
         }
     }
@@ -528,6 +529,7 @@ export class OrderRepository {
             const orders = results.map(result => this.mapToViewModel(result));
             return orders.filter((order): order is OrderViewModel => order !== null);
         } catch (error) {
+            console.error('Failed to get orders for user:', error);
             return [];
         }
     }
@@ -552,6 +554,7 @@ export class OrderRepository {
                 createdAt: item.createdAt.toISOString()
             }));
         } catch (error) {
+            console.error('Failed to get order status history:', error);
             return [];
         }
     }
@@ -581,6 +584,7 @@ export class OrderRepository {
             const orders = results.map(result => this.mapToViewModel(result));
             return orders.filter((order): order is OrderViewModel => order !== null);
         } catch (error) {
+            console.error('Failed to get orders by status:', error);
             return [];
         }
     }
@@ -601,6 +605,7 @@ export class OrderRepository {
 
             return transactions;
         } catch (error) {
+            console.error('Failed to get order payment transactions:', error);
             return [];
         }
     }

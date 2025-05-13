@@ -229,28 +229,22 @@ export class CartRepository {
             // Parse composites from JSON if they exist
             let composites = [];
             if (item.composites) {
-                console.log('[CART-REPO] Item composites type:', typeof item.composites);
-                console.log('[CART-REPO] Item composites value:', item.composites);
 
                 try {
                     // If composites is already an array, use it directly
                     if (Array.isArray(item.composites)) {
-                        console.log('[CART-REPO] Composites is an array');
                         composites = item.composites;
                     }
                     // If it's a string, parse it
                     else if (typeof item.composites === 'string') {
-                        console.log('[CART-REPO] Composites is a string, parsing...');
                         composites = JSON.parse(item.composites);
                     }
                     // If it's an object with a toJSON method (like Prisma's JsonValue), use that
                     else if (typeof item.composites === 'object') {
-                        console.log('[CART-REPO] Composites is an object');
                         // Cast to array if it's a JSON object
                         composites = Array.isArray(item.composites) ? item.composites : [];
                     }
 
-                    console.log('[CART-REPO] Parsed composites:', composites);
                 } catch (error) {
                     console.error('Error parsing composites:', error);
                     composites = [];

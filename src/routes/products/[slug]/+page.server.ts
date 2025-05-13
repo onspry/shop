@@ -98,8 +98,6 @@ export const actions: Actions = {
                 }
             }
 
-            console.log('[PAGE.SERVER] Extracted composites:', composites);
-
             // Get or create cart
             const userCart = await cartRepository.getOrCreateCart(sessionId, userId);
 

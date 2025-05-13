@@ -25,12 +25,6 @@
 		currentItem = item;
 	});
 
-	// Log initial item state
-	console.log('[CART-ITEM] Initial item:', item);
-	console.log('[CART-ITEM] Initial composites:', item.composites);
-	console.log('[CART-ITEM] Image URL:', item.imageUrl);
-	console.log('[CART-ITEM] Variant attributes:', item.variant?.attributes);
-
 	// Quantity can't go below 1 or above available stock
 	const minQuantity = 1;
 	const maxQuantity = $derived(currentItem?.variant?.stock_quantity || 1);
