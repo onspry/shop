@@ -4,7 +4,7 @@ Bei Onspry respektieren wir Ihre Privatsphäre und verpflichten uns, Ihre persö
 
 Wir sammeln nur die notwendigen Informationen, um Ihnen unsere Produkte und Dienstleistungen zur Verfügung zu stellen. Dazu gehören Ihr Name, Ihre E-Mail-Adresse, Lieferadresse und Zahlungsinformationen, wenn Sie eine Bestellung aufgeben. Wir teilen Ihre persönlichen Daten nicht mit Dritten, außer wenn es zur Erfüllung Ihrer Bestellung notwendig ist (wie z.B. die Weitergabe von Versandinformationen an Lieferdienste).
 
-Wenn Sie die Löschung Ihrer Daten beantragen möchten, kontaktieren Sie uns bitte unter support@onspry.com, und wir werden Ihre Anfrage umgehend bearbeiten.
+Wenn Sie die Löschung Ihrer Daten beantragen möchten, besuchen Sie bitte unsere Seite [Antrag auf Datenlöschung](/privacy/data-deletion) oder kontaktieren Sie uns unter support@onspry.com, und wir werden Ihre Anfrage umgehend bearbeiten.
 
 Für weitere Informationen über unsere Datenschutzpraktiken lesen Sie bitte die folgenden Abschnitte.
 
@@ -14,7 +14,7 @@ Wenn Sie in der Europäischen Union ansässig sind, haben Sie bestimmte Rechte g
 
 Mehr über diese Rechte erfahren Sie unter https://gdpr-info.eu/.
 
-Um eines dieser Rechte auszuüben, kontaktieren Sie uns bitte unter support@onspry.com.
+Um eines dieser Rechte auszuüben, einschließlich Ihres [Rechts auf Vergessenwerden](/privacy/data-deletion), kontaktieren Sie uns bitte unter support@onspry.com.
 
 ## Informationen zur Datenverarbeitung
 
@@ -25,5 +25,7 @@ Wir verarbeiten Ihre Daten nur für bestimmte Zwecke:
 - Um unsere Produkte und Dienstleistungen zu verbessern
 
 Ihre Daten werden sicher aufbewahrt und nur so lange wie nötig, um diese Zwecke zu erfüllen oder um gesetzlichen Verpflichtungen nachzukommen.
+
+Weitere Informationen darüber, wie wir Datenlöschungsanträge bearbeiten, finden Sie auf unserer speziellen Seite [Antrag auf Datenlöschung](/privacy/data-deletion).
 
 Für weitere Informationen über die DSGVO und Ihre Rechte besuchen Sie bitte https://gdpr-info.eu/. 

@@ -6,12 +6,11 @@ export const load: PageServerLoad = async ({ locals }) => {
     // Get the user's preferred language from locals
     const locale = locals.paraglide?.lang || 'en';
 
-    // Load content for the About page in the user's language
-    const { html } = await loadContent('about', locale);
+    // Load content for the data deletion page in the user's language
+    const { html } = await loadContent('data-deletion', locale);
 
     // Parse the HTML content into structured sections
     const structuredContent = parseStructuredContent(html);
-
 
     return structuredContent;
 }; 

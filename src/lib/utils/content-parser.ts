@@ -1,3 +1,5 @@
+import { localizeHref } from '$lib/paraglide/runtime';
+
 /**
  * Parses HTML content from markdown into structured sections
  * @param html HTML content generated from markdown
@@ -24,6 +26,7 @@ export function parseStructuredContent(html: string) {
         intro = introMatch[1].trim();
         // Convert plain URLs to links in intro section
         intro = convertUrlsToLinks(intro);
+        intro = localizeInternalHrefs(intro);
         contentWithoutTitle = contentWithoutTitle.replace(introMatch[1], '').trim();
     }
 
@@ -36,6 +39,7 @@ export function parseStructuredContent(html: string) {
             let sectionContent = match[2].trim();
             // Convert plain URLs to links in section content
             sectionContent = convertUrlsToLinks(sectionContent);
+            sectionContent = localizeInternalHrefs(sectionContent);
             sections.push({
                 title: sectionTitle,
                 content: sectionContent
@@ -51,19 +55,39 @@ export function parseStructuredContent(html: string) {
 }
 
 /**
+ * Applies localization to internal hrefs in HTML content
+ * @param content HTML content that may contain link elements
+ * @returns HTML content with localized internal hrefs
+ */
+function localizeInternalHrefs(content: string): string {
+    // Match <a> tags with href attribute that points to internal paths
+    // but exclude links that are already external (http://, https://, mailto:, etc.)
+    const internalLinkRegex = /<a\s+(?:[^>]*?\s+)?href=["'](?!https?:\/\/|mailto:|tel:|#)([^'"]+)["']([^>]*)>/gi;
+
+    // Replace internal hrefs with localized versions
+    return content.replace(internalLinkRegex, (match, path, rest) => {
+        // Make sure path starts with / for localizeHref
+        const internalPath = path.startsWith('/') ? path : `/${path}`;
+        return `<a href="${localizeHref(internalPath)}"${rest}>`;
+    });
+}
+
+/**
  * Converts plain text URLs to HTML anchor tags
  * @param content HTML content that may contain plain URLs
  * @returns HTML content with URLs converted to links
  */
 function convertUrlsToLinks(content: string): string {
-    // Regular expression to match URLs that aren't already in HTML links
+    // First, handle plain text URLs that aren't already in HTML links
     // This matches URLs starting with http://, https://, or www.
     const urlRegex = /(?<!["'=])(https?:\/\/|www\.)[^\s<>]+\.[^\s<>]+(?!["'>])/g;
 
-    // Replace URLs with HTML links
-    return content.replace(urlRegex, (url) => {
+    // Replace plain URLs with HTML links
+    const processedContent = content.replace(urlRegex, (url) => {
         // Add https:// prefix if the URL starts with www.
         const fullUrl = url.startsWith('www.') ? `https://${url}` : url;
         return `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer">${url}</a>`;
     });
+
+    return processedContent;
 } 
