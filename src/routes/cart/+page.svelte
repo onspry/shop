@@ -40,28 +40,28 @@
 		isCheckingOut = true;
 		// Simulate a small delay to show the loading state
 		setTimeout(() => {
-			goto('/checkout');
+			goto(localizeHref('/checkout'));
 		}, 300);
 	}
 </script>
 
 <div
-	class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-opacity duration-500"
+	class="mx-auto max-w-[1400px] px-4 py-8 transition-opacity duration-500 sm:px-6 lg:px-8"
 	class:opacity-0={!contentVisible}
 	class:opacity-100={contentVisible}
 >
 	{#if !$cart || !$cart.items || $cart.items.length === 0}
 		<!-- Empty Cart View - Full Width Layout -->
-		<div class="flex flex-col items-center justify-center py-24 px-4">
-			<div class="w-24 h-24 mb-6 relative">
-				<ShoppingCart size={64} class="text-muted-foreground absolute" />
-				<div class="w-full h-full rounded-full bg-muted/20 animate-pulse"></div>
+		<div class="flex flex-col items-center justify-center px-4 py-24">
+			<div class="relative mb-6 h-24 w-24">
+				<ShoppingCart size={64} class="absolute text-muted-foreground" />
+				<div class="h-full w-full animate-pulse rounded-full bg-muted/20"></div>
 			</div>
-			<h1 class="text-3xl font-bold mb-3 text-center">{m.cart_empty_title()}</h1>
-			<p class="text-muted-foreground mb-8 text-center max-w-md text-lg">
+			<h1 class="mb-3 text-center text-3xl font-bold">{m.cart_empty_title()}</h1>
+			<p class="mb-8 max-w-md text-center text-lg text-muted-foreground">
 				{m.cart_empty_message()}
 			</p>
-			<div class="flex flex-col sm:flex-row gap-4">
+			<div class="flex flex-col gap-4 sm:flex-row">
 				<Button href={localizeHref('/products')} size="lg" class="px-8">
 					{m.cart_browse_products()}
 					<ArrowRight class="ml-2 h-5 w-5" />
@@ -71,11 +71,11 @@
 		</div>
 	{:else}
 		<!-- Populated Cart View - Two Column Layout -->
-		<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+		<div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
 			<!-- Cart items list -->
 			<div class="lg:col-span-7">
-				<div class="flex items-center justify-between w-full mb-6">
-					<h1 class="text-2xl font-semibold flex items-center gap-2">
+				<div class="mb-6 flex w-full items-center justify-between">
+					<h1 class="flex items-center gap-2 text-2xl font-semibold">
 						<ShoppingCart class="h-5 w-5" />
 						{m.cart_title()}
 					</h1>
@@ -89,11 +89,11 @@
 			</div>
 
 			<!-- Cart summary -->
-			<div class="lg:col-span-5 lg:sticky lg:top-[calc(var(--header-height)+1rem)] lg:h-fit">
+			<div class="lg:sticky lg:top-[calc(var(--header-height)+1rem)] lg:col-span-5 lg:h-fit">
 				{#if $cart && $cart.items && $cart.items.length > 0}
-					<div class="bg-background rounded-lg">
-						<div class="flex items-center justify-between w-full mb-6">
-							<h2 class="text-2xl font-semibold flex items-center gap-2">
+					<div class="rounded-lg bg-background">
+						<div class="mb-6 flex w-full items-center justify-between">
+							<h2 class="flex items-center gap-2 text-2xl font-semibold">
 								<ShoppingCart class="h-5 w-5" />
 								{m.cart_summary()}
 							</h2>
@@ -102,7 +102,7 @@
 						<div class="space-y-6">
 							<!-- Items Summary -->
 							<div class="text-sm text-muted-foreground">
-								<div class="flex justify-between mb-1">
+								<div class="mb-1 flex justify-between">
 									<span
 										>{$cart.items.length}
 										{$cart.items.length === 1
@@ -130,7 +130,7 @@
 									<span class="text-muted-foreground">{m.cart_calculated_at_next_step()}</span>
 								</div>
 
-								<div class="flex justify-between text-xl font-semibold pt-4 mt-4 border-t">
+								<div class="mt-4 flex justify-between border-t pt-4 text-xl font-semibold">
 									<span>{m.cart_total()}</span>
 									<span>{formatPrice($cart.total)}</span>
 								</div>
@@ -143,7 +143,7 @@
 								<Button class="w-full" size="lg" onclick={handleCheckout} disabled={isCheckingOut}>
 									{#if isCheckingOut}
 										<span
-											class="h-5 w-5 block animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"
+											class="block h-5 w-5 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"
 										></span>
 										<span class="ml-2">{m.loading()}</span>
 									{:else}
@@ -151,13 +151,13 @@
 										<ArrowRight class="ml-2 h-4 w-4" />
 									{/if}
 								</Button>
-								<p class="text-center text-xs text-muted-foreground/60 mt-2">
+								<p class="mt-2 text-center text-xs text-muted-foreground/60">
 									{m.cart_secure_transaction()}
 								</p>
 							</div>
 
 							<!-- Terms Agreement -->
-							<div class="text-xs text-muted-foreground/60 text-center space-y-1.5 border-t pt-6">
+							<div class="space-y-1.5 border-t pt-6 text-center text-xs text-muted-foreground/60">
 								<p>{m.cart_terms_agreement()}</p>
 							</div>
 						</div>

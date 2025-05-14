@@ -41,7 +41,10 @@ export function GET(event: RequestEvent): Response {
     });
 
     // Store the redirect URL in a cookie
-    event.cookies.set("oauth_redirect", redirectTo, {
+    // Ensure the redirect URL is properly formatted for Paraglide internationalization
+    const formattedRedirectTo = redirectTo.startsWith('/') ? redirectTo : `/${redirectTo}`;
+
+    event.cookies.set("oauth_redirect", formattedRedirectTo, {
         httpOnly: true,
         maxAge: 60 * 10, // 10 minutes
         secure: import.meta.env.PROD,

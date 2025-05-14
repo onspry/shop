@@ -49,7 +49,7 @@
 <div class="relative inline-block">
 	{#if $authStore.isLoading}
 		<!-- Show a placeholder while loading -->
-		<div class="h-10 w-10 flex items-center justify-center">
+		<div class="flex h-10 w-10 items-center justify-center">
 			<LoadingSpinner size={20} />
 		</div>
 	{:else if $authStore.user}
@@ -57,7 +57,7 @@
 			<DropdownMenu.Trigger class="focus:outline-none focus-visible:ring-0">
 				<Avatar.Root>
 					{#if !imageLoaded}
-						<Skeleton class="absolute inset-0 w-full h-full rounded-full z-10" />
+						<Skeleton class="absolute inset-0 z-10 h-full w-full rounded-full" />
 					{/if}
 					<Avatar.Image
 						src={$authStore.user.image ?? ''}
@@ -75,20 +75,20 @@
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content class="w-48">
 				<DropdownMenu.Item>
-					<a href={localizeHref('/account')} class="flex items-center w-full">
+					<a href={localizeHref('/account')} class="flex w-full items-center">
 						<UserIcon class="mr-2 h-4 w-4" />
 						{m.my_account()}
 					</a>
 				</DropdownMenu.Item>
 				<DropdownMenu.Item>
-					<a href={localizeHref('/orders')} class="flex items-center w-full">
+					<a href={localizeHref('/orders')} class="flex w-full items-center">
 						<Package class="mr-2 h-4 w-4" />
 						{m.my_orders()}
 					</a>
 				</DropdownMenu.Item>
 				<DropdownMenu.Separator />
 				<DropdownMenu.Item>
-					<a href={localizeHref('/auth/logout')} class="flex items-center w-full text-destructive">
+					<a href={'/auth/logout'} class="flex w-full items-center text-destructive">
 						<LogOut class="mr-2 h-4 w-4" />
 						{m.sign_out()}
 					</a>

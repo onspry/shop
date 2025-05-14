@@ -8,7 +8,13 @@ import { Provider } from "$lib/models/user";
 
 export async function GET(event: RequestEvent): Promise<Response> {
     // Get the stored redirect URL from the cookie
-    const redirectTo = event.cookies.get('oauth_redirect') || '/';
+    let redirectTo = event.cookies.get('oauth_redirect') || '/';
+
+    // Important: If the redirect is an internal URL (doesn't start with http),
+    // ensure it's not treated as a route path by ensuring it starts with /
+    if (!redirectTo.startsWith('http') && !redirectTo.startsWith('/')) {
+        redirectTo = '/' + redirectTo;
+    }
 
     // Check code and state
     const code = event.url.searchParams.get("code");

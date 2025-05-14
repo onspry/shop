@@ -28,15 +28,24 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 };
 
 export const actions: Actions = {
-    default: async ({ request, cookies, url }) => {
+    default: async ({ request, cookies, url, locals }) => {
         // Get the cart session before any authentication changes
         const cartSessionId = cookies.get('cart-session') || '';
+
+        // Get the current locale from locals
+        const locale = locals.paraglide?.locale || 'en';
 
         // Validate the form with Superform and Zod
         const form = await superValidate(request, zod(loginSchema));
 
         // Get redirectTo from URL param or default to home
-        const redirectTo = url.searchParams.get('redirect') || '/';
+        let redirectTo = url.searchParams.get('redirect') || '/';
+
+        // Ensure the redirect URL respects the user's locale
+        // If it's the home page and not English, add the locale prefix
+        if (redirectTo === '/' && locale !== 'en') {
+            redirectTo = `/${locale}`;
+        }
 
         // Return validation errors if any
         if (!form.valid) {
@@ -106,11 +115,7 @@ export const actions: Actions = {
             });
         }
 
-        // After successful login, redirect to the saved URL if it's internal
-        if (redirectTo && redirectTo.startsWith('/')) {
-            throw redirect(303, redirectTo);
-        }
-
-        throw redirect(303, "/");
+        // After successful login, redirect to the proper URL
+        throw redirect(303, redirectTo);
     }
 };
