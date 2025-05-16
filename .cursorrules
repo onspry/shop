@@ -99,7 +99,8 @@ You are an AI assistant seamlessly integrated with a developer's IDE, optimized 
 
 ---
 
-**Rule:**  
+**Rule:**
+
 > All contributors must follow these testing framework and usage guidelines to ensure maintainability, consistency, and reliability across the codebase.
 
 - Ensure all user-visible text is properly internationalized using Paraglide.
@@ -139,6 +140,7 @@ You are an AI assistant seamlessly integrated with a developer's IDE, optimized 
 ### Database Structure (prisma/schema.prisma)
 
 Parse prisma/schema.prisma to understand:
+
 - Product, product variant, and product image schemas
 - User and authentication tables
 - Cart and cart item structures
@@ -146,6 +148,7 @@ Parse prisma/schema.prisma to understand:
 - Discount and promotion schemas
 
 Use this information to:
+
 - Generate type-safe Prisma ORM queries
 - Ensure proper table relations are maintained
 - Validate data integrity constraints
@@ -255,29 +258,29 @@ Use this information to:
 
 ```svelte
 <script>
-  import { ImageWithSkeleton } from "$lib/components/ui/image-with-skeleton";
+	import { ImageWithSkeleton } from '$lib/components/ui/image-with-skeleton';
 
-  let count = $state(0);
-  let doubledCount = $derived(count * 2);
+	let count = $state(0);
+	let doubledCount = $derived(count * 2);
 
-  $effect(() => {
-    console.log(`Count changed to ${count}`);
-  });
+	$effect(() => {
+		console.log(`Count changed to ${count}`);
+	});
 
-  function incrementCount() {
-    count++;
-  }
+	function incrementCount() {
+		count++;
+	}
 </script>
 
 <Button onclick={incrementCount}>
-  Increment: {count} (doubled: {doubledCount})
+	Increment: {count} (doubled: {doubledCount})
 </Button>
 
 <ImageWithSkeleton
-  src="/product-image.jpg"
-  alt="Product display"
-  className="w-full"
-  aspectRatio="1/1"
+	src="/product-image.jpg"
+	alt="Product display"
+	className="w-full"
+	aspectRatio="1/1"
 />
 ```
 
@@ -289,22 +292,22 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export async function getProductWithVariants(productId: string) {
-  try {
-    const result = await prisma.product.findUnique({
-      where: {
-        id: productId
-      },
-      include: {
-        variants: true,
-        images: true
-      }
-    });
+	try {
+		const result = await prisma.product.findUnique({
+			where: {
+				id: productId
+			},
+			include: {
+				variants: true,
+				images: true
+			}
+		});
 
-    return result;
-  } catch (error) {
-    console.error("Database query failed:", error);
-    throw new Error("Failed to fetch product");
-  }
+		return result;
+	} catch (error) {
+		console.error('Database query failed:', error);
+		throw new Error('Failed to fetch product');
+	}
 }
 ```
 
@@ -313,66 +316,66 @@ export async function getProductWithVariants(productId: string) {
 ```typescript
 // src/lib/repositories/product-repository.ts
 import { PrismaClient } from '@prisma/client';
-import type { ProductViewModel, ProductDetailViewModel } from "$lib/types";
+import type { ProductViewModel, ProductVariantViewModel } from '../models/product';
 
 const prisma = new PrismaClient();
 
 export async function getProducts(): Promise<ProductViewModel[]> {
-  try {
-    const products = await prisma.product.findMany({
-      include: {
-        images: {
-          take: 1
-        }
-      }
-    });
+	try {
+		const products = await prisma.product.findMany({
+			include: {
+				images: {
+					take: 1
+				}
+			}
+		});
 
-    // Transform to viewmodel
-    return products.map(p => ({
-      id: p.id,
-      name: p.name,
-      price: p.price,
-      description: p.description,
-      imageUrl: p.images[0]?.url || '/placeholder.jpg'
-    }));
-  } catch (error) {
-    console.error("Failed to get products:", error);
-    throw new Error("Failed to retrieve products");
-  }
+		// Transform to viewmodel
+		return products.map((p) => ({
+			id: p.id,
+			name: p.name,
+			price: p.price,
+			description: p.description,
+			imageUrl: p.images[0]?.url || '/placeholder.jpg'
+		}));
+	} catch (error) {
+		console.error('Failed to get products:', error);
+		throw new Error('Failed to retrieve products');
+	}
 }
 
-export async function getProductById(id: string): Promise<ProductDetailViewModel | null> {
-  try {
-    const result = await prisma.product.findUnique({
-      where: {
-        id: id
-      },
-      include: {
-        variants: true,
-        images: true
-      }
-    });
+export async function getProductById(id: string): Promise<ProductViewModel | null> {
+	try {
+		const result = await prisma.product.findUnique({
+			where: {
+				id: id
+			},
+			include: {
+				variants: true,
+				images: true
+			}
+		});
 
-    if (!result) return null;
+		if (!result) return null;
 
-    // Transform to viewmodel
-    return {
-      id: result.id,
-      name: result.name,
-      price: result.price,
-      description: result.description,
-      images: result.images.map(img => img.url),
-      variants: result.variants.map(v => ({
-        id: v.id,
-        name: v.name,
-        price: v.price,
-        stockQuantity: v.stockQuantity
-      }))
-    };
-  } catch (error) {
-    console.error(`Failed to get product ${id}:`, error);
-    throw new Error("Failed to retrieve product details");
-  }
+		// Transform to viewmodel
+		return {
+			id: result.id,
+			name: result.name,
+			price: result.price,
+			description: result.description,
+			images: result.images.map((img) => img.url),
+			variants: result.variants.map((v) => ({
+				id: v.id,
+				name: v.name,
+				price: v.price,
+				stockQuantity: v.stockQuantity
+			}))
+		};
+	} catch (error) {
+		console.error(`Failed to get product ${id}:`, error);
+		throw new Error('Failed to retrieve product details');
+	}
 }
 ```
 
@@ -384,15 +387,15 @@ import { error } from '@sveltejs/kit';
 import { getProductById } from '$lib/repositories/product-repository';
 
 export async function load({ params }) {
-  const product = await getProductById(params.id);
+	const product = await getProductById(params.id);
 
-  if (!product) {
-    error(404, 'Product not found');
-  }
+	if (!product) {
+		error(404, 'Product not found');
+	}
 
-  return {
-    product
-  };
+	return {
+		product
+	};
 }
 ```
 
@@ -400,14 +403,14 @@ export async function load({ params }) {
 
 ```svelte
 <script>
-  import * as m from '$lib/paraglide/messages/en.js';
+	import * as m from '$lib/paraglide/messages/en.js';
 </script>
 
 <div class="product-card">
-  <h3>{m.product_title()}</h3>
-  <p>{m.product_price({ value: product.price })}</p>
-  <span>{m.product_quantity()}</span>
-  <Button>{m.product_add_to_cart()}</Button>
+	<h3>{m.product_title()}</h3>
+	<p>{m.product_price({ value: product.price })}</p>
+	<span>{m.product_quantity()}</span>
+	<Button>{m.product_add_to_cart()}</Button>
 </div>
 ```
 

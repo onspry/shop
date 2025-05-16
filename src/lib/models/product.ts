@@ -3,6 +3,7 @@ export interface ProductViewModel {
     id: string;
     name: string;
     description: string;
+    price: number; // Price in cents (first variant's price, for display purposes)
     category: string;
     features: string[]; // Localized for current language
     specifications: Record<string, unknown>; // Localized for current language
@@ -28,7 +29,8 @@ export interface ProductVariantViewModel {
     id: string;
     sku: string;
     name: string;
-    price: number;
+    price: number; // Default price (base currency)
+    prices: Record<string, number>; // Localized prices by currency code: { "EUR": 100, "GBP": 85, "CNY": 780 }
     stock_quantity: number;
     attributes: Record<string, unknown>;
     stockStatus: 'in_stock' | 'low_stock' | 'out_of_stock';

@@ -7,6 +7,7 @@
 	import type { AutoplayType } from 'embla-carousel-autoplay';
 	import { onMount } from 'svelte';
 	import * as m from '$lib/paraglide/messages';
+	import PriceDisplay from '$lib/components/PriceDisplay.svelte';
 
 	let { data } = $props<{ data: { catalogue: CatalogueViewModel } }>();
 
@@ -108,7 +109,7 @@
 	</div>
 
 	<!-- Desktop layout with right cards matching left card height -->
-	<div class="hidden sm:grid sm:grid-cols-3 gap-4 md:gap-6">
+	<div class="hidden gap-4 sm:grid sm:grid-cols-3 md:gap-6">
 		<!-- Main product - takes up 2 columns -->
 		<div class="col-span-2 min-h-[600px]">
 			{#if mainProduct}
@@ -118,13 +119,13 @@
 
 		<!-- Right accessory column - takes up 1 column -->
 		<div class="flex flex-col gap-4 md:gap-6">
-			<div class="flex-1 min-h-[290px]">
+			<div class="min-h-[290px] flex-1">
 				{#if topAccessory}
 					<ProductCard product={topAccessory} class="h-full" />
 				{/if}
 			</div>
 
-			<div class="flex-1 min-h-[290px]">
+			<div class="min-h-[290px] flex-1">
 				{#if bottomAccessory}
 					<ProductCard product={bottomAccessory} class="h-full" />
 				{/if}
@@ -133,8 +134,8 @@
 	</div>
 
 	<!-- Accessories Carousel -->
-	<div class="mt-8 mb-6 md:mt-12">
-		<h2 class="text-xl md:text-2xl font-bold mb-3 md:mb-4">{m.product_more_accessories()}</h2>
+	<div class="mb-6 mt-8 md:mt-12">
+		<h2 class="mb-3 text-xl font-bold md:mb-4 md:text-2xl">{m.product_more_accessories()}</h2>
 		<div class="w-full" role="region" aria-label={m.aria_accessories_carousel()}>
 			<Carousel.Root
 				plugins={[createAutoplayPlugin()]}
@@ -142,13 +143,13 @@
 				class="w-full overflow-hidden"
 			>
 				<Carousel.Content
-					class="-ml-4 md:-ml-6 flex transition-transform duration-30000 ease-linear"
+					class="duration-30000 -ml-4 flex transition-transform ease-linear md:-ml-6"
 				>
 					{#each accessories as product (product.id)}
 						<Carousel.Item
-							class="pl-4 md:pl-6 md:basis-1/2 lg:basis-1/3 xl:basis-1/4 transition-opacity duration-1000"
+							class="pl-4 transition-opacity duration-1000 md:basis-1/2 md:pl-6 lg:basis-1/3 xl:basis-1/4"
 						>
-							<div class="p-2 h-[350px]">
+							<div class="h-[350px] p-2">
 								<ProductCard {product} class="h-full" />
 							</div>
 						</Carousel.Item>

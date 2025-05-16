@@ -24,13 +24,39 @@
 	// Initialize locale immediately from server data for SSR
 	if (data.paraglide?.lang) {
 		try {
-			setLocale(data.paraglide.lang as AvailableLocale, { reload: false });
+			setLocale(data.paraglide.lang as AvailableLocale);
 		} catch (error) {
 			console.error('Error setting initial locale during SSR:', error);
 			// Force fallback to 'en'
-			setLocale('en', { reload: false });
+			setLocale('en');
 		}
 	}
+
+	// Handle locale sync during navigation
+	afterNavigate(() => {
+		if (browser) {
+			try {
+				// Get the current URL path segments
+				const pathSegments = window.location.pathname.split('/').filter(Boolean);
+				const urlLocale = pathSegments[0];
+
+				// Check if the first segment is a valid locale
+				if (urlLocale && ['en', 'de', 'fr', 'cn'].includes(urlLocale)) {
+					const currentLocale = getLocale();
+
+					// If URL locale doesn't match current locale, update it
+					if (currentLocale !== urlLocale) {
+						console.log(`Syncing locale to match URL: ${urlLocale}`);
+						setLocale(urlLocale as AvailableLocale);
+						// Invalidate all data to ensure it's reloaded with new locale
+						invalidate('app:locale');
+					}
+				}
+			} catch (error) {
+				console.error('Error syncing locale during navigation:', error);
+			}
+		}
+	});
 
 	// Initialize browser-specific settings on mount
 	onMount(() => {
@@ -57,7 +83,7 @@
 						// Only update if they don't match (URL has locale but cookie doesn't match)
 						if (currentLocale !== firstSegment) {
 							console.log(`Setting locale cookie to match URL: ${firstSegment}`);
-							setLocale(firstSegment as 'en' | 'de' | 'fr' | 'cn', { reload: false });
+							setLocale(firstSegment as 'en' | 'de' | 'fr' | 'cn');
 						}
 					}
 				}
@@ -136,21 +162,21 @@
 
 <div class="flex min-h-screen w-full flex-col bg-background font-sans antialiased">
 	<header
-		class="sticky top-0 z-50 w-full h-[var(--header-height)] border-b bg-background/80 backdrop-blur-sm"
+		class="sticky top-0 z-50 h-[var(--header-height)] w-full border-b bg-background/80 backdrop-blur-sm"
 	>
-		<div class="max-w-[1400px] mx-auto w-full h-full px-4 sm:px-6 md:px-8 lg:px-12">
+		<div class="mx-auto h-full w-full max-w-[1400px] px-4 sm:px-6 md:px-8 lg:px-12">
 			<Navbar />
 		</div>
 	</header>
 
-	<main class="flex-1 w-full">
-		<div class="max-w-[1400px] mx-auto w-full h-full px-4 py-4 sm:px-6 md:px-8 lg:px-12">
+	<main class="w-full flex-1">
+		<div class="mx-auto h-full w-full max-w-[1400px] px-4 py-4 sm:px-6 md:px-8 lg:px-12">
 			{@render children()}
 		</div>
 	</main>
 
-	<footer class="w-full h-[var(--footer-height)] border-t bg-background/80 backdrop-blur-sm">
-		<div class="max-w-[1400px] mx-auto w-full h-full px-4 sm:px-6 md:px-8 lg:px-12">
+	<footer class="h-[var(--footer-height)] w-full border-t bg-background/80 backdrop-blur-sm">
+		<div class="mx-auto h-full w-full max-w-[1400px] px-4 sm:px-6 md:px-8 lg:px-12">
 			<Footer />
 		</div>
 	</footer>

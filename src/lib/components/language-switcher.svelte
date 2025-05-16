@@ -22,14 +22,16 @@
 	// Language display names mapped to locales
 	function getLanguageName(lang: string) {
 		switch (lang) {
-			case 'en':
-				return m.language_english();
-			case 'de':
-				return m.language_german();
-			case 'fr':
-				return m.language_french();
-			case 'cn':
-				return m.language_chinese();
+			case 'en-US':
+				return m.language_english() + ' (US)';
+			case 'en-UK':
+				return m.language_english() + ' (UK)';
+			case 'de-DE':
+				return m.language_german() + ' (DE)';
+			case 'fr-FR':
+				return m.language_french() + ' (FR)';
+			case 'zh-CN':
+				return m.language_chinese() + ' (CN)';
 			default:
 				return lang;
 		}
@@ -37,14 +39,15 @@
 
 	// Language flag emoji (optional)
 	const languageFlags = {
-		en: '🇺🇸',
-		de: '🇩🇪',
-		fr: '🇫🇷',
-		cn: '🇨🇳'
+		'en-US': '🇺🇸',
+		'en-UK': '🇬🇧',
+		'de-DE': '🇩🇪',
+		'fr-FR': '🇫🇷',
+		'zh-CN': '🇨🇳'
 	};
 
 	// Initialize current language with fallback
-	let currentLanguage = $state<AvailableLocale>('en');
+	let currentLanguage = $state<AvailableLocale>('en-US');
 
 	// Safely get the current locale
 	function updateCurrentLanguage() {
@@ -72,29 +75,33 @@
 	async function changeLanguage(lang: AvailableLocale) {
 		if (browser && lang !== currentLanguage) {
 			try {
-				// Use setLocale to set the cookie
-				setLocale(lang, { reload: false });
+				// Let Paraglide handle the state
+				setLocale(lang);
 
-				// Use full URL instead of just pathname to avoid parsing errors
-				const fullUrl = page.url.href;
+				// Get the current path segments
+				const pathSegments = window.location.pathname.split('/').filter(Boolean);
 
-				// Let Paraglide handle the URL transformation with the complete URL
-				const localizedUrl = localizeUrl(fullUrl, { locale: lang });
+				// Remove the language prefix if it exists
+				const langPrefixes = ['en-uk', 'de-de', 'fr-fr', 'zh-cn'];
+				if (pathSegments[0] && langPrefixes.includes(pathSegments[0].toLowerCase())) {
+					pathSegments.shift();
+				}
 
-				// Method 1: Use window.location for a full page refresh
-				window.location.href = typeof localizedUrl === 'string' ? localizedUrl : localizedUrl.href;
+				// Reconstruct the base path without locale
+				const basePath = pathSegments.length > 0 ? `/${pathSegments.join('/')}` : '/';
 
-				// Method 2: Alternative approach - use goto with invalidation
-				// This approach avoids a full page refresh but might not work in all cases
-				/*
-				await goto(localizedUrl, { replaceState: true, invalidateAll: true });
-				
-				// Update current language immediately for better UX
-				currentLanguage = lang;
-				
-				// Force re-render by dispatching a custom event
-				window.dispatchEvent(new CustomEvent('language-changed', { detail: { locale: lang } }));
-				*/
+				// Create the new URL with search params and hash
+				const newUrl = new URL(basePath, window.location.origin);
+				newUrl.search = window.location.search;
+				newUrl.hash = window.location.hash;
+
+				// Let Paraglide localize the clean URL
+				const localizedUrl = localizeUrl(newUrl.href, { locale: lang });
+
+				// Navigate to the new URL
+				await goto(localizedUrl, {
+					invalidateAll: true
+				});
 			} catch (error) {
 				console.error('Error changing language:', error);
 			}
@@ -126,7 +133,7 @@
 	<DropdownMenu>
 		<DropdownMenuTrigger>
 			<div
-				class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 w-10 p-0 hover:bg-accent hover:text-accent-foreground"
+				class="inline-flex h-10 w-10 items-center justify-center whitespace-nowrap rounded-md p-0 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
 				aria-label={m.sr_change_language()}
 			>
 				<Globe class="h-[1.2rem] w-[1.2rem]" />
@@ -137,7 +144,7 @@
 			{#each locales as lang}
 				<DropdownMenuItem
 					onclick={() => changeLanguage(lang)}
-					class="cursor-pointer flex items-center gap-2"
+					class="flex cursor-pointer items-center gap-2"
 					style={currentLanguage === lang ? activeStyle : ''}
 					data-lang={lang}
 				>

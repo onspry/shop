@@ -117,7 +117,8 @@ model ProductVariant {
   productId        String    @map("product_id")
   sku              String    @unique
   name             String
-  price            Int       // Stored in cents
+  price            Int       // Base price in cents (EUR). Used for fallback and sorting.
+  prices           Json      @default("{}") // Localized prices by currency: { "EUR": 10000, "GBP": 8500, "CNY": 78000 }
   stockQuantity    Int       @default(0) @map("stock_quantity")
   attributes       Json      @default("{}")
   createdAt        DateTime  @default(now()) @map("created_at")

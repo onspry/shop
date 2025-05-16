@@ -6,7 +6,7 @@
 	import { AppImage } from '$lib/components/ui/app-image';
 	import { Button } from '$lib/components/ui/button';
 	import { Loader2 } from 'lucide-svelte';
-	import { localizeHref } from '$lib/paraglide/runtime';
+	import { localizeHref, getLocale } from '$lib/paraglide/runtime';
 
 	let { product, class: className = '' } = $props<{
 		product: ProductViewModel;
@@ -14,6 +14,9 @@
 	}>();
 
 	let isLoading = $state(false);
+
+	// Get the current locale
+	const currentLocale = $derived(getLocale());
 
 	const basePrice = $derived(
 		product?.variants?.length > 0
@@ -31,12 +34,12 @@
 </script>
 
 <div
-	class="group relative bg-card overflow-hidden rounded-lg border border-border hover:shadow-md transition-all duration-200 hover:border-border/80 {className}"
+	class="group relative overflow-hidden rounded-lg border border-border bg-card transition-all duration-200 hover:border-border/80 hover:shadow-md {className}"
 >
 	<!-- Image Section -->
-	<div class="relative w-full p-4 pb-20 overflow-hidden flex items-center justify-center">
+	<div class="relative flex w-full items-center justify-center overflow-hidden p-4 pb-20">
 		<div
-			class="relative aspect-square w-full h-[250px] overflow-hidden rounded-md flex items-center justify-center"
+			class="relative flex aspect-square h-[250px] w-full items-center justify-center overflow-hidden rounded-md"
 		>
 			<AppImage
 				src={product?.images?.length ? product.images[0].url : ''}
@@ -53,12 +56,12 @@
 
 	<!-- Text Overlay (Theme aware) -->
 	<div
-		class="absolute bottom-0 left-0 right-0 p-4 bg-background/90 backdrop-blur-sm border-t border-border/50"
+		class="absolute bottom-0 left-0 right-0 border-t border-border/50 bg-background/90 p-4 backdrop-blur-sm"
 	>
-		<h3 class="text-lg font-medium text-foreground truncate">
+		<h3 class="truncate text-lg font-medium text-foreground">
 			{product?.name || 'Product Name'}
 		</h3>
-		<div class="flex items-center justify-between gap-2 mt-2">
+		<div class="mt-2 flex items-center justify-between gap-2">
 			<div class="flex items-baseline gap-2">
 				{#if hasMultipleVariants}
 					<span class="text-xs text-muted-foreground">
@@ -66,20 +69,20 @@
 					</span>
 				{/if}
 				<span class="text-xl font-bold text-foreground">
-					{formatPrice(basePrice)}
+					{formatPrice(basePrice, currentLocale)}
 				</span>
 			</div>
 			<Button
 				href={localizeHref(`/products/${product?.slug || ''}`)}
 				variant="default"
 				size="sm"
-				class="h-8 px-3 transition-colors hover:bg-primary/90 flex items-center justify-center gap-2"
+				class="flex h-8 items-center justify-center gap-2 px-3 transition-colors hover:bg-primary/90"
 				onclick={handleViewDetails}
 				disabled={isLoading}
 			>
 				{#if isLoading}
 					<span
-						class="h-5 w-5 block animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"
+						class="block h-5 w-5 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"
 					></span>
 					<span>{m.product_view_details()}</span>
 				{:else}

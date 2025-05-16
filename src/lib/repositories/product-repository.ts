@@ -5,6 +5,7 @@ import type { CatalogueViewModel, ProductGroup } from '../models/catalogue';
 import { VariantError } from '$lib/errors/shop-errors';
 import { getLocalizedValue, type Locale } from '$lib/utils/localization';
 import type { LocalizedValue } from '$lib/types/localization';
+import { getPriceForLocale } from '$lib/models/product-price';
 
 // Helper function to determine stock status
 function getStockStatus(quantity: number): 'in_stock' | 'low_stock' | 'out_of_stock' {
@@ -14,12 +15,16 @@ function getStockStatus(quantity: number): 'in_stock' | 'low_stock' | 'out_of_st
 }
 
 // Helper function to transform variant to ViewModel
-export function toProductVariantViewModel(variant: ProductVariant): ProductVariantViewModel {
+export function toProductVariantViewModel(variant: ProductVariant, locale: Locale = 'en-US'): ProductVariantViewModel {
+    // Get localized price
+    const localizedPrice = getPriceForLocale(variant.prices, locale, variant.price);
+
     return {
         id: variant.id,
         name: variant.name,
         sku: variant.sku,
-        price: variant.price,
+        price: localizedPrice,
+        prices: typeof variant.prices === 'object' ? variant.prices as Record<string, number> : {},
         stock_quantity: variant.stockQuantity,
         attributes: variant.attributes as Record<string, unknown>,
         stockStatus: getStockStatus(variant.stockQuantity),
@@ -29,11 +34,11 @@ export function toProductVariantViewModel(variant: ProductVariant): ProductVaria
     };
 }
 
-// Helper function to transform internal product to ViewModel
-function toProductViewModel(product: Product & {
+// Helper function to transform internal product to ViewModel for display
+function toProductDisplayViewModel(product: Product & {
     variants: ProductVariant[];
     images: ProductImage[];
-}, locale: Locale = 'en'): ProductViewModel {
+}, locale: Locale = 'en-US'): ProductViewModel {
     // Get localized description
     const localizedDescription = getLocalizedValue(
         product.descriptions as unknown as Record<string, LocalizedValue>,
@@ -48,13 +53,20 @@ function toProductViewModel(product: Product & {
     const rawSpecs = getLocalizedValue(product.specifications as unknown as Record<string, LocalizedValue>, locale);
     const specifications = typeof rawSpecs === 'object' && rawSpecs !== null ? rawSpecs as Record<string, unknown> : {};
 
+    // Convert variants with localized prices
+    const localizedVariants = product.variants.map(v => toProductVariantViewModel(v, locale));
+
+    // Use the first variant's price as the default display price
+    const defaultPrice = localizedVariants.length > 0 ? localizedVariants[0].price : 0;
+
     return {
         id: product.id,
         name: product.name,
-        description: localizedDescription, // Use localized description or fall back to legacy field
+        description: localizedDescription,
         category: product.category,
         features,
         specifications,
+        price: defaultPrice, // Add price from first variant for display purposes
         images: product.images.map(img => ({
             id: img.id,
             url: img.url,
@@ -62,7 +74,7 @@ function toProductViewModel(product: Product & {
             position: img.position,
             productId: img.productId
         })),
-        variants: product.variants.map(toProductVariantViewModel),
+        variants: localizedVariants,
         isAccessory: product.isAccessory,
         slug: product.slug,
         createdAt: product.createdAt,
@@ -72,9 +84,10 @@ function toProductViewModel(product: Product & {
 
 // Repository methods
 export const productRepository = {
-    async getProducts(category?: string, page: number = 1, pageSize: number = 50, locale: Locale = 'en'): Promise<{
+    async getProducts(category?: string, page: number = 1, pageSize: number = 50, locale: Locale = 'en-US'): Promise<{
         products: ProductViewModel[];
-        total: number;
+        totalCount: number;
+        pageCount: number;
     }> {
         try {
             const skip = (page - 1) * pageSize;
@@ -95,8 +108,9 @@ export const productRepository = {
             ]);
 
             return {
-                products: products.map(p => toProductViewModel(p, locale)),
-                total
+                products: products.map(p => toProductDisplayViewModel(p, locale)),
+                totalCount: total,
+                pageCount: Math.ceil(total / pageSize)
             };
         } catch (error) {
             console.error('Error getting products:', error);
@@ -104,7 +118,7 @@ export const productRepository = {
         }
     },
 
-    async getProduct(slug: string, locale: Locale = 'en'): Promise<{
+    async getProduct(slug: string, locale: Locale = 'en-US'): Promise<{
         product: ProductViewModel;
         defaultVariantId: string | null;
     }> {
@@ -125,7 +139,7 @@ export const productRepository = {
                 throw new Error('Product not found');
             }
 
-            const productViewModel = toProductViewModel(product, locale);
+            const productViewModel = toProductDisplayViewModel(product, locale);
             const defaultVariantId = product.variants.length > 0 ? product.variants[0].id : null;
 
             return {
@@ -145,10 +159,11 @@ export const productRepository = {
         category: string,
         page: number = 1,
         pageSize: number = 50,
-        locale: Locale = 'en'
+        locale: Locale = 'en-US'
     ): Promise<{
         products: ProductViewModel[];
-        total: number;
+        totalCount: number;
+        pageCount: number;
     }> {
         try {
             const skip = (page - 1) * pageSize;
@@ -169,8 +184,9 @@ export const productRepository = {
             ]);
 
             return {
-                products: products.map(p => toProductViewModel(p, locale)),
-                total
+                products: products.map(p => toProductDisplayViewModel(p, locale)),
+                totalCount: total,
+                pageCount: Math.ceil(total / pageSize)
             };
         } catch (error) {
             console.error(`Error getting products for category ${category}:`, error);
@@ -182,7 +198,7 @@ export const productRepository = {
         query: string,
         page: number = 1,
         pageSize: number = 50,
-        locale: Locale = 'en'
+        locale: Locale = 'en-US'
     ): Promise<{
         products: ProductViewModel[];
         total: number;
@@ -216,7 +232,7 @@ export const productRepository = {
             ]);
 
             return {
-                products: products.map(p => toProductViewModel(p, locale)),
+                products: products.map(p => toProductDisplayViewModel(p, locale)),
                 total
             };
         } catch (error) {
@@ -225,10 +241,10 @@ export const productRepository = {
         }
     },
 
-    async getCatalogue(page: number = 1, pageSize: number = 50, locale: Locale = 'en'): Promise<CatalogueViewModel> {
+    async getCatalogue(page: number = 1, pageSize: number = 50, locale: Locale = 'en-US'): Promise<CatalogueViewModel> {
         try {
             // 1. Get products and total count
-            const { products, total } = await this.getProducts(undefined, page, pageSize, locale);
+            const { products, totalCount } = await this.getProducts(undefined, page, pageSize, locale);
 
             // 2. Group products by category
             const productGroups = products.reduce((acc, product) => {
@@ -245,7 +261,7 @@ export const productRepository = {
             }));
 
             // 3. Call the transformation helper with grouped data and total
-            return this.toCatalogueViewModel(groups, total);
+            return this.toCatalogueViewModel(groups, totalCount);
         } catch (error) {
             console.error('Error getting catalogue:', error);
             throw new Error('Failed to retrieve catalogue');
@@ -491,7 +507,7 @@ export const productRepository = {
         }
     },
 
-    async getFeaturedProducts(limit: number = 10, locale: Locale = 'en'): Promise<ProductViewModel[]> {
+    async getFeaturedProducts(limit: number = 10, locale: Locale = 'en-US'): Promise<ProductViewModel[]> {
         try {
             const products = await prisma.product.findMany({
                 take: limit,
@@ -504,7 +520,7 @@ export const productRepository = {
                 }
             });
 
-            return products.map(p => toProductViewModel(p, locale));
+            return products.map(p => toProductDisplayViewModel(p, locale));
         } catch (error) {
             console.error('Error getting featured products:', error);
             throw new Error('Failed to retrieve featured products');
@@ -559,6 +575,150 @@ export const productRepository = {
         } catch (error) {
             console.error(`Error updating product ${productId} and variants:`, error);
             throw new Error('Failed to update product and variants');
+        }
+    },
+
+    // Helper function to update a variant with prices for different currencies
+    async updateProductVariantWithPrices(
+        variantId: string,
+        data: {
+            sku?: string;
+            name?: string;
+            price?: number; // Base price in EUR
+            prices?: Record<string, number>; // Prices in different currencies
+            stockQuantity?: number;
+            attributes?: Record<string, unknown>;
+        }
+    ): Promise<ProductVariant> {
+        try {
+            return await prisma.productVariant.update({
+                where: { id: variantId },
+                data: {
+                    sku: data.sku,
+                    name: data.name,
+                    price: data.price,
+                    // Convert attributes and prices to proper JSON for Prisma
+                    prices: data.prices !== undefined ? data.prices as Record<string, number> : undefined,
+                    stockQuantity: data.stockQuantity,
+                    attributes: data.attributes !== undefined ? data.attributes as Record<string, string> : undefined,
+                }
+            });
+        } catch (error) {
+            console.error(`Error updating variant ${variantId}:`, error);
+            throw new Error('Failed to update product variant');
+        }
+    },
+
+    /**
+     * Get product with localized data and pricing
+     */
+    async getLocalizedProduct(slug: string, locale: Locale = 'en-US'): Promise<{
+        product: ProductViewModel;
+        defaultVariantId: string | null;
+    }> {
+        try {
+            // Fetch product with related data
+            const product = await prisma.product.findUnique({
+                where: { slug },
+                include: {
+                    variants: true,
+                    images: {
+                        orderBy: {
+                            position: 'asc'
+                        }
+                    }
+                }
+            });
+
+            if (!product) {
+                throw new Error('Product not found');
+            }
+
+            // Convert to view model with localized content
+            const productViewModel = toProductDisplayViewModel(product, locale);
+
+            // Find default variant ID
+            const defaultVariantId = product.variants.length > 0 ? product.variants[0].id : null;
+
+            return {
+                product: productViewModel,
+                defaultVariantId
+            };
+        } catch (error) {
+            console.error(`Error getting localized product ${slug}:`, error);
+            throw new Error(`Failed to retrieve product: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    },
+
+    async getProductById(id: string, locale: Locale = 'en-US'): Promise<ProductViewModel | null> {
+        try {
+            const product = await prisma.product.findUnique({
+                where: { id },
+                include: {
+                    variants: true,
+                    images: true
+                }
+            });
+
+            if (!product) {
+                return null;
+            }
+
+            return toProductDisplayViewModel(product, locale);
+        } catch (error) {
+            console.error(`Error getting product ${id}:`, error);
+            throw new Error('Failed to retrieve product by ID');
+        }
+    },
+
+    async getProductBySlug(slug: string, locale: Locale = 'en-US'): Promise<ProductViewModel | null> {
+        try {
+            const product = await prisma.product.findUnique({
+                where: { slug },
+                include: {
+                    variants: true,
+                    images: true
+                }
+            });
+
+            if (!product) {
+                return null;
+            }
+
+            return toProductDisplayViewModel(product, locale);
+        } catch (error) {
+            console.error(`Error getting product by slug ${slug}:`, error);
+            throw new Error('Failed to retrieve product by slug');
+        }
+    },
+
+    async getProductVariants(productId: string, locale: Locale = 'en-US'): Promise<ProductVariantViewModel[]> {
+        try {
+            const variants = await prisma.productVariant.findMany({
+                where: { productId }
+            });
+
+            return variants.map(v => toProductVariantViewModel(v, locale));
+        } catch (error) {
+            console.error(`Error getting variants for product ${productId}:`, error);
+            throw new Error('Failed to retrieve product variants');
+        }
+    },
+
+    async getVariantById(variantId: string, locale: Locale = 'en-US'): Promise<ProductVariantViewModel | null> {
+        try {
+            const variant = await prisma.productVariant.findUnique({
+                where: { id: variantId }
+            });
+
+            if (!variant) {
+                return null;
+            }
+
+            return toProductVariantViewModel(variant, locale);
+        } catch (error) {
+            console.error(`Error getting variant ${variantId}:`, error);
+            throw new Error('Failed to retrieve variant by ID');
         }
     }
 };

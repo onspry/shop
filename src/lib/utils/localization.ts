@@ -3,20 +3,20 @@ import type { LocalizedValue } from '$lib/types/localization';
 /**
  * Available locales in the application
  */
-export const AVAILABLE_LOCALES = ['en', 'de', 'fr', 'cn'] as const;
+export const AVAILABLE_LOCALES = ['en-US', 'en-UK', 'de-DE', 'fr-FR', 'zh-CN'] as const;
 export type Locale = (typeof AVAILABLE_LOCALES)[number];
 
 /**
  * Gets a localized value from a multilingual object
  * @param obj - The object containing localized values
  * @param locale - The target locale
- * @param fallback - The fallback locale (defaults to 'en')
+ * @param fallback - The fallback locale (defaults to 'en-US')
  * @returns The localized value or a default based on the value type
  */
 export function getLocalizedValue(
     obj: Record<string, LocalizedValue> | null | undefined,
     locale: Locale,
-    fallback: Locale = 'en'
+    fallback: Locale = 'en-US'
 ): LocalizedValue {
     if (!obj) {
         return Array.isArray(obj) ? [] : (typeof obj === 'object' ? {} : '');

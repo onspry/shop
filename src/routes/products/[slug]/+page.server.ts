@@ -1,10 +1,11 @@
 import { productRepository } from '$lib/repositories/product-repository';
 import type { ProductViewModel } from '$lib/models/product';
 import type { PageServerLoad } from './$types';
-import { fail } from '@sveltejs/kit';
+import { fail, error as svelteError } from '@sveltejs/kit';
 import type { Actions } from './$types';
 import { cartRepository } from '$lib/repositories/cart-repository';
 import * as m from '$lib/paraglide/messages';
+import type { Locale } from '$lib/utils/localization';
 
 // Disable prerendering as we need access to URL search params
 export const prerender = false;
@@ -18,40 +19,52 @@ export const config = {
     }
 };
 
-export const load: PageServerLoad = async ({ params, url, setHeaders, locals }) => {
+export const load: PageServerLoad = async ({ params, url, setHeaders, locals, cookies, depends }) => {
+    // Track dependencies to ensure reloads on locale changes
+    depends('app:locale');
+
     // Set cache headers for dynamic content
     setHeaders({
         'Cache-Control': 'public, max-age=1800, stale-while-revalidate=86400'
     });
 
-    // Get locale from locals or fall back to 'en'
-    const locale = locals.paraglide?.lang || 'en';
+    // Get the user's preferred language from locals or cookies with fallback
+    const locale = locals.paraglide?.lang || cookies.get('PARAGLIDE_LOCALE') || 'en-US';
+    console.log(`[PRODUCT-DETAIL] Loading product with locale: ${locale}`);
 
-    const result = await productRepository.getProduct(params.slug, locale);
+    try {
+        // Use the optimized SQL query to get product with localized data in one call
+        const result = await productRepository.getLocalizedProduct(params.slug, locale as Locale);
 
-    // If this is a keyboard, fetch compatible switches and keycaps
-    let switches: ProductViewModel[] = [];
-    let keycaps: ProductViewModel[] = [];
-    if (result.product.category === 'KEYBOARD') {
-        const switchesResult = await productRepository.getProductsByCategory('SWITCH', 1, 50, locale);
-        switches = switchesResult.products;
-        const keycapsResult = await productRepository.getProductsByCategory('KEYCAP', 1, 50, locale);
-        keycaps = keycapsResult.products;
-    }
-
-    return {
-        product: result.product,
-        variants: result.product.variants || [],
-        images: result.product.images || [],
-        defaultVariantId: result.defaultVariantId,
-        switches,
-        keycaps,
-        searchParams: {
-            variant: url.searchParams.get('variant'),
-            switch: url.searchParams.get('switch'),
-            keycap: url.searchParams.get('keycap')
+        // If this is a keyboard, fetch compatible switches and keycaps
+        let switches: ProductViewModel[] = [];
+        let keycaps: ProductViewModel[] = [];
+        if (result.product.category === 'KEYBOARD') {
+            const switchesResult = await productRepository.getProductsByCategory('SWITCH', 1, 50, locale as Locale);
+            switches = switchesResult.products;
+            const keycapsResult = await productRepository.getProductsByCategory('KEYCAP', 1, 50, locale as Locale);
+            keycaps = keycapsResult.products;
         }
-    };
+
+        return {
+            product: result.product,
+            variants: result.product.variants || [],
+            images: result.product.images || [],
+            defaultVariantId: result.defaultVariantId,
+            switches,
+            keycaps,
+            searchParams: {
+                variant: url.searchParams.get('variant'),
+                switch: url.searchParams.get('switch'),
+                keycap: url.searchParams.get('keycap')
+            },
+            locale
+        };
+    } catch (err) {
+        // Use SvelteKit's error function to handle not found
+        console.error(`Error loading product ${params.slug}:`, err);
+        throw svelteError(404, 'Product not found');
+    }
 };
 
 export const actions: Actions = {

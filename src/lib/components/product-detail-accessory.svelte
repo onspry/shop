@@ -18,7 +18,7 @@
 	import { enhance } from '$app/forms';
 	import { cart } from '$lib/stores/cart';
 	import { preloadData } from '$app/navigation';
-	import { localizeHref } from '$lib/paraglide/runtime';
+	import { localizeHref, getLocale } from '$lib/paraglide/runtime';
 
 	let { product, variants, images } = $props<{
 		product: ProductViewModel;
@@ -99,35 +99,38 @@
 		!!selectedVariant && selectedVariant.stockStatus !== 'out_of_stock'
 	);
 
+	// Add current locale derivation
+	const currentLocale = $derived(getLocale());
+
 	// Image handling is now done by ProductImageGallery component
 </script>
 
 <div>
 	{#if !product?.id}
-		<div class="flex justify-center items-center h-64">
-			<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+		<div class="flex h-64 items-center justify-center">
+			<div class="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-primary"></div>
 		</div>
 	{:else}
 		<div class="py-8">
-			<div class="grid grid-cols-1 md:grid-cols-5 gap-x-12 lg:gap-x-16 items-start">
+			<div class="grid grid-cols-1 items-start gap-x-12 md:grid-cols-5 lg:gap-x-16">
 				<!-- Product Images -->
 				<div
-					class="md:col-span-3 flex justify-center items-start md:sticky md:top-20 md:self-start"
+					class="flex items-start justify-center md:sticky md:top-20 md:col-span-3 md:self-start"
 				>
-					<div class="w-full max-w-2xl rounded-2xl min-h-[400px] md:min-h-[500px]">
+					<div class="min-h-[400px] w-full max-w-2xl rounded-2xl md:min-h-[500px]">
 						<ProductImageGallery {images} />
 					</div>
 				</div>
 
 				<!-- Product Details -->
-				<div class="md:col-span-2 flex flex-col space-y-10 pt-8 md:pt-0">
+				<div class="flex flex-col space-y-10 pt-8 md:col-span-2 md:pt-0">
 					<div class="space-y-2">
-						<h1 class="text-3xl lg:text-4xl font-bold">{product.name}</h1>
-						<p class="text-xl lg:text-2xl font-medium text-muted-foreground">
-							{formatPrice(selectedVariant?.price || basePrice)}
+						<h1 class="text-3xl font-bold lg:text-4xl">{product.name}</h1>
+						<p class="text-xl font-medium text-muted-foreground lg:text-2xl">
+							{formatPrice(selectedVariant?.price || basePrice, currentLocale)}
 						</p>
 						{#if product.description}
-							<p class="text-base text-muted-foreground pt-2">{product.description}</p>
+							<p class="pt-2 text-base text-muted-foreground">{product.description}</p>
 						{/if}
 					</div>
 
@@ -150,8 +153,8 @@
 					</div>
 
 					{#if selectedVariant}
-						<div class="bg-muted/50 p-4 rounded-md border">
-							<h3 class="text-md font-semibold mb-3">{m.product_selected_option()}</h3>
+						<div class="rounded-md border bg-muted/50 p-4">
+							<h3 class="text-md mb-3 font-semibold">{m.product_selected_option()}</h3>
 							<div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
 								{#if product.category === 'SWITCH'}
 									<div>{m.switch_type()}:</div>
@@ -177,12 +180,12 @@
 					{/if}
 
 					<!-- Add to cart section -->
-					<div class="space-y-6 pt-4 border-t">
+					<div class="space-y-6 border-t pt-4">
 						<!-- Quantity selector -->
-						<div class="flex justify-between items-center">
+						<div class="flex items-center justify-between">
 							<span class="text-sm font-medium">{m.product_quantity()}</span>
 							<div
-								class="flex items-center space-x-1 bg-muted/30 dark:bg-muted/20 rounded-md p-1 border"
+								class="flex items-center space-x-1 rounded-md border bg-muted/30 p-1 dark:bg-muted/20"
 							>
 								<Button
 									variant="ghost"
@@ -205,10 +208,12 @@
 						</div>
 
 						<!-- Total price -->
-						<div class="flex justify-between items-center">
+						<div class="flex items-center justify-between">
 							<span class="text-base font-medium">{m.product_total()}</span>
 							<span class="text-2xl font-bold">
-								{selectedVariant ? formatPrice(selectedVariant.price * quantity) : '--'}
+								{selectedVariant
+									? formatPrice(selectedVariant.price * quantity, currentLocale)
+									: '--'}
 							</span>
 						</div>
 
@@ -244,23 +249,23 @@
 							>
 								{#if isAddingToCart}
 									<span
-										class="h-5 w-5 block animate-spin rounded-full border-2 border-primary-foreground border-t-transparent mr-2"
+										class="mr-2 block h-5 w-5 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"
 									></span>
 									<span>{m.adding()}</span>
 								{:else if addedToCart}
-									<Check class="h-5 w-5 mr-2" />
+									<Check class="mr-2 h-5 w-5" />
 									<span>{m.added_to_cart()}</span>
 								{:else if selectedVariant?.stockStatus === 'out_of_stock'}
 									<span>{m.product_out_of_stock()}</span>
 								{:else}
-									<ShoppingCart class="h-5 w-5 mr-2" />
+									<ShoppingCart class="mr-2 h-5 w-5" />
 									<span>{m.addToCart()}</span>
 								{/if}
 							</Button>
 						</form>
 
 						{#if addedToCart}
-							<div class="flex justify-between gap-3 mt-3">
+							<div class="mt-3 flex justify-between gap-3">
 								<a href={localizeHref('/cart')} class="flex-1" data-sveltekit-preload-data="hover">
 									<Button variant="outline" class="w-full">{m.view_cart()}</Button>
 								</a>
@@ -277,11 +282,11 @@
 
 					<!-- Features and Specifications -->
 					{#if product.features?.length > 0 || (product.specifications && Object.keys(product.specifications).length > 0)}
-						<div class="pt-6 border-t space-y-6">
+						<div class="space-y-6 border-t pt-6">
 							{#if product.features?.length > 0}
 								<div class="space-y-2">
 									<h3 class="text-md font-semibold">{m.product_features()}</h3>
-									<ul class="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+									<ul class="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
 										{#each product.features as feature}
 											<li>{feature}</li>
 										{/each}

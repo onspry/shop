@@ -38,8 +38,8 @@ const paraglideHandle: Handle = ({ event, resolve }) => {
 	return paraglideMiddleware(event.request, ({ request: localizedRequest, locale }) => {
 		event.request = localizedRequest;
 
-		// Always use 'en' as fallback if locale is undefined
-		const safeLocale = locale || 'en';
+		// Always use 'en-US' as fallback if locale is undefined
+		const safeLocale = locale || 'en-US';
 
 		// Add locale to event.locals to make it accessible in server-side rendering
 		event.locals.paraglide = {
@@ -48,15 +48,15 @@ const paraglideHandle: Handle = ({ event, resolve }) => {
 			textDirection: 'ltr'
 		};
 
-		// // Set cookie to remember the user's language preference
-		// if (event.cookies) {
-		// 	event.cookies.set('PARAGLIDE_LOCALE', safeLocale, {
-		// 		path: '/',
-		// 		httpOnly: false, // Allow client-side access
-		// 		maxAge: 60 * 60 * 24 * 365, // 1 year
-		// 		sameSite: 'lax'
-		// 	});
-		// }
+		// Ensure the cookie is set when accessing URLs directly
+		if (event.cookies && !event.cookies.get('PARAGLIDE_LOCALE')) {
+			event.cookies.set('PARAGLIDE_LOCALE', safeLocale, {
+				path: '/',
+				httpOnly: false,
+				maxAge: 60 * 60 * 24 * 365, // 1 year
+				sameSite: 'lax'
+			});
+		}
 
 		return resolve(event, {
 			transformPageChunk: ({ html }) => {

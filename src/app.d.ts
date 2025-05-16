@@ -6,8 +6,8 @@ declare global {
 			user: import('$lib/server/auth/auth.server').SessionValidationResult['user'];
 			session: import('$lib/server/auth/auth.server').SessionValidationResult['session'];
 			paraglide: {
-				locale: "en" | "de" | "fr" | "cn";
-				lang: "en" | "de" | "fr" | "cn";
+				locale: "en-US" | "en-UK" | "de-DE" | "fr-FR" | "zh-CN";
+				lang: "en-US" | "en-UK" | "de-DE" | "fr-FR" | "zh-CN";
 				textDirection?: "ltr" | "rtl";
 			};
 		}

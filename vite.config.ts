@@ -10,7 +10,7 @@ export default defineConfig({
 			outdir: './src/lib/paraglide',
 			strategy: ['url', 'cookie', 'baseLocale'],
 			disableAsyncLocalStorage: true,
-			cookieDomain: '',  // Empty string means same-origin only
+			cookieDomain: '',  // Empty string = same-origin only, works for both dev and prod
 			cookieMaxAge: 365 * 24 * 60 * 60, // 1 year
 			urlPatterns: [
 				{
@@ -18,11 +18,12 @@ export default defineConfig({
 					localized: [
 						// Note: Order matters here!
 						// More specific patterns (with language prefixes) first
-						["de", "/de/:path(.*)?"],
-						["fr", "/fr/:path(.*)?"],
-						["cn", "/cn/:path(.*)?"],
-						// Default language (en) last with no prefix
-						["en", "/:path(.*)?"]
+						["en-UK", "/en-uk/:path(.*)?"],
+						["de-DE", "/de-de/:path(.*)?"],
+						["fr-FR", "/fr-fr/:path(.*)?"],
+						["zh-CN", "/zh-cn/:path(.*)?"],
+						// Default language (en-US) last with no prefix
+						["en-US", "/:path(.*)?"]
 					]
 				}
 			]

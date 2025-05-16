@@ -4,6 +4,8 @@
 	import ProductDetailAccessory from '$lib/components/product-detail-accessory.svelte';
 	import { onMount } from 'svelte';
 	import * as m from '$lib/paraglide/messages';
+	import { afterNavigate, invalidate } from '$app/navigation';
+	import { getLocale } from '$lib/paraglide/runtime.js';
 
 	let { data } = $props<{ data: PageData }>();
 
@@ -58,6 +60,18 @@
 
 	// Get the store name from the messages
 	const storeName = m.shop_title();
+
+	// Watch for locale changes and reload data
+	let currentLocale = $state(getLocale());
+
+	$effect(() => {
+		const newLocale = getLocale();
+		if (newLocale !== currentLocale) {
+			console.log(`Locale changed from ${currentLocale} to ${newLocale}, invalidating data`);
+			currentLocale = newLocale;
+			invalidate('app:locale');
+		}
+	});
 </script>
 
 <!-- Add SEO metadata to head -->
@@ -84,8 +98,8 @@
 		class:opacity-100={contentVisible}
 	>
 		{#if !data}
-			<div class="flex justify-center items-center h-64">
-				<div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+			<div class="flex h-64 items-center justify-center">
+				<div class="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-primary"></div>
 			</div>
 		{:else if productCategory === 'KEYBOARD'}
 			<ProductDetailKeyboard

@@ -1,15 +1,20 @@
+import { getCurrencyForLocale, DEFAULT_CURRENCY } from '$lib/models/product-price';
+import type { Locale } from '$lib/utils/localization';
+
 /**
  * Formats a price from cents to a localized currency string
  * @param price - Price in cents (integer)
  * @param locale - Locale for formatting (defaults to 'en-US')
- * @param currency - Currency code (defaults to 'USD')
  * @returns Formatted price string with currency symbol
  */
 export function formatPrice(
     price: number,
-    locale: string = 'en-US',
-    currency: string = 'USD'
+    locale: Locale = 'en-US'
 ): string {
+    // Get currency based on locale
+    const currency = getCurrencyForLocale(locale) || DEFAULT_CURRENCY;
+
+    // Format the price with the correct locale and currency
     const dollars = price / 100;
     return new Intl.NumberFormat(locale, {
         style: 'currency',

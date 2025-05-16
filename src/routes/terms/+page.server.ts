@@ -5,10 +5,10 @@ import { parseStructuredContent } from '$lib/utils/content-parser';
 export const load: PageServerLoad = async ({ locals, cookies }) => {
     // Get the user's preferred language from locals
     const locale = locals.paraglide?.lang || cookies.get('PARAGLIDE_LOCALE') || 'en';
-    console.log(`[ABOUT-PAGE] Loading content with locale: ${locale}`);
+    console.log(`[TERMS-PAGE] Loading content with locale: ${locale}`);
 
-    // Load content for the About page in the user's language
-    const { html } = await loadContent('about', locale);
+    // Load content for the Terms page in the user's language
+    const { html } = await loadContent('terms', locale);
 
     // Parse the HTML content into structured sections
     const structuredContent = parseStructuredContent(html);
