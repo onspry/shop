@@ -8,6 +8,7 @@
 	import { enhance } from '$app/forms';
 	import { toast } from 'svelte-sonner';
 	import { cart } from '$lib/stores/cart';
+	import { getLocale } from '$lib/paraglide/runtime.js';
 
 	let { item, disabled = false } = $props<{
 		item: CartItemViewModel;
@@ -59,11 +60,11 @@
 
 <div class="relative">
 	<div
-		class="flex bg-background rounded-lg p-4 hover:shadow-md transition-all duration-200 border border-transparent hover:border-border"
+		class="flex rounded-lg border border-transparent bg-background p-4 transition-all duration-200 hover:border-border hover:shadow-md"
 	>
 		<!-- Product Image with hover zoom -->
 		<div
-			class="w-32 h-32 flex-shrink-0 relative overflow-hidden rounded-md group flex items-center justify-center"
+			class="group relative flex h-32 w-32 flex-shrink-0 items-center justify-center overflow-hidden rounded-md"
 		>
 			<AppImage
 				src={currentItem.imageUrl}
@@ -75,17 +76,17 @@
 			/>
 		</div>
 
-		<div class="flex-1 pl-6 flex flex-col justify-between">
+		<div class="flex flex-1 flex-col justify-between pl-6">
 			<div class="flex justify-between">
 				<div>
-					<h3 class="font-medium text-base">{variantName}</h3>
+					<h3 class="text-base font-medium">{variantName}</h3>
 
 					<!-- Composite Items -->
 					{#if currentItem.composites && currentItem.composites.length > 0}
 						<div class="mt-2 space-y-1">
 							{#each currentItem.composites as composite}
 								<div class="flex items-center gap-1">
-									<div class="w-1.5 h-1.5 rounded-full bg-muted-foreground/40"></div>
+									<div class="h-1.5 w-1.5 rounded-full bg-muted-foreground/40"></div>
 									<p class="text-sm text-muted-foreground">
 										{composite.name}
 									</p>
@@ -96,11 +97,11 @@
 
 					<!-- Stock Status -->
 					{#if currentItem.variant.stockStatus === 'low_stock'}
-						<p class="text-xs text-warning mt-1">
+						<p class="text-warning mt-1 text-xs">
 							{m.stock_only_left({ count: currentItem.variant.stock_quantity })}
 						</p>
 					{:else if currentItem.variant.stockStatus === 'in_stock'}
-						<p class="text-xs text-green-600 mt-1">{m.stock_in_stock()}</p>
+						<p class="mt-1 text-xs text-green-600">{m.stock_in_stock()}</p>
 					{/if}
 				</div>
 
@@ -136,7 +137,7 @@
 							>
 								<div class="flex items-center gap-2">
 									<Button
-										class="p-2 rounded-md hover:bg-muted text-muted-foreground transition-colors disabled:opacity-50"
+										class="rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
 										variant="ghost"
 										type="button"
 										onclick={cancelRemove}
@@ -146,7 +147,7 @@
 										<span class="text-xs">{m.action_cancel()}</span>
 									</Button>
 									<Button
-										class="p-2 rounded-md hover:bg-muted text-muted-foreground transition-colors disabled:opacity-50"
+										class="rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
 										variant="ghost"
 										type="submit"
 										disabled={disabled || isUpdating}
@@ -159,7 +160,7 @@
 							</form>
 						{:else}
 							<Button
-								class="p-2 rounded-md hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors disabled:opacity-50 group"
+								class="group rounded-md p-2 text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
 								variant="ghost"
 								onclick={showRemoveConfirmation}
 								disabled={disabled || isUpdating}
@@ -172,10 +173,10 @@
 				</div>
 			</div>
 
-			<div class="mt-4 flex justify-between items-center">
+			<div class="mt-4 flex items-center justify-between">
 				<!-- Improved Quantity Controls with Server Actions -->
 				<div
-					class="flex items-center space-x-2 bg-muted/10 dark:bg-muted/5 rounded-md p-1.5 border border-border/50 dark:border-border"
+					class="flex items-center space-x-2 rounded-md border border-border/50 bg-muted/10 p-1.5 dark:border-border dark:bg-muted/5"
 				>
 					<form
 						method="POST"
@@ -205,7 +206,7 @@
 						<input type="hidden" name="cartItemId" value={currentItem.id} />
 						<input type="hidden" name="quantity" value={Math.max(1, quantity - 1)} />
 						<Button
-							class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+							class="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
 							variant="ghost"
 							type="submit"
 							disabled={disabled || isUpdating || quantity <= minQuantity}
@@ -247,7 +248,7 @@
 						<input type="hidden" name="cartItemId" value={currentItem.id} />
 						<input type="hidden" name="quantity" value={quantity + 1} />
 						<Button
-							class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+							class="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
 							variant="ghost"
 							type="submit"
 							disabled={disabled || isUpdating || quantity >= maxQuantity}
@@ -260,7 +261,7 @@
 
 				<!-- Price -->
 				<div class="text-right">
-					<span class="font-medium text-lg">{formatPrice(price * quantity)}</span>
+					<span class="text-lg font-medium">{formatPrice(price * quantity, getLocale())}</span>
 				</div>
 			</div>
 		</div>

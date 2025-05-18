@@ -23,7 +23,7 @@
 	import type { PageData } from './$types';
 	import { browser } from '$app/environment';
 	import { enhance } from '$app/forms';
-	import { localizeHref } from '$lib/paraglide/runtime';
+	import { localizeHref, getLocale } from '$lib/paraglide/runtime';
 
 	import { countries, addressStructures } from '$lib/config/address-structures';
 	import { checkoutStore } from '$lib/stores/checkout';
@@ -402,16 +402,16 @@
 	}
 </script>
 
-<div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 lg:px-8">
 	<!-- Checkout Progress Indicator -->
-	<div class="mb-8 relative">
-		<div class="hidden sm:block h-0.5 w-full bg-muted absolute top-5 left-0"></div>
-		<ol class="relative grid grid-cols-3 w-full">
+	<div class="relative mb-8">
+		<div class="absolute left-0 top-5 hidden h-0.5 w-full bg-muted sm:block"></div>
+		<ol class="relative grid w-full grid-cols-3">
 			<!-- Email Step -->
 			<li class="flex flex-col items-center">
 				<button class="flex flex-col items-center focus:outline-none" onclick={() => goToStep(1)}>
 					<div
-						class="flex items-center justify-center w-10 h-10 rounded-full border-2 z-10 transition-colors duration-300 mb-2"
+						class="z-10 mb-2 flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors duration-300"
 						class:bg-primary={checkout.currentStep >= 1 || activeStep === 1}
 						class:border-primary={checkout.currentStep >= 1 || activeStep === 1}
 						class:text-primary-foreground={checkout.currentStep >= 1 || activeStep === 1}
@@ -438,7 +438,7 @@
 					disabled={!checkout.emailValidated}
 				>
 					<div
-						class="flex items-center justify-center w-10 h-10 rounded-full border-2 z-10 transition-colors duration-300 mb-2"
+						class="z-10 mb-2 flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors duration-300"
 						class:bg-primary={checkout.currentStep >= 2 || activeStep === 2}
 						class:border-primary={checkout.currentStep >= 2 || activeStep === 2}
 						class:text-primary-foreground={checkout.currentStep >= 2 || activeStep === 2}
@@ -465,7 +465,7 @@
 					disabled={!checkout.emailValidated || !checkout.shippingValidated}
 				>
 					<div
-						class="flex items-center justify-center w-10 h-10 rounded-full border-2 z-10 transition-colors duration-300 mb-2"
+						class="z-10 mb-2 flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors duration-300"
 						class:bg-primary={checkout.currentStep >= 3 || activeStep === 3}
 						class:border-primary={checkout.currentStep >= 3 || activeStep === 3}
 						class:text-primary-foreground={checkout.currentStep >= 3 || activeStep === 3}
@@ -486,18 +486,18 @@
 		</ol>
 	</div>
 
-	<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+	<div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
 		<!-- Main checkout flow -->
 		<div class="lg:col-span-7">
 			<!-- Email Section -->
 			<div class="mb-8" data-section="email" class:hidden={activeStep !== 1}>
-				<div class="flex items-center justify-between w-full mb-6">
-					<h2 class="text-2xl font-semibold flex items-center gap-2">
+				<div class="mb-6 flex w-full items-center justify-between">
+					<h2 class="flex items-center gap-2 text-2xl font-semibold">
 						<Mail class="h-5 w-5" />
 						{m.checkout_contact_info_title()}
 						{#if formErrors.email}
 							<span
-								class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-destructive ml-2 error-indicator"
+								class="error-indicator ml-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-destructive"
 							>
 								<span class="text-xs font-bold text-destructive-foreground">!</span>
 							</span>
@@ -509,8 +509,8 @@
 					{#if checkout.isLoggedIn}
 						<!-- Logged in user view -->
 						<div class="flex items-start gap-4">
-							<div class="bg-muted p-4 rounded-lg flex-1">
-								<div class="flex items-center gap-2 mb-2">
+							<div class="flex-1 rounded-lg bg-muted p-4">
+								<div class="mb-2 flex items-center gap-2">
 									<User class="h-5 w-5 text-primary" />
 									<p class="font-medium">{m.signed_in_as()}</p>
 								</div>
@@ -518,12 +518,12 @@
 							</div>
 						</div>
 					{:else}
-						<div class="flex items-center justify-between mb-4">
+						<div class="mb-4 flex items-center justify-between">
 							<div class="text-sm text-muted-foreground">
 								{m.have_account()}
 								<a
 									href={localizeHref('/auth/login?redirect=/checkout')}
-									class="text-primary hover:underline ml-1">{m.checkout_log_in()}</a
+									class="ml-1 text-primary hover:underline">{m.checkout_log_in()}</a
 								>
 							</div>
 						</div>
@@ -554,7 +554,7 @@
 					{/if}
 					<!-- Navigation Buttons -->
 					<div class="mt-8 border-t pt-6">
-						<div class="flex justify-between items-center">
+						<div class="flex items-center justify-between">
 							<div>
 								<!-- No back button on first step -->
 							</div>
@@ -586,13 +586,13 @@
 
 			<!-- Shipping Section -->
 			<div class="mb-8" data-section="shipping" class:hidden={activeStep !== 2}>
-				<div class="flex items-center justify-between w-full mb-6">
-					<h2 class="text-2xl font-semibold flex items-center gap-2">
+				<div class="mb-6 flex w-full items-center justify-between">
+					<h2 class="flex items-center gap-2 text-2xl font-semibold">
 						<MapPin class="h-5 w-5" />
 						{m.checkout_tab_shipping()}
 						{#if formErrors.shipping}
 							<span
-								class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-destructive ml-2 error-indicator"
+								class="error-indicator ml-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-destructive"
 							>
 								<span class="text-xs font-bold text-destructive-foreground">
 									{shippingErrorDetails.errorCount > 0 ? shippingErrorDetails.errorCount : '!'}
@@ -638,7 +638,7 @@
 						</Form.Field>
 
 						<!-- Name Fields -->
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 							<Form.Field form={shippingSuperForm} name="firstName">
 								<Form.Control>
 									{#snippet children({ props })}
@@ -734,7 +734,7 @@
 						</Form.Field>
 
 						<!-- City, State, ZIP -->
-						<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+						<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
 							<Form.Field form={shippingSuperForm} name="city">
 								<Form.Control>
 									{#snippet children({ props })}
@@ -839,7 +839,7 @@
 													type="button"
 													role="radio"
 													aria-checked={$shippingForm.shippingMethod === method.id}
-													class={`w-full text-left flex items-start gap-4 p-4 rounded-lg bg-muted/5 cursor-pointer hover:bg-muted/10 transition-colors ${$shippingForm.shippingMethod === method.id ? 'ring-1 ring-primary' : ''}`}
+													class={`flex w-full cursor-pointer items-start gap-4 rounded-lg bg-muted/5 p-4 text-left transition-colors hover:bg-muted/10 ${$shippingForm.shippingMethod === method.id ? 'ring-1 ring-primary' : ''}`}
 													onclick={() => {
 														handleShippingMethodChange(method.id);
 													}}
@@ -847,10 +847,10 @@
 													<div class="flex-1">
 														<div class="flex items-center gap-2">
 															<div
-																class="w-4 h-4 rounded-full border-2 border-primary flex items-center justify-center"
+																class="flex h-4 w-4 items-center justify-center rounded-full border-2 border-primary"
 															>
 																{#if $shippingForm.shippingMethod === method.id}
-																	<div class="w-2 h-2 rounded-full bg-primary"></div>
+																	<div class="h-2 w-2 rounded-full bg-primary"></div>
 																{/if}
 															</div>
 															<span class="font-medium">{method.name}</span>
@@ -859,11 +859,11 @@
 																{m.shipping_business_days()})
 															</span>
 														</div>
-														<p class="text-sm text-muted-foreground ml-6 mt-1">
+														<p class="ml-6 mt-1 text-sm text-muted-foreground">
 															{method.description}
 														</p>
 													</div>
-													<div class="font-medium">{formatPrice(method.price)}</div>
+													<div class="font-medium">{formatPrice(method.price, getLocale())}</div>
 												</button>
 											{/each}
 										</div>
@@ -876,7 +876,7 @@
 
 				<!-- Navigation Buttons -->
 				<div class="mt-8 border-t pt-6">
-					<div class="flex justify-between items-center">
+					<div class="flex items-center justify-between">
 						<Button variant="outline" class="md:w-auto" onclick={goToPreviousStep}>
 							<span class="flex items-center gap-2">
 								<svg
@@ -917,13 +917,13 @@
 
 			<!-- Payment Section -->
 			<div class="mb-8" data-section="payment" class:hidden={activeStep !== 3}>
-				<div class="flex items-center justify-between w-full mb-6">
-					<h2 class="text-2xl font-semibold flex items-center gap-2">
+				<div class="mb-6 flex w-full items-center justify-between">
+					<h2 class="flex items-center gap-2 text-2xl font-semibold">
 						<CreditCard class="h-5 w-5" />
 						{m.payment_information()}
 						{#if formErrors.payment}
 							<span
-								class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-destructive ml-2 error-indicator"
+								class="error-indicator ml-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-destructive"
 							>
 								<span class="text-xs font-bold text-destructive-foreground">
 									{paymentErrorDetails.errorCount > 0 ? paymentErrorDetails.errorCount : '!'}
@@ -1033,7 +1033,7 @@
 						</Form.Field>
 
 						<!-- Expiry Date and CVV -->
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 							<Form.Field form={paymentSuperForm} name="expiryDate">
 								<Form.Control>
 									{#snippet children({ props })}
@@ -1096,10 +1096,10 @@
 						</div>
 
 						<!-- Security Badges -->
-						<div class="mt-4 p-4 bg-muted/20 rounded-lg border border-muted">
-							<div class="flex items-center justify-between mb-2">
+						<div class="mt-4 rounded-lg border border-muted bg-muted/20 p-4">
+							<div class="mb-2 flex items-center justify-between">
 								<div class="flex items-center">
-									<div class="mr-2 p-1 bg-green-100 rounded-full">
+									<div class="mr-2 rounded-full bg-green-100 p-1">
 										<svg
 											xmlns="http://www.w3.org/2000/svg"
 											class="h-4 w-4 text-green-600"
@@ -1116,7 +1116,7 @@
 									<span class="text-sm font-medium">{m.checkout_secure_payment()}</span>
 								</div>
 								<div class="flex items-center">
-									<div class="mr-2 p-1 bg-blue-100 rounded-full">
+									<div class="mr-2 rounded-full bg-blue-100 p-1">
 										<svg
 											xmlns="http://www.w3.org/2000/svg"
 											class="h-4 w-4 text-blue-600"
@@ -1139,7 +1139,7 @@
 						</div>
 
 						<!-- Save Payment Method -->
-						<div class="flex items-center space-x-2 mt-4">
+						<div class="mt-4 flex items-center space-x-2">
 							<input
 								type="checkbox"
 								id="savePaymentMethod"
@@ -1160,7 +1160,7 @@
 
 				<!-- Navigation Buttons -->
 				<div class="mt-8 border-t pt-6">
-					<div class="flex justify-between items-center">
+					<div class="flex items-center justify-between">
 						<Button variant="outline" class="md:w-auto" onclick={goToPreviousStep}>
 							<span class="flex items-center gap-2">
 								<svg
@@ -1187,9 +1187,9 @@
 		<div class="lg:col-span-5">
 			<div class="lg:sticky lg:top-[calc(var(--header-height)+1rem)] lg:h-fit">
 				<!-- Mobile Order Summary Toggle -->
-				<div class="block lg:hidden mb-4">
+				<div class="mb-4 block lg:hidden">
 					<button
-						class="w-full flex items-center justify-between p-4 bg-muted/20 rounded-lg border border-muted hover:bg-muted/30 transition-colors"
+						class="flex w-full items-center justify-between rounded-lg border border-muted bg-muted/20 p-4 transition-colors hover:bg-muted/30"
 						onclick={() => {
 							// Toggle mobile summary visibility
 							const summaryElement = document.getElementById('mobile-order-summary');
@@ -1201,12 +1201,12 @@
 						<div class="flex items-center gap-2">
 							<ShoppingBag class="h-5 w-5" />
 							<span class="font-medium">{m.checkout_order_summary()}</span>
-							<span class="text-sm text-muted-foreground ml-1"
+							<span class="ml-1 text-sm text-muted-foreground"
 								>({m.items_count({ count: data.cart.items.length })})</span
 							>
 						</div>
 						<div class="flex items-center gap-2">
-							<span class="font-medium">{formatPrice(data.cart.total)}</span>
+							<span class="font-medium">{formatPrice(data.cart.total, getLocale())}</span>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
 								class="h-5 w-5"
@@ -1224,8 +1224,8 @@
 				</div>
 
 				<!-- Desktop Order Summary Title -->
-				<div class="hidden lg:flex items-center justify-between w-full mb-6">
-					<h2 class="text-2xl font-semibold flex items-center gap-2">
+				<div class="mb-6 hidden w-full items-center justify-between lg:flex">
+					<h2 class="flex items-center gap-2 text-2xl font-semibold">
 						<ShoppingBag class="h-5 w-5" />
 						{m.checkout_order_summary()}
 					</h2>
@@ -1233,22 +1233,22 @@
 
 				<div
 					id="mobile-order-summary"
-					class="hidden lg:block bg-background rounded-lg space-y-6 shadow-sm border border-muted/50 p-4"
+					class="hidden space-y-6 rounded-lg border border-muted/50 bg-background p-4 shadow-sm lg:block"
 				>
 					<!-- Cart items summary -->
 					<div class="space-y-6">
 						{#each data.cart.items as item}
-							<div class="flex justify-between items-start">
+							<div class="flex items-start justify-between">
 								<div class="flex-1">
 									<div class="flex gap-4">
 										<div class="relative">
 											<div
-												class="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium shadow-sm z-20"
+												class="absolute -right-2 -top-2 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground shadow-sm"
 											>
 												{item.quantity}
 											</div>
 											<div
-												class="w-12 h-12 flex items-center justify-center overflow-hidden rounded-md"
+												class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-md"
 											>
 												<AppImage
 													src={item.imageUrl}
@@ -1261,17 +1261,19 @@
 											</div>
 										</div>
 										<div class="flex-1">
-											<div class="flex justify-between items-start">
+											<div class="flex items-start justify-between">
 												<div>
 													<p class="font-medium">{item.variant?.name || item.name}</p>
 												</div>
-												<p class="font-medium ml-4">{formatPrice(item.price * item.quantity)}</p>
+												<p class="ml-4 font-medium">
+													{formatPrice(item.price * item.quantity, getLocale())}
+												</p>
 											</div>
 											{#if item.composites && item.composites.length > 0}
 												<div class="mt-1 space-y-1">
 													{#each item.composites as composite}
 														<div class="flex items-center gap-1">
-															<div class="w-1.5 h-1.5 rounded-full bg-muted-foreground/40"></div>
+															<div class="h-1.5 w-1.5 rounded-full bg-muted-foreground/40"></div>
 															<p class="text-sm text-muted-foreground">
 																{composite.name}
 															</p>
@@ -1290,7 +1292,7 @@
 					<div class="space-y-4 border-t pt-6">
 						<div class="flex justify-between text-base">
 							<span class="text-muted-foreground">{m.cart_subtotal()}</span>
-							<span>{formatPrice(data.cart.subtotal)}</span>
+							<span>{formatPrice(data.cart.subtotal, getLocale())}</span>
 						</div>
 
 						<div class="flex justify-between text-base">
@@ -1298,7 +1300,7 @@
 							{#if !checkout.shippingValidated}
 								<span class="text-muted-foreground">{m.cart_calculated_at_next_step()}</span>
 							{:else}
-								<span>{formatPrice(checkout.shippingCost)}</span>
+								<span>{formatPrice(checkout.shippingCost, getLocale())}</span>
 							{/if}
 						</div>
 
@@ -1307,24 +1309,24 @@
 							{#if !checkout.shippingValidated}
 								<span class="text-muted-foreground">{m.cart_calculated_at_next_step()}</span>
 							{:else}
-								<span>{formatPrice(calculateTax(data.cart.subtotal))}</span>
+								<span>{formatPrice(calculateTax(data.cart.subtotal), getLocale())}</span>
 							{/if}
 						</div>
 
 						{#if data.cart.discountAmount > 0}
 							<div class="flex justify-between text-base text-green-600 dark:text-green-400">
 								<span>{m.cart_discount()}</span>
-								<span>-{formatPrice(data.cart.discountAmount)}</span>
+								<span>-{formatPrice(data.cart.discountAmount, getLocale())}</span>
 							</div>
 						{/if}
 
 						<!-- Total -->
-						<div class="flex justify-between text-xl font-semibold pt-4 mt-4 border-t">
+						<div class="mt-4 flex justify-between border-t pt-4 text-xl font-semibold">
 							<span>{m.cart_total()}</span>
 							{#if !checkout.shippingValidated}
 								<span class="text-muted-foreground">{m.cart_calculated_at_next_step()}</span>
 							{:else}
-								<span>{formatPrice(checkout.total)}</span>
+								<span>{formatPrice(checkout.total, getLocale())}</span>
 							{/if}
 						</div>
 					</div>
@@ -1332,14 +1334,14 @@
 					<!-- Shipping Information -->
 					{#if checkout.shippingValidated && checkout.shippingAddress && checkout.shippingMethod && checkout.estimatedDays && checkout.shippingAddress.addressLine1}
 						<div class="border-t pt-6">
-							<h3 class="font-medium text-base mb-4 flex items-center gap-2">
+							<h3 class="mb-4 flex items-center gap-2 text-base font-medium">
 								<MapPin class="h-5 w-5 text-primary" />
 								{m.checkout_tab_shipping()}
 							</h3>
 
 							<!-- Shipping Address Card -->
-							<div class="bg-muted/20 rounded-lg p-4 border border-muted/40 mb-4">
-								<div class="flex items-center gap-2 mb-2">
+							<div class="mb-4 rounded-lg border border-muted/40 bg-muted/20 p-4">
+								<div class="mb-2 flex items-center gap-2">
 									<User class="h-4 w-4 text-primary" />
 									<span class="font-medium">
 										{checkout.shippingAddress.firstName}
@@ -1356,7 +1358,7 @@
 										{checkout.shippingAddress.city}, {checkout.shippingAddress.state}
 										{checkout.shippingAddress.postalCode}
 									</p>
-									<div class="flex items-center gap-2 mt-1">
+									<div class="mt-1 flex items-center gap-2">
 										<svg
 											xmlns="http://www.w3.org/2000/svg"
 											class="h-4 w-4 text-primary"
@@ -1380,12 +1382,12 @@
 
 							<!-- Delivery Estimate -->
 							<div
-								class="flex items-center gap-2 text-sm bg-muted/20 rounded-lg p-3 border border-muted/40"
+								class="flex items-center gap-2 rounded-lg border border-muted/40 bg-muted/20 p-3 text-sm"
 							>
 								<Truck class="h-5 w-5 text-primary" />
 								<div>
 									<span class="font-medium">{m.checkout_estimated_delivery()}</span>
-									<span class="text-muted-foreground ml-1"
+									<span class="ml-1 text-muted-foreground"
 										>({checkout.estimatedDays} {m.shipping_business_days()})</span
 									>
 								</div>
@@ -1396,23 +1398,23 @@
 					<!-- Payment Information -->
 					{#if checkout.paymentValidated && $paymentForm.cardNumber && $paymentForm.cardHolder}
 						<div class="border-t pt-6">
-							<h3 class="font-medium text-base mb-4 flex items-center gap-2">
+							<h3 class="mb-4 flex items-center gap-2 text-base font-medium">
 								<CreditCard class="h-5 w-5 text-primary" />
 								{m.checkout_tab_payment()}
 							</h3>
 
 							<!-- Payment Card Preview -->
 							<div
-								class="bg-gradient-to-r from-primary/80 to-primary rounded-lg p-4 text-primary-foreground mb-4 shadow-sm"
+								class="mb-4 rounded-lg bg-gradient-to-r from-primary/80 to-primary p-4 text-primary-foreground shadow-sm"
 							>
-								<div class="flex justify-between items-center mb-2">
-									<div class="w-10 h-6 bg-white/20 rounded-md"></div>
+								<div class="mb-2 flex items-center justify-between">
+									<div class="h-6 w-10 rounded-md bg-white/20"></div>
 									<CreditCard class="h-6 w-6 text-primary-foreground/80" />
 								</div>
-								<div class="font-mono tracking-wider mb-1">
+								<div class="font-mono mb-1 tracking-wider">
 									•••• •••• •••• {$paymentForm.cardNumber.slice(-4)}
 								</div>
-								<div class="flex justify-between items-center text-sm">
+								<div class="flex items-center justify-between text-sm">
 									<span class="text-primary-foreground/80">{m.checkout_card_holder()}</span>
 									<span class="text-primary-foreground/80">{m.checkout_expires()}</span>
 								</div>
@@ -1425,7 +1427,7 @@
 						id="order-form"
 						method="POST"
 						action="?/placeOrder"
-						class="pt-6 border-t"
+						class="border-t pt-6"
 						use:enhance={async () => {
 							// Show processing toast with longer duration
 							const processingToast = toast.loading(m.order_processing_message(), {
@@ -1537,7 +1539,7 @@
 
 						<Button
 							type="submit"
-							class="w-full relative overflow-hidden group transition-all duration-300 hover:shadow-lg"
+							class="group relative w-full overflow-hidden transition-all duration-300 hover:shadow-lg"
 							size="lg"
 							disabled={!checkout.emailValidated ||
 								!checkout.shippingValidated ||
@@ -1545,13 +1547,13 @@
 						>
 							{m.checkout_place_order()}
 						</Button>
-						<p class="text-center text-xs text-muted-foreground/60 mt-2">
+						<p class="mt-2 text-center text-xs text-muted-foreground/60">
 							{m.checkout_secure_transaction()}
 						</p>
 					</form>
 
 					<!-- Moved Terms Agreement -->
-					<div class="text-xs text-muted-foreground/60 text-center space-y-1.5 border-t pt-6">
+					<div class="space-y-1.5 border-t pt-6 text-center text-xs text-muted-foreground/60">
 						<p>{m.cart_terms_agreement()}</p>
 					</div>
 				</div>

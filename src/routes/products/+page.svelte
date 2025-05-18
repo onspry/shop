@@ -7,7 +7,6 @@
 	import type { AutoplayType } from 'embla-carousel-autoplay';
 	import { onMount } from 'svelte';
 	import * as m from '$lib/paraglide/messages';
-	import PriceDisplay from '$lib/components/PriceDisplay.svelte';
 
 	let { data } = $props<{ data: { catalogue: CatalogueViewModel } }>();
 

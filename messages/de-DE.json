@@ -232,11 +232,15 @@
 	"footer_terms": "Nutzungsbedingungen",
 	"footer_text": "Alle Rechte vorbehalten!",
 	"handschmeichler": "Handschmeichler",
-	"handschmeichler_description": "Comfort with zero compromise",
+	"handschmeichler_description": "Komfort ohne Kompromisse",
 	"have_account": "Haben Sie bereits ein Konto?",
 	"hello_world": "Hallo, {name} aus de!",
-	"home_featured_products": "Featured Products",
-	"included": "Enthalten",
+	"hero_description": "Wir verbessern die Kunst des Tippens durch innovatives Design, das Ihren kreativen Arbeitsablauf unterstützt.",
+	"hero_emphasis": "Ihre Hände verdienen das.",
+	"hero_tagline": "Wo Ergonomie auf Ästhetik trifft — entwickelt für die, die die Zukunft gestalten",
+	"hero_title": "Präzision neu definiert",
+	"home_featured_products": "Ausgewählte Produkte",
+	"included": "Inbegriffen",
 	"increase_quantity": "Increase quantity",
 	"items_count": [
 		{

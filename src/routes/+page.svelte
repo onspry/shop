@@ -1,194 +1,134 @@
 <script lang="ts">
-	import {
-		Carousel,
-		CarouselContent,
-		CarouselItem,
-		CarouselNext,
-		CarouselPrevious
-	} from '$lib/components/ui/carousel';
-	import {
-		Card,
-		CardContent,
-		CardDescription,
-		CardHeader,
-		CardTitle
-	} from '$lib/components/ui/card';
-	import { Zap, Wrench, Sparkles, ChevronsDown } from 'lucide-svelte/icons';
-	import Hero from '$lib/components/hero.svelte';
-	import { onMount } from 'svelte';
+	import { ChevronsDown } from 'lucide-svelte/icons';
 	import * as m from '$lib/paraglide/messages';
-	import PriceDisplay from '$lib/components/PriceDisplay.svelte';
+	import PriceDisplay from '$lib/components/price-display.svelte';
+	import { Skeleton } from '$lib/components/ui/skeleton';
+	import ProductCard from '$lib/components/product-card.svelte';
+	import type { ProductViewModel } from '$lib/models/product';
+	import { localizeHref } from '$lib/paraglide/runtime';
 
-	// Get data from page load function
-	const { data } = $props();
-
-	// Access featuredProducts from server data
-	const { featuredProducts } = data;
-
-	// Content visibility control
-	let contentVisible = $state(false);
-
-	// Set timeout to prevent flash of content
-	onMount(() => {
-		const timer = setTimeout(() => {
-			contentVisible = true;
-		}, 300);
-
-		return () => clearTimeout(timer);
-	});
-
-	// Scroll to features function
-	function scrollToFeatures() {
-		// Delay scrolling by 300ms to allow button animation to play
-		setTimeout(() => {
-			document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
-		}, 300);
-	}
-
-	// Key features of the keyboard
-	const features = [
-		{
-			title: m.split_design(),
-			description: m.split_design_description(),
-			icon: Zap
-		},
-		{
-			title: m.customizable(),
-			description: m.customizable_description(),
-			icon: Wrench
-		},
-		{
-			title: m.handschmeichler(),
-			description: m.handschmeichler_description(),
-			icon: Sparkles
-		}
-	];
+	export let data: { products: ProductViewModel[] };
+	let products = data.products;
 </script>
 
-<div class="min-h-screen bg-background">
-	<div
-		class="container mx-auto px-4 py-8 transition-opacity duration-500"
-		class:opacity-0={!contentVisible}
-		class:opacity-100={contentVisible}
+<!-- Hero Section -->
+<section
+	class="flex flex-col items-center justify-center bg-white px-4 pb-6 pt-8 text-center dark:bg-neutral-950"
+>
+	<h1 class="mb-4 text-4xl font-extrabold leading-tight tracking-tight md:text-5xl lg:text-6xl">
+		Work Smarter.<br />Type Better.
+	</h1>
+	<p class="mx-auto mb-6 max-w-md text-lg text-foreground/80">
+		Ergonomic, sustainable keyboards for creators and professionals. Designed for comfort, built for
+		performance.
+	</p>
+	<a
+		href={localizeHref('/products')}
+		class="mb-6 inline-block rounded-full bg-primary px-8 py-3 text-lg font-semibold text-white shadow-lg transition hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50"
 	>
-		<section class="flex flex-col gap-8">
-			<Hero />
+		Shop Now
+	</a>
+	<img
+		src="/images/products/thypoono/main.jpg"
+		alt="Zero Keyboard"
+		class="mb-4 h-auto w-full rounded-xl object-contain dark:shadow-lg lg:h-[480px] lg:max-w-[1280px]"
+	/>
 
-			<div class="flex justify-center">
-				<div
-					class="cursor-pointer text-muted-foreground transition-colors hover:text-primary"
-					onclick={scrollToFeatures}
-					onkeydown={(e) => e.key === 'Enter' && scrollToFeatures()}
-					role="button"
-					tabindex="0"
-					aria-label={m.scroll_to_features()}
+	<!-- Testimonial/Quote -->
+	<section class="bg-background px-4 py-10 text-center">
+		<blockquote class="mx-auto max-w-2xl text-xl font-medium italic text-foreground/80">
+			"Switching to a split ergonomic keyboard drastically reduced the wrist and shoulder pain I
+			experienced from years of heavy typing. While the transition had a learning curve, the
+			long-term comfort and posture improvements made it absolutely worth it. I now type more
+			mindfully and with significantly less strain."
+			<footer class="mt-3 text-sm text-foreground/60">
+				— Desmond KH Ip
+				<a
+					href="https://medium.com/@desmond-kh-ip/adopting-a-split-ergonomic-keyboard-to-reduce-keyboard-related-injuries-part-i-cf075e953dfe"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="ml-2 text-primary underline underline-offset-2 hover:text-primary/80"
+					>Read his full story</a
 				>
-					<ChevronsDown class="h-12 w-12 animate-bounce" />
-				</div>
-			</div>
+			</footer>
+		</blockquote>
+	</section>
 
-			<div id="features" class="pt-8">
-				<Carousel opts={{ align: 'start', loop: true }}>
-					<CarouselContent class="-ml-2 md:-ml-4">
-						{#each features as feature}
-							<CarouselItem class="pl-2 md:basis-1/2 md:pl-4 lg:basis-1/3">
-								<Card class="h-full bg-card">
-									<CardHeader>
-										<div class="flex items-start gap-4">
-											<CardTitle class="text-xl font-semibold">{feature.title}</CardTitle>
-										</div>
-									</CardHeader>
-									<CardContent>
-										<CardDescription class="text-base">{feature.description}</CardDescription>
-									</CardContent>
-								</Card>
-							</CarouselItem>
-						{/each}
-					</CarouselContent>
-					<CarouselPrevious />
-					<CarouselNext />
-				</Carousel>
-			</div>
+	<!-- Value Propositions -->
+	<section
+		class="flex flex-col gap-8 bg-white px-4 py-12 dark:bg-neutral-950 md:flex-row md:justify-center md:gap-8"
+	>
+		<div
+			class="group flex flex-1 flex-col items-center rounded-lg border border-border bg-white p-6 transition-all duration-200 hover:border-border/80 hover:shadow-md dark:bg-neutral-900"
+		>
+			<span class="i-lucide-armchair mb-2 text-3xl text-primary"></span>
+			<h3 class="mb-1 text-lg font-bold text-neutral-900 dark:text-white">Ergonomic</h3>
+			<p class="text-sm text-neutral-600 dark:text-neutral-300">
+				Split, low-profile, and designed for all-day comfort.
+			</p>
+		</div>
+		<div
+			class="group flex flex-1 flex-col items-center rounded-lg border border-border bg-white p-6 transition-all duration-200 hover:border-border/80 hover:shadow-md dark:bg-neutral-900"
+		>
+			<span class="i-lucide-sliders-horizontal mb-2 text-3xl text-primary"></span>
+			<h3 class="mb-1 text-lg font-bold text-neutral-900 dark:text-white">Customizable</h3>
+			<p class="text-sm text-neutral-600 dark:text-neutral-300">
+				Hot-swappable switches, layouts, and keycaps.
+			</p>
+		</div>
+		<div
+			class="group flex flex-1 flex-col items-center rounded-lg border border-border bg-white p-6 transition-all duration-200 hover:border-border/80 hover:shadow-md dark:bg-neutral-900"
+		>
+			<span class="i-lucide-leaf mb-2 text-3xl text-primary"></span>
+			<h3 class="mb-1 text-lg font-bold text-neutral-900 dark:text-white">Sustainable</h3>
+			<p class="text-sm text-neutral-600 dark:text-neutral-300">
+				Eco-friendly materials and packaging.
+			</p>
+		</div>
+	</section>
 
-			<!-- Add product displays with price -->
-			<section class="featured-products">
-				<h2>{m.home_featured_products()}</h2>
-				<div class="product-grid">
-					{#each featuredProducts as product}
-						<a href="/products/{product.slug}" class="product-card">
-							<div class="product-image">
-								<img
-									src={product.images[0]?.url || '/placeholder.jpg'}
-									alt={product.name}
-									loading="lazy"
-								/>
-							</div>
-							<div class="product-info">
-								<h3 class="product-name">{product.name}</h3>
-								<div class="product-price">
-									<PriceDisplay price={product.price} />
-								</div>
-							</div>
-						</a>
-					{/each}
-				</div>
-			</section>
-		</section>
-	</div>
-</div>
+	<!-- Product Preview Carousel -->
+	<section class="bg-white px-2 py-6 dark:bg-neutral-950">
+		<h2 class="mb-4 text-center text-2xl font-bold text-neutral-900 dark:text-white">
+			Featured Products
+		</h2>
+		<div class="flex snap-x gap-8 overflow-x-auto pb-2">
+			{#if products.length === 0}
+				{#each Array(4) as _}
+					<div class="h-[350px] w-[300px] flex-shrink-0 snap-center p-2">
+						<div
+							class="group relative h-full w-full overflow-hidden rounded-lg border border-border bg-card"
+						>
+							<Skeleton class="h-full w-full animate-pulse rounded-lg bg-gray-200" />
+						</div>
+					</div>
+				{/each}
+			{:else}
+				{#each products as product (product.id)}
+					<div class="h-[350px] w-[300px] flex-shrink-0 snap-center p-2">
+						<ProductCard {product} class="h-full w-full" />
+					</div>
+				{/each}
+			{/if}
+		</div>
+	</section>
+</section>
+
+<!-- <div class="flex gap-4 p-8">
+	{#each Array(4) as _}
+		<div class="h-[350px] w-[300px] p-2">
+			<div
+				class="group relative h-full w-full overflow-hidden rounded-lg border border-border bg-card"
+			>
+				<Skeleton class="h-full w-full animate-pulse rounded-lg bg-muted" />
+			</div>
+		</div>
+	{/each}
+</div> -->
 
 <style>
-	.product-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-		gap: 2rem;
-		margin: 2rem 0;
-	}
-
-	.product-card {
-		display: block;
-		text-decoration: none;
-		color: inherit;
-		border: 1px solid #eee;
-		border-radius: 8px;
-		overflow: hidden;
-		transition:
-			transform 0.2s,
-			box-shadow 0.2s;
-	}
-
-	.product-card:hover {
-		transform: translateY(-4px);
-		box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-	}
-
-	.product-image {
-		aspect-ratio: 1 / 1;
-		overflow: hidden;
-	}
-
-	.product-image img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		transition: transform 0.3s;
-	}
-
-	.product-card:hover .product-image img {
-		transform: scale(1.05);
-	}
-
-	.product-info {
-		padding: 1rem;
-	}
-
-	.product-name {
-		font-size: 1rem;
-		margin: 0 0 0.5rem 0;
-	}
-
-	.product-price {
-		font-weight: bold;
-		color: #333;
+	/* Hide scrollbars for horizontal carousel on mobile */
+	::-webkit-scrollbar {
+		display: none;
 	}
 </style>
