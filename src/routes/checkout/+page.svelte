@@ -492,7 +492,7 @@
 			<!-- Email Section -->
 			<div class="mb-8" data-section="email" class:hidden={activeStep !== 1}>
 				<div class="mb-6 flex w-full items-center justify-between">
-					<h2 class="flex items-center gap-2">
+					<h3 class="flex items-center gap-2">
 						<Mail class="h-5 w-5" />
 						{m.checkout_contact_info_title()}
 						{#if formErrors.email}
@@ -502,7 +502,7 @@
 								<span class="text-xs font-bold text-destructive-foreground">!</span>
 							</span>
 						{/if}
-					</h2>
+					</h3>
 				</div>
 
 				<div class="space-y-6">
@@ -587,7 +587,7 @@
 			<!-- Shipping Section -->
 			<div class="mb-8" data-section="shipping" class:hidden={activeStep !== 2}>
 				<div class="mb-6 flex w-full items-center justify-between">
-					<h2 class="flex items-center gap-2">
+					<h3 class="flex items-center gap-2">
 						<MapPin class="h-5 w-5" />
 						{m.checkout_tab_shipping()}
 						{#if formErrors.shipping}
@@ -599,7 +599,7 @@
 								</span>
 							</span>
 						{/if}
-					</h2>
+					</h3>
 				</div>
 
 				<form>
@@ -918,7 +918,7 @@
 			<!-- Payment Section -->
 			<div class="mb-8" data-section="payment" class:hidden={activeStep !== 3}>
 				<div class="mb-6 flex w-full items-center justify-between">
-					<h2 class="flex items-center gap-2">
+					<h3 class="flex items-center gap-2">
 						<CreditCard class="h-5 w-5" />
 						{m.payment_information()}
 						{#if formErrors.payment}
@@ -930,7 +930,7 @@
 								</span>
 							</span>
 						{/if}
-					</h2>
+					</h3>
 				</div>
 
 				<!-- Credit Card Visual Preview -->
@@ -1225,10 +1225,10 @@
 
 				<!-- Desktop Order Summary Title -->
 				<div class="mb-6 hidden w-full items-center justify-between lg:flex">
-					<h2 class="flex items-center gap-2">
+					<h3 class="flex items-center gap-2">
 						<ShoppingBag class="h-5 w-5" />
 						{m.checkout_order_summary()}
-					</h2>
+					</h3>
 				</div>
 
 				<div

@@ -75,10 +75,10 @@
 			<!-- Cart items list -->
 			<div class="lg:col-span-7">
 				<div class="mb-6 flex w-full items-center justify-between">
-					<h2 class="flex items-center gap-2">
+					<h3 class="flex items-center gap-2">
 						<ShoppingCart class="h-5 w-5" />
 						{m.cart_title()}
-					</h2>
+					</h3>
 				</div>
 
 				<div class="space-y-6">
@@ -93,10 +93,10 @@
 				{#if $cart && $cart.items && $cart.items.length > 0}
 					<div class="rounded-lg bg-background">
 						<div class="mb-6 flex w-full items-center justify-between">
-							<h2 class="flex items-center gap-2">
+							<h3 class="flex items-center gap-2">
 								<ShoppingCart class="h-5 w-5" />
 								{m.cart_summary()}
-							</h2>
+							</h3>
 						</div>
 
 						<div class="space-y-6">
