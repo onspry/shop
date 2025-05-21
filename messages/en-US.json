@@ -214,6 +214,7 @@
 	"error_add_to_cart_failed": "Failed to add item to cart",
 	"error_apply_discount_failed": "Failed to apply discount",
 	"error_cart_item_id_required": "Cart item ID is required",
+	"error_check_connection": "Please check your internet connection and try again.",
 	"error_clear_cart_failed": "Failed to clear cart",
 	"error_discount_code_required": "Discount code is required",
 	"error_during_login": "An error occurred during login",
@@ -225,8 +226,19 @@
 	"error_remove_cart_failed": "Failed to remove cart item",
 	"error_remove_discount_failed": "Failed to remove discount",
 	"error_something_went_wrong": "Oops! Something went wrong.",
+	"error_try_again": "Try Again",
 	"error_unexpected": "An unexpected error occurred. Please try again later.",
 	"error_update_cart_failed": "Failed to update cart item",
+	"feature_customizable_desc": "Hot-swappable switches and customizable keycaps for your perfect typing experience",
+	"feature_customizable_title": "Fully Customizable",
+	"feature_ergonomic_desc": "Split layout and adjustable angles for natural hand positioning and reduced strain",
+	"feature_ergonomic_title": "Ergonomic Design",
+	"feature_sustainable_desc": "Recycled aluminum and eco-friendly packaging for a greener typing experience",
+	"feature_sustainable_title": "Sustainable Materials",
+	"featured_products_subtitle": "Discover our most popular keyboards and accessories.",
+	"featured_products_title": "Featured Products",
+	"features_subtitle": "Experience the perfect blend of ergonomics, customization, and sustainability",
+	"features_title": "Why Choose Our Keyboards",
 	"feel": "Feel",
 	"footer_privacy": "Privacy",
 	"footer_terms": "Terms",
@@ -235,26 +247,23 @@
 	"handschmeichler_description": "Comfort with zero compromise",
 	"have_account": "Already have an account?",
 	"hello_world": "Hello, {name} from en!",
-	"hero_description": "Elevating the art of typing through innovative design that supports your creative flow.",
-	"hero_emphasis": "Your hands and shoulders deserve this.",
-	"hero_tagline": "Where ergonomics meets aesthetics — designed for those who create the future",
-	"hero_title": "Crafted for Precision",
+	"hero_cta_learn": "Learn More",
+	"hero_cta_shop": "Shop Now",
+	"hero_description": "Ergonomic and durable keyboards for creators and professionals. Designed for comfort, built for performance.",
+	"hero_emphasis": "",
+	"hero_tagline": "",
+	"hero_title": "Work smarter. Type better.",
 	"home_featured_products": "Featured Products",
 	"included": "Included",
 	"increase_quantity": "Increase quantity",
 	"items_count": [
 		{
-			"declarations": [
-				"input count",
-				"local countPlural = count: plural"
-			],
-			"selectors": [
-				"countPlural"
-			],
+			"declarations": ["input count", "local countPlural = count: plural"],
 			"match": {
 				"countPlural=one": "{count} item",
 				"countPlural=other": "{count} items"
-			}
+			},
+			"selectors": ["countPlural"]
 		}
 	],
 	"keyboard_name": "Zero",
@@ -430,6 +439,9 @@
 	"terms_title": "Terms of Service",
 	"terms_user_accounts": "You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You agree to provide accurate and complete information when creating an account.",
 	"terms_user_accounts_title": "1. User Accounts",
+	"testimonial_read_more": "Read the full story",
+	"testimonial_subtitle": "Understanding the benefits of ergonomic keyboards",
+	"testimonial_title": "Why People Switch",
 	"total": "Total",
 	"validation_email_invalid": "Invalid email address",
 	"validation_email_required": "Email is required",
@@ -457,7 +469,5 @@
 	"verify_email_title": "Verify your email address",
 	"verify_email_verify_button": "Verify",
 	"view_cart": "View Cart",
-	"welcome_back": "Welcome Back",
-	"error_check_connection": "Please check your internet connection and try again.",
-	"error_try_again": "Try Again"
+	"welcome_back": "Welcome Back"
 }
