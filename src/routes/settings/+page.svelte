@@ -18,7 +18,7 @@
 
 <div class="container py-8">
 	<div class="mb-6">
-		<h1 class="text-3xl font-bold">{m.account_settings()}</h1>
+		<h1>{m.account_settings()}</h1>
 	</div>
 
 	<div class="grid gap-6 md:grid-cols-2">

@@ -57,7 +57,7 @@
 				<ShoppingCart size={64} class="absolute text-muted-foreground" />
 				<div class="h-full w-full animate-pulse rounded-full bg-muted/20"></div>
 			</div>
-			<h1 class="mb-3 text-center text-3xl font-bold">{m.cart_empty_title()}</h1>
+			<h2 class="mb-3 text-center">{m.cart_empty_title()}</h2>
 			<p class="mb-8 max-w-md text-center text-lg text-muted-foreground">
 				{m.cart_empty_message()}
 			</p>
@@ -75,10 +75,10 @@
 			<!-- Cart items list -->
 			<div class="lg:col-span-7">
 				<div class="mb-6 flex w-full items-center justify-between">
-					<h1 class="flex items-center gap-2 text-2xl font-semibold">
+					<h2 class="flex items-center gap-2">
 						<ShoppingCart class="h-5 w-5" />
 						{m.cart_title()}
-					</h1>
+					</h2>
 				</div>
 
 				<div class="space-y-6">
@@ -93,7 +93,7 @@
 				{#if $cart && $cart.items && $cart.items.length > 0}
 					<div class="rounded-lg bg-background">
 						<div class="mb-6 flex w-full items-center justify-between">
-							<h2 class="flex items-center gap-2 text-2xl font-semibold">
+							<h2 class="flex items-center gap-2">
 								<ShoppingCart class="h-5 w-5" />
 								{m.cart_summary()}
 							</h2>

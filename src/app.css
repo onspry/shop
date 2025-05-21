@@ -14,15 +14,15 @@
 
 /* Font loading strategy (basic visibility handling) */
 html {
-  visibility: hidden;
+	visibility: hidden;
 }
 
 html.fonts-loaded {
-  visibility: visible;
+	visibility: visible;
 }
 
 html.fonts-failed {
-  visibility: visible;
+	visibility: visible;
 }
 
 @tailwind base;
@@ -30,266 +30,290 @@ html.fonts-failed {
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 20 14.3% 4.1%;
-    --card: 0 0% 100%;
-    --card-foreground: 20 14.3% 4.1%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 20 14.3% 4.1%;
-    --primary: 24.6 95% 53.1%;
-    --primary-foreground: 60 9.1% 97.8%;
-    --secondary: 60 4.8% 95.9%;
-    --secondary-foreground: 24 9.8% 10%;
-    --muted: 60 4.8% 95.9%;
-    --muted-foreground: 25 5.3% 44.7%;
-    --accent: 60 4.8% 95.9%;
-    --accent-foreground: 24 9.8% 10%;
-    --destructive: 0 72.22% 50.59%;
-    --destructive-foreground: 60 9.1% 97.8%;
-    --border: 20 5.9% 90%;
-    --input: 20 5.9% 90%;
-    --ring: 24.6 95% 53.1%;
-    --radius: 0rem;
+	:root {
+		--background: 0 0% 100%;
+		--foreground: 20 14.3% 4.1%;
+		--card: 0 0% 100%;
+		--card-foreground: 20 14.3% 4.1%;
+		--popover: 0 0% 100%;
+		--popover-foreground: 20 14.3% 4.1%;
+		--primary: 24.6 95% 53.1%;
+		--primary-foreground: 60 9.1% 97.8%;
+		--secondary: 60 4.8% 95.9%;
+		--secondary-foreground: 24 9.8% 10%;
+		--muted: 60 4.8% 95.9%;
+		--muted-foreground: 25 5.3% 44.7%;
+		--accent: 60 4.8% 95.9%;
+		--accent-foreground: 24 9.8% 10%;
+		--destructive: 0 72.22% 50.59%;
+		--destructive-foreground: 60 9.1% 97.8%;
+		--border: 20 5.9% 90%;
+		--input: 20 5.9% 90%;
+		--ring: 24.6 95% 53.1%;
+		--radius: 0rem;
 
-    /* Layout sizes */
-    --header-height: 4rem; /* 64px */
-    --footer-height: 3rem; /* 48px */
-    --page-padding-x: 2rem; /* 32px */
-    --content-max-width: 72rem; /* 1152px - optimal reading width */
+		/* Layout sizes */
+		--header-height: 4rem; /* 64px */
+		--footer-height: 3rem; /* 48px */
+		--page-padding-x: 2rem; /* 32px */
+		--content-max-width: 72rem; /* 1152px - optimal reading width */
 
-    @screen md {
-      --header-height: 5rem; /* 80px */
-      --footer-height: 4rem; /* 64px */
-      --page-padding-x: 3rem; /* 48px */
-    }
+		@screen md {
+			--header-height: 5rem; /* 80px */
+			--footer-height: 4rem; /* 64px */
+			--page-padding-x: 3rem; /* 48px */
+		}
 
-    @screen lg {
-      --page-padding-x: 4rem; /* 64px */
-    }
+		@screen lg {
+			--page-padding-x: 4rem; /* 64px */
+		}
 
-    @screen xl {
-      --page-padding-x: 5rem; /* 80px - extra spacious on very large screens */
-    }
+		@screen xl {
+			--page-padding-x: 5rem; /* 80px - extra spacious on very large screens */
+		}
 
-    @screen 2xl {
-      --page-padding-x: 6rem; /* 96px - maximum spacing for ultra-wide screens */
-    }
+		@screen 2xl {
+			--page-padding-x: 6rem; /* 96px - maximum spacing for ultra-wide screens */
+		}
 
-    --logo: url('/logo-dark.svg') no-repeat; /* Dark text for light mode */
-  }
-  .dark {
-    --background: 20 14.3% 4.1%;
-    --foreground: 60 9.1% 97.8%;
-    --card: 20 14.3% 4.1%;
-    --card-foreground: 60 9.1% 97.8%;
-    --popover: 20 14.3% 4.1%;
-    --popover-foreground: 60 9.1% 97.8%;
-    --primary: 20.5 90.2% 48.2%;
-    --primary-foreground: 60 9.1% 97.8%;
-    --secondary: 12 6.5% 15.1%;
-    --secondary-foreground: 60 9.1% 97.8%;
-    --muted: 12 6.5% 15.1%;
-    --muted-foreground: 24 5.4% 63.9%;
-    --accent: 12 6.5% 15.1%;
-    --accent-foreground: 60 9.1% 97.8%;
-    --destructive: 0 72.2% 50.6%;
-    --destructive-foreground: 60 9.1% 97.8%;
-    --border: 12 6.5% 15.1%;
-    --input: 12 6.5% 15.1%;
-    --ring: 20.5 90.2% 48.2%;
+		--logo: url('/logo-dark.svg') no-repeat; /* Dark text for light mode */
+	}
+	.dark {
+		--background: 20 14.3% 4.1%;
+		--foreground: 60 9.1% 97.8%;
+		--card: 20 14.3% 4.1%;
+		--card-foreground: 60 9.1% 97.8%;
+		--popover: 20 14.3% 4.1%;
+		--popover-foreground: 60 9.1% 97.8%;
+		--primary: 20.5 90.2% 48.2%;
+		--primary-foreground: 60 9.1% 97.8%;
+		--secondary: 12 6.5% 15.1%;
+		--secondary-foreground: 60 9.1% 97.8%;
+		--muted: 12 6.5% 15.1%;
+		--muted-foreground: 24 5.4% 63.9%;
+		--accent: 12 6.5% 15.1%;
+		--accent-foreground: 60 9.1% 97.8%;
+		--destructive: 0 72.2% 50.6%;
+		--destructive-foreground: 60 9.1% 97.8%;
+		--border: 12 6.5% 15.1%;
+		--input: 12 6.5% 15.1%;
+		--ring: 20.5 90.2% 48.2%;
 
-    --logo: url('/logo-light.svg') no-repeat; /* White text for dark mode */
-  }
+		--logo: url('/logo-light.svg') no-repeat; /* White text for dark mode */
+	}
 
-  * {
-    border-color: hsl(var(--border));
-  }
+	* {
+		border-color: hsl(var(--border));
+	}
 
-  body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-  }
+	body {
+		background-color: hsl(var(--background));
+		color: hsl(var(--foreground));
+	}
 
-  /* Prevent SvelteKit from adding unwanted styles when dropdown is open */
-  body[style*="padding-right"] {
-    padding-right: 0 !important;
-    margin-right: 0 !important;
-    overflow: auto !important;
-    pointer-events: auto !important;
-  }
+	/* Prevent SvelteKit from adding unwanted styles when dropdown is open */
+	body[style*='padding-right'] {
+		padding-right: 0 !important;
+		margin-right: 0 !important;
+		overflow: auto !important;
+		pointer-events: auto !important;
+	}
 
-  /* Additional fix for the app-body class */
-  .app-body {
-    padding-right: 0 !important;
-    margin-right: 0 !important;
-    overflow: auto !important;
-    pointer-events: auto !important;
-  }
+	/* Additional fix for the app-body class */
+	.app-body {
+		padding-right: 0 !important;
+		margin-right: 0 !important;
+		overflow: auto !important;
+		pointer-events: auto !important;
+	}
 
-  /* Form elements and accordion styling */
-  input:focus-visible,
-  select:focus-visible,
-  [data-radix-select-trigger]:focus-visible {
-    outline: 2px solid hsl(var(--ring));
-    outline-offset: 0;
-  }
+	/* Form elements and accordion styling */
+	input:focus-visible,
+	select:focus-visible,
+	[data-radix-select-trigger]:focus-visible {
+		outline: 2px solid hsl(var(--ring));
+		outline-offset: 0;
+	}
 
-  /* Spacing adjustments for form layouts */
-  .grid.gap-2 {
-    row-gap: 0.75rem;
-  }
+	/* Spacing adjustments for form layouts */
+	.grid.gap-2 {
+		row-gap: 0.75rem;
+	}
 
-  /* Accordion styling */
-  [data-accordion-content] {
-    padding-top: 0;
-  }
+	/* Accordion styling */
+	[data-accordion-content] {
+		padding-top: 0;
+	}
 
-  .pt-4 {
-    padding-top: 0.5rem;
-  }
+	.pt-4 {
+		padding-top: 0.5rem;
+	}
 
-  [data-accordion-item] + [data-accordion-item] {
-    margin-top: 0.5rem;
-  }
+	[data-accordion-item] + [data-accordion-item] {
+		margin-top: 0.5rem;
+	}
 
-  /* Typography defaults */
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-onest font-bold;
-  }
+	/* Typography defaults */
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		@apply font-onest;
+	}
 
-  /* Specific heading styles */
-  h1 {
-    @apply text-4xl md:text-5xl;
-  }
+	/* Specific heading styles */
+	h1 {
+		@apply text-3xl font-normal md:text-4xl;
+	}
 
-  h2 {
-    @apply text-3xl md:text-4xl;
-  }
+	h2 {
+		@apply text-2xl font-normal md:text-3xl;
+	}
 
-  h3 {
-    @apply text-2xl md:text-3xl;
-  }
+	h3 {
+		@apply text-xl font-light md:text-2xl;
+	}
 
-  h4 {
-    @apply text-xl md:text-2xl;
-  }
+	h4 {
+		@apply text-lg font-light md:text-xl;
+	}
 
-  /* Body text defaults */
-  p, input, textarea, select, button, li, a {
-    @apply font-sans;
-  }
+	/* Body text defaults */
+	p,
+	input,
+	textarea,
+	select,
+	button,
+	li,
+	a {
+		@apply font-sans;
+	}
 
-  /* Optional: Set specific styles for body text */
-  p {
-    @apply text-base leading-relaxed;
-  }
+	/* Optional: Set specific styles for body text */
+	p {
+		@apply text-base leading-relaxed;
+	}
 
-  /* Fix for dropdown menu overlay */
-  [data-portal] {
-    position: fixed !important;
-    z-index: 50 !important;
-    pointer-events: none !important;
-  }
+	/* Fix for dropdown menu overlay */
+	[data-portal] {
+		position: fixed !important;
+		z-index: 50 !important;
+		pointer-events: none !important;
+	}
 
-  /* Ensure dropdown content has pointer events */
-  [data-portal] > * {
-    pointer-events: auto !important;
-  }
+	/* Ensure dropdown content has pointer events */
+	[data-portal] > * {
+		pointer-events: auto !important;
+	}
 }
 
 @layer components {
-  /* Reusable text-only class for prominent paragraphs */
-  .text-only {
-    max-width: 65ch;
-    margin-left: auto;
-    margin-right: auto;
-  }
-  
-  /* Style links in containers orange without affecting layout */
-  .container a {
-    color: hsl(var(--primary));
-    text-decoration: none;
-    font-weight: 500;
-    transition: color 0.2s ease;
-  }
-  
-  .container a:hover {
-    color: hsl(var(--primary) / 0.8);
-  }
-  
-  /* Layout container for consistent spacing */
-  .layout-container {
-    width: 100%;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: var(--page-padding-x);
-    padding-right: var(--page-padding-x);
-  }
+	/* Reusable text-only class for prominent paragraphs */
+	.text-only {
+		max-width: 65ch;
+		margin-left: auto;
+		margin-right: auto;
+	}
 
-  .logo {
-    display: block;
-    box-sizing: border-box;
-    background: var(--logo);
-    background-size: contain;
-    width: 180px;
-    height: 32px;
-    background-position: center center;
-    background-repeat: no-repeat;
+	/* Style links in containers orange without affecting layout */
+	.container a {
+		color: hsl(var(--primary));
+		text-decoration: none;
+		font-weight: 500;
+		transition: color 0.2s ease;
+	}
 
-    @media (max-width: 640px) {
-      width: 120px;
-      height: 24px;
-    }
-  }
-  
-  /* List styling for content pages */
-  .prose ul {
-    list-style-type: none;
-    padding-left: 2rem;
-    margin-top: 1rem;
-    margin-bottom: 1rem;
-  }
-  
-  .prose ul li {
-    position: relative;
-    padding-left: 0;
-    margin-bottom: 1rem;
-    padding-top: 0;
-    padding-bottom: 0;
-  }
-  
-  .prose ul li::before {
-    content: "";
-    position: absolute;
-    left: -1.5rem;
-    top: 0.5em;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: hsl(var(--primary));
-  }
-  
-  .prose ul li strong {
-    color: hsl(var(--primary));
-    font-weight: 600;
-  }
+	.container a:hover {
+		color: hsl(var(--primary) / 0.8);
+	}
+
+	/* Layout container for consistent spacing */
+	.layout-container {
+		width: 100%;
+		margin-left: auto;
+		margin-right: auto;
+		padding-left: var(--page-padding-x);
+		padding-right: var(--page-padding-x);
+	}
+
+	/* Heading hierarchy in prose content */
+	.prose h1 {
+		@apply text-4xl font-bold;
+	}
+
+	.prose h2 {
+		@apply text-3xl font-semibold;
+	}
+
+	.prose h3 {
+		@apply text-2xl font-medium;
+	}
+
+	.logo {
+		display: block;
+		box-sizing: border-box;
+		background: var(--logo);
+		background-size: contain;
+		width: 180px;
+		height: 32px;
+		background-position: center center;
+		background-repeat: no-repeat;
+
+		@media (max-width: 640px) {
+			width: 120px;
+			height: 24px;
+		}
+	}
+
+	/* List styling for content pages */
+	.prose ul {
+		list-style-type: none;
+		padding-left: 2rem;
+		margin-top: 1rem;
+		margin-bottom: 1rem;
+	}
+
+	.prose ul li {
+		position: relative;
+		padding-left: 0;
+		margin-bottom: 1rem;
+		padding-top: 0;
+		padding-bottom: 0;
+	}
+
+	.prose ul li::before {
+		content: '';
+		position: absolute;
+		left: -1.5rem;
+		top: 0.5em;
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background-color: hsl(var(--primary));
+	}
+
+	.prose ul li strong {
+		color: hsl(var(--primary));
+		font-weight: 600;
+	}
 }
 
 /* Error indicator animation */
 @keyframes pulse {
-    0% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.1);
-    }
-    100% {
-        transform: scale(1);
-    }
+	0% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.1);
+	}
+	100% {
+		transform: scale(1);
+	}
 }
 
 .error-indicator {
-    animation: pulse 1.5s infinite;
-    box-shadow: 0 0 0 3px rgba(240, 82, 82, 0.2);
+	animation: pulse 1.5s infinite;
+	box-shadow: 0 0 0 3px rgba(240, 82, 82, 0.2);
 }

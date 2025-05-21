@@ -22,7 +22,7 @@
 - 将一端插入**左半边的 USB-C 接口**。
 - 将另一端插入**右半边的 USB-C 接口**。
 
-![Zero Connected Keyboard](zero-connected.svg)
+![Zero Connected Keyboard](/user-manual/zero-connected.svg)
 
 > 💡 _提示：互连线可正反插——两侧没有专用的"输入"或"输出"端口。_
 
@@ -33,7 +33,7 @@
 - 一端插入**左半边的 USB-C 接口**。
 - 另一端插入您的**电脑**。
 
-![Zero Connected Keyboard](zero-connected-laptop.svg)
+![Zero Connected Keyboard](/user-manual/zero-connected-laptop.svg)
 
 > 🔌 _只需将左半边连接到电脑。右半边通过互连线获取电源和数据。_
 
@@ -63,6 +63,38 @@ Zero 键盘支持通过 **QMK** 或 **VIA** 进行高级自定义。
 - 固件及配置工具下载地址：[onspry.com/firmware](https://onspry.com/firmware)
 
 > ⚠️ _固件修改为可选项，仅建议高级用户操作。_
+
+---
+
+## 🎹 使用 Vial 自定义按键
+
+Zero 键盘支持通过 **Vial** 应用程序进行按键自定义，这是一个用户友好的键盘配置工具。
+
+### 使用 Vial Web
+
+1. 在浏览器中访问 [vial.rocks](https://vial.rocks)
+2. 将键盘连接到电脑
+3. 键盘必须处于解锁模式才能继续
+4. 按住指定按键直到进度条填满
+5. 连接成功后，您可以：
+   - 重新映射按键
+   - 创建自定义层
+   - 配置宏
+   - 调整键盘设置
+
+> 💡 _提示：为获得最佳体验，请使用最新版本的 Chrome、Chromium 或 Edge 浏览器。_
+
+### 使用 Vial 桌面应用
+
+用于离线使用或获取额外功能：
+
+1. 从 [get.vial.today](https://get.vial.today) 下载独立的 Vial 应用程序
+2. 安装并启动应用程序
+3. 连接键盘
+4. 按照与网页版相同的解锁流程操作
+5. 根据需要自定义键盘布局
+
+> ⚠️ _安全提示：请在可信的电脑上进行键盘自定义。完成更改后，记得通过选择菜单中的安全->锁定或重新插拔键盘来锁定键盘。_
 
 ---
 

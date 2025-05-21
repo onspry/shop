@@ -58,7 +58,7 @@
 	<div
 		class="absolute bottom-0 left-0 right-0 border-t border-border/50 bg-background/90 p-4 backdrop-blur-sm"
 	>
-		<h3 class="truncate text-lg font-medium text-foreground">
+		<h3 class="truncate">
 			{product?.name || 'Product Name'}
 		</h3>
 		<div class="mt-2 flex items-center justify-between gap-2">

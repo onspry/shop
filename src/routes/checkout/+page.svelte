@@ -492,7 +492,7 @@
 			<!-- Email Section -->
 			<div class="mb-8" data-section="email" class:hidden={activeStep !== 1}>
 				<div class="mb-6 flex w-full items-center justify-between">
-					<h2 class="flex items-center gap-2 text-2xl font-semibold">
+					<h2 class="flex items-center gap-2">
 						<Mail class="h-5 w-5" />
 						{m.checkout_contact_info_title()}
 						{#if formErrors.email}
@@ -587,7 +587,7 @@
 			<!-- Shipping Section -->
 			<div class="mb-8" data-section="shipping" class:hidden={activeStep !== 2}>
 				<div class="mb-6 flex w-full items-center justify-between">
-					<h2 class="flex items-center gap-2 text-2xl font-semibold">
+					<h2 class="flex items-center gap-2">
 						<MapPin class="h-5 w-5" />
 						{m.checkout_tab_shipping()}
 						{#if formErrors.shipping}
@@ -825,7 +825,7 @@
 
 						<!-- Shipping Method -->
 						<div class="grid gap-4">
-							<h3 class="text-lg font-medium">{m.checkout_shipping_method()}</h3>
+							<h3>{m.checkout_shipping_method()}</h3>
 							<Form.Field form={shippingSuperForm} name="shippingMethod">
 								<Form.Control>
 									{#snippet children({ props })}
@@ -918,7 +918,7 @@
 			<!-- Payment Section -->
 			<div class="mb-8" data-section="payment" class:hidden={activeStep !== 3}>
 				<div class="mb-6 flex w-full items-center justify-between">
-					<h2 class="flex items-center gap-2 text-2xl font-semibold">
+					<h2 class="flex items-center gap-2">
 						<CreditCard class="h-5 w-5" />
 						{m.payment_information()}
 						{#if formErrors.payment}
@@ -1225,7 +1225,7 @@
 
 				<!-- Desktop Order Summary Title -->
 				<div class="mb-6 hidden w-full items-center justify-between lg:flex">
-					<h2 class="flex items-center gap-2 text-2xl font-semibold">
+					<h2 class="flex items-center gap-2">
 						<ShoppingBag class="h-5 w-5" />
 						{m.checkout_order_summary()}
 					</h2>
@@ -1334,7 +1334,7 @@
 					<!-- Shipping Information -->
 					{#if checkout.shippingValidated && checkout.shippingAddress && checkout.shippingMethod && checkout.estimatedDays && checkout.shippingAddress.addressLine1}
 						<div class="border-t pt-6">
-							<h3 class="mb-4 flex items-center gap-2 text-base font-medium">
+							<h3 class="mb-4 flex items-center gap-2">
 								<MapPin class="h-5 w-5 text-primary" />
 								{m.checkout_tab_shipping()}
 							</h3>
@@ -1398,7 +1398,7 @@
 					<!-- Payment Information -->
 					{#if checkout.paymentValidated && $paymentForm.cardNumber && $paymentForm.cardHolder}
 						<div class="border-t pt-6">
-							<h3 class="mb-4 flex items-center gap-2 text-base font-medium">
+							<h3 class="mb-4 flex items-center gap-2">
 								<CreditCard class="h-5 w-5 text-primary" />
 								{m.checkout_tab_payment()}
 							</h3>

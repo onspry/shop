@@ -1,5 +1,22 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"hello_world": "Hello, {name} from fr!",
-	"home_featured_products": "Produits en vedette"
+	"home_featured_products": "Produits en vedette",
+	"feature_customizable_desc": "Échangez les touches et les switches pour créer votre expérience de frappe parfaite.",
+	"feature_customizable_title": "Personnalisable",
+	"feature_ergonomic_desc": "Conçu pour le confort pendant les longues sessions de frappe, réduisant la tension et la fatigue.",
+	"feature_ergonomic_title": "Ergonomique",
+	"feature_sustainable_desc": "Fabriqué avec des matériaux recyclés et conçu pour la longévité et la réparabilité.",
+	"feature_sustainable_title": "Durable",
+	"featured_products_subtitle": "Découvrez nos claviers et accessoires les plus populaires.",
+	"featured_products_title": "Produits en vedette",
+	"features_subtitle": "Nos claviers sont conçus pour vous. Voici ce qui les rend spéciaux.",
+	"features_title": "Pourquoi choisir nos claviers ?",
+	"hero_cta_learn": "En savoir plus",
+	"hero_cta_shop": "Acheter maintenant",
+	"hero_description": "Claviers ergonomiques et durables pour les créateurs et les professionnels. Conçus pour le confort, construits pour la performance.",
+	"hero_title": "Travaillez plus intelligemment. Tapez mieux.",
+	"testimonial_read_more": "Lire l'histoire →",
+	"testimonial_subtitle": "Écoutez ceux qui sont passés aux claviers ergonomiques.",
+	"testimonial_title": "Pourquoi les gens changent"
 }

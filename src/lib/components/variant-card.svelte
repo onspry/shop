@@ -116,9 +116,7 @@
 		</div>
 
 		<!-- Variant Name -->
-		<h3 class="mb-1 line-clamp-2 text-sm font-medium">
-			{variant.name.split(' - ')[1] || variant.name}
-		</h3>
+		<h3 class="mb-1 line-clamp-2">{variant.name}</h3>
 
 		<!-- Variant Price -->
 		{#if showPrice !== false}

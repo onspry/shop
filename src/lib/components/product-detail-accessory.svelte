@@ -125,7 +125,7 @@
 				<!-- Product Details -->
 				<div class="flex flex-col space-y-10 pt-8 md:col-span-2 md:pt-0">
 					<div class="space-y-2">
-						<h1 class="text-3xl font-bold lg:text-4xl">{product.name}</h1>
+						<h1>{product.name}</h1>
 						<p class="text-xl font-medium text-muted-foreground lg:text-2xl">
 							{formatPrice(selectedVariant?.price || basePrice, currentLocale)}
 						</p>
@@ -138,7 +138,7 @@
 
 					<!-- Accessory Configuration Options -->
 					<div class="space-y-4">
-						<h2 class="text-xl font-semibold">{product.category} {m.options()}</h2>
+						<h2>{product.category} {m.options()}</h2>
 						<div class="grid grid-cols-1 gap-3">
 							{#each variants || [] as variant}
 								<VariantCard
@@ -154,7 +154,7 @@
 
 					{#if selectedVariant}
 						<div class="rounded-md border bg-muted/50 p-4">
-							<h3 class="text-md mb-3 font-semibold">{m.product_selected_option()}</h3>
+							<h3 class="mb-3">{m.product_selected_option()}</h3>
 							<div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
 								{#if product.category === 'SWITCH'}
 									<div>{m.switch_type()}:</div>
@@ -285,7 +285,7 @@
 						<div class="space-y-6 border-t pt-6">
 							{#if product.features?.length > 0}
 								<div class="space-y-2">
-									<h3 class="text-md font-semibold">{m.product_features()}</h3>
+									<h3>{m.product_features()}</h3>
 									<ul class="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
 										{#each product.features as feature}
 											<li>{feature}</li>
@@ -296,7 +296,7 @@
 
 							{#if product.specifications && Object.keys(product.specifications).length > 0}
 								<div class="space-y-2">
-									<h3 class="text-md font-semibold">{m.product_specifications()}</h3>
+									<h3>{m.product_specifications()}</h3>
 									<div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-muted-foreground">
 										{#each Object.entries(product.specifications) as [key, value]}
 											<div class="capitalize">{key.replace(/_/g, ' ')}:</div>

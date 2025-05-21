@@ -19,16 +19,16 @@
 				<div class="logo" aria-label={m.shop_title()}></div>
 			</a>
 			<!-- Desktop nav -->
-			<div class="hidden md:flex items-center gap-6">
+			<div class="hidden items-center gap-6 md:flex">
 				<a
 					href={localizeHref('/about')}
-					class="text-sm font-medium hover:text-primary transition-colors">{m.navbar_about()}</a
+					class="text-sm font-medium transition-colors hover:text-primary">{m.navbar_about()}</a
 				>
 			</div>
-			<div class="hidden md:flex items-center gap-6">
+			<div class="hidden items-center gap-6 md:flex">
 				<a
 					href={localizeHref('/products')}
-					class="text-sm font-medium hover:text-primary transition-colors">{m.navbar_products()}</a
+					class="text-sm font-medium transition-colors hover:text-primary">{m.navbar_products()}</a
 				>
 			</div>
 			<!-- Mobile hamburger -->
@@ -36,7 +36,7 @@
 				<Sheet bind:open>
 					<SheetTrigger>
 						<div
-							class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 w-10 p-0 hover:bg-accent hover:text-accent-foreground"
+							class="inline-flex h-10 w-10 items-center justify-center whitespace-nowrap rounded-md p-0 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
 							aria-label={m.open_menu()}
 						>
 							<svg
@@ -61,12 +61,6 @@
 								class="text-base font-medium"
 								onclick={() => (open = false)}>{m.navbar_products()}</a
 							>
-
-							<!-- Mobile language switcher placeholder -->
-							<div class="mt-4 pt-4 border-t border-border">
-								<p class="text-sm text-muted-foreground mb-2">{m.navbar_language()}</p>
-								<LanguageSwitcher isMobile={true} />
-							</div>
 						</nav>
 					</SheetContent>
 				</Sheet>

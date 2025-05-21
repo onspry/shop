@@ -4,12 +4,12 @@
 </script>
 
 <div class="product-details">
-	<h1 class="text-2xl font-bold mb-2">{product.name}</h1>
+	<h1 class="mb-2">{product.name}</h1>
 	<p class="mb-4">{product.description}</p>
 
 	{#if product.features && product.features.length > 0}
-		<h2 class="text-lg font-semibold mt-4 mb-2">{m.product_features()}</h2>
-		<ul class="list-disc list-inside mb-4">
+		<h2 class="mb-2 mt-4">{m.product_features()}</h2>
+		<ul class="mb-4 list-inside list-disc">
 			{#each product.features as feature}
 				<li>{feature}</li>
 			{/each}
@@ -17,7 +17,7 @@
 	{/if}
 
 	{#if product.specifications && Object.keys(product.specifications).length > 0}
-		<h2 class="text-lg font-semibold mt-4 mb-2">{m.product_specifications()}</h2>
+		<h2 class="mb-2 mt-4">{m.product_specifications()}</h2>
 		<table class="min-w-full border text-sm">
 			<tbody>
 				{#each Object.entries(product.specifications) as [key, value]}

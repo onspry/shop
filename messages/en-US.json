@@ -244,12 +244,17 @@
 	"increase_quantity": "Increase quantity",
 	"items_count": [
 		{
-			"declarations": ["input count", "local countPlural = count: plural"],
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
 			"match": {
 				"countPlural=one": "{count} item",
 				"countPlural=other": "{count} items"
-			},
-			"selectors": ["countPlural"]
+			}
 		}
 	],
 	"keyboard_name": "Zero",
@@ -452,5 +457,7 @@
 	"verify_email_title": "Verify your email address",
 	"verify_email_verify_button": "Verify",
 	"view_cart": "View Cart",
-	"welcome_back": "Welcome Back"
+	"welcome_back": "Welcome Back",
+	"error_check_connection": "Please check your internet connection and try again.",
+	"error_try_again": "Try Again"
 }

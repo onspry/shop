@@ -29,9 +29,9 @@ async function main() {
 			data: [
 				{
 					id: '550e8400-e29b-41d4-a716-446655440000',
-					slug: 'thypoono',
+					slug: 'zero',
 					category: 'KEYBOARD',
-					name: 'Thypoono',
+					name: 'Zero',
 					descriptions: {
 						'en-US':
 							'A premium low-profile mechanical keyboard with a sleek design and exceptional typing experience.',
@@ -244,8 +244,8 @@ async function main() {
 				{
 					id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
 					productId: '550e8400-e29b-41d4-a716-446655440000',
-					sku: 'KB-THYP-ERG-CHOC',
-					name: 'Thypoono - Ergonomic Layout',
+					sku: 'KB-ZERO-ERG-CHOC',
+					name: 'Zero - Ergonomic Layout',
 					price: 19800,
 					prices: {
 						CNY: 92800,
@@ -375,8 +375,8 @@ async function main() {
 				{
 					id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
 					productId: '550e8400-e29b-41d4-a716-446655440000',
-					url: '/images/products/thypoono/main.jpg',
-					alt: 'Thypoono Split Keyboard - Main View',
+					url: '/images/products/zero/main.jpg',
+					alt: 'Zero Split Keyboard - Main View',
 					position: 1
 				},
 				{

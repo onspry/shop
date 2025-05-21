@@ -134,7 +134,7 @@
 
 	<!-- Accessories Carousel -->
 	<div class="mb-6 mt-8 md:mt-12">
-		<h2 class="mb-3 text-xl font-bold md:mb-4 md:text-2xl">{m.product_more_accessories()}</h2>
+		<h2 class="mb-3 md:mb-4">{m.product_more_accessories()}</h2>
 		<div class="w-full" role="region" aria-label={m.aria_accessories_carousel()}>
 			<Carousel.Root
 				plugins={[createAutoplayPlugin()]}

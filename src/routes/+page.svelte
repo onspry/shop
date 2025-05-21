@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { ChevronsDown } from 'lucide-svelte/icons';
 	import * as m from '$lib/paraglide/messages';
-	import PriceDisplay from '$lib/components/price-display.svelte';
-	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { Button } from '$lib/components/ui/button';
+	import { ArrowRight, MousePointerClick, Palette, Leaf } from 'lucide-svelte';
 	import ProductCard from '$lib/components/product-card.svelte';
 	import type { ProductViewModel } from '$lib/models/product';
 	import { localizeHref } from '$lib/paraglide/runtime';
@@ -15,116 +14,146 @@
 <section
 	class="flex flex-col items-center justify-center bg-white px-4 pb-6 pt-8 text-center dark:bg-neutral-950"
 >
-	<h1 class="mb-4 text-4xl font-extrabold leading-tight tracking-tight md:text-5xl lg:text-6xl">
-		Work Smarter.<br />Type Better.
-	</h1>
-	<p class="mx-auto mb-6 max-w-md text-lg text-foreground/80">
-		Ergonomic, sustainable keyboards for creators and professionals. Designed for comfort, built for
-		performance.
-	</p>
-	<a
-		href={localizeHref('/products')}
-		class="mb-6 inline-block rounded-full bg-primary px-8 py-3 text-lg font-semibold text-white shadow-lg transition hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50"
-	>
-		Shop Now
-	</a>
+	<div class="flex flex-col items-center justify-center px-4 py-20 text-center md:py-32">
+		<h1 class="mb-4">
+			{m.hero_title()}
+		</h1>
+		<p class="mx-auto mb-6 max-w-md text-lg text-foreground/80">
+			{m.hero_description()}
+		</p>
+		<div class="flex flex-col gap-4 sm:flex-row">
+			<Button href={localizeHref('/products')} size="lg" class="px-8">
+				{m.hero_cta_shop()}
+				<ArrowRight class="ml-2 h-5 w-5" />
+			</Button>
+			<Button href={localizeHref('/about')} variant="outline" size="lg">{m.hero_cta_learn()}</Button
+			>
+		</div>
+	</div>
 	<img
-		src="/images/products/thypoono/main.jpg"
-		alt="Zero Keyboard"
-		class="mb-4 h-auto w-full rounded-xl object-contain dark:shadow-lg lg:h-[480px] lg:max-w-[1280px]"
+		src="/images/products/zero/main.jpg"
+		alt="Featured Keyboard"
+		class="mx-auto h-auto w-full max-w-4xl rounded-lg shadow-lg"
 	/>
-
-	<!-- Testimonial/Quote -->
-	<section class="bg-background px-4 py-10 text-center">
-		<blockquote class="mx-auto max-w-2xl text-xl font-medium italic text-foreground/80">
-			"Switching to a split ergonomic keyboard drastically reduced the wrist and shoulder pain I
-			experienced from years of heavy typing. While the transition had a learning curve, the
-			long-term comfort and posture improvements made it absolutely worth it. I now type more
-			mindfully and with significantly less strain."
-			<footer class="mt-3 text-sm text-foreground/60">
-				— Desmond KH Ip
-				<a
-					href="https://medium.com/@desmond-kh-ip/adopting-a-split-ergonomic-keyboard-to-reduce-keyboard-related-injuries-part-i-cf075e953dfe"
-					target="_blank"
-					rel="noopener noreferrer"
-					class="ml-2 text-primary underline underline-offset-2 hover:text-primary/80"
-					>Read his full story</a
-				>
-			</footer>
-		</blockquote>
-	</section>
-
-	<!-- Value Propositions -->
-	<section
-		class="flex flex-col gap-8 bg-white px-4 py-12 dark:bg-neutral-950 md:flex-row md:justify-center md:gap-8"
-	>
-		<div
-			class="group flex flex-1 flex-col items-center rounded-lg border border-border bg-white p-6 transition-all duration-200 hover:border-border/80 hover:shadow-md dark:bg-neutral-900"
-		>
-			<span class="i-lucide-armchair mb-2 text-3xl text-primary"></span>
-			<h3 class="mb-1 text-lg font-bold text-neutral-900 dark:text-white">Ergonomic</h3>
-			<p class="text-sm text-neutral-600 dark:text-neutral-300">
-				Split, low-profile, and designed for all-day comfort.
-			</p>
-		</div>
-		<div
-			class="group flex flex-1 flex-col items-center rounded-lg border border-border bg-white p-6 transition-all duration-200 hover:border-border/80 hover:shadow-md dark:bg-neutral-900"
-		>
-			<span class="i-lucide-sliders-horizontal mb-2 text-3xl text-primary"></span>
-			<h3 class="mb-1 text-lg font-bold text-neutral-900 dark:text-white">Customizable</h3>
-			<p class="text-sm text-neutral-600 dark:text-neutral-300">
-				Hot-swappable switches, layouts, and keycaps.
-			</p>
-		</div>
-		<div
-			class="group flex flex-1 flex-col items-center rounded-lg border border-border bg-white p-6 transition-all duration-200 hover:border-border/80 hover:shadow-md dark:bg-neutral-900"
-		>
-			<span class="i-lucide-leaf mb-2 text-3xl text-primary"></span>
-			<h3 class="mb-1 text-lg font-bold text-neutral-900 dark:text-white">Sustainable</h3>
-			<p class="text-sm text-neutral-600 dark:text-neutral-300">
-				Eco-friendly materials and packaging.
-			</p>
-		</div>
-	</section>
-
-	<!-- Product Preview Carousel -->
-	<section class="bg-white px-2 py-6 dark:bg-neutral-950">
-		<h2 class="mb-4 text-center text-2xl font-bold text-neutral-900 dark:text-white">
-			Featured Products
-		</h2>
-		<div class="flex snap-x gap-8 overflow-x-auto pb-2">
-			{#if products.length === 0}
-				{#each Array(4) as _}
-					<div class="h-[350px] w-[300px] flex-shrink-0 snap-center p-2">
-						<div
-							class="group relative h-full w-full overflow-hidden rounded-lg border border-border bg-card"
-						>
-							<Skeleton class="h-full w-full animate-pulse rounded-lg bg-gray-200" />
-						</div>
-					</div>
-				{/each}
-			{:else}
-				{#each products as product (product.id)}
-					<div class="h-[350px] w-[300px] flex-shrink-0 snap-center p-2">
-						<ProductCard {product} class="h-full w-full" />
-					</div>
-				{/each}
-			{/if}
-		</div>
-	</section>
 </section>
 
-<!-- <div class="flex gap-4 p-8">
-	{#each Array(4) as _}
-		<div class="h-[350px] w-[300px] p-2">
+<!-- Features Section -->
+<section class="bg-muted/50 py-16 dark:bg-background">
+	<div class="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
+		<div class="mb-12 text-center">
+			<h2>{m.features_title()}</h2>
+			<p class="mx-auto mt-4 max-w-xl text-muted-foreground">
+				{m.features_subtitle()}
+			</p>
+		</div>
+
+		<div class="grid gap-8 md:grid-cols-3">
 			<div
-				class="group relative h-full w-full overflow-hidden rounded-lg border border-border bg-card"
+				class="group flex flex-col items-center rounded-lg border border-muted bg-background p-6 shadow transition-all hover:border-orange-200 hover:shadow-lg dark:hover:border-orange-900"
 			>
-				<Skeleton class="h-full w-full animate-pulse rounded-lg bg-muted" />
+				<div
+					class="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 text-primary dark:bg-orange-900"
+				>
+					<MousePointerClick />
+				</div>
+				<h3 class="mb-1">{m.feature_ergonomic_title()}</h3>
+				<p class="text-center text-muted-foreground">
+					{m.feature_ergonomic_desc()}
+				</p>
+			</div>
+
+			<div
+				class="group flex flex-col items-center rounded-lg border border-muted bg-background p-6 shadow transition-all hover:border-orange-200 hover:shadow-lg dark:hover:border-orange-900"
+			>
+				<div
+					class="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 text-primary dark:bg-orange-900"
+				>
+					<Palette />
+				</div>
+				<h3 class="mb-1">{m.feature_customizable_title()}</h3>
+				<p class="text-center text-muted-foreground">
+					{m.feature_customizable_desc()}
+				</p>
+			</div>
+
+			<div
+				class="group flex flex-col items-center rounded-lg border border-muted bg-background p-6 shadow transition-all hover:border-orange-200 hover:shadow-lg dark:hover:border-orange-900"
+			>
+				<div
+					class="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 text-primary dark:bg-orange-900"
+				>
+					<Leaf />
+				</div>
+				<h3 class="mb-1">{m.feature_sustainable_title()}</h3>
+				<p class="text-center text-muted-foreground">
+					{m.feature_sustainable_desc()}
+				</p>
 			</div>
 		</div>
-	{/each}
-</div> -->
+	</div>
+</section>
+
+<!-- Testimonials Section -->
+<section class="bg-muted/30 py-16 dark:bg-background/50">
+	<div class="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
+		<div class="mb-12 text-center">
+			<h2>{m.testimonial_title()}</h2>
+			<p class="mx-auto mt-4 max-w-xl text-muted-foreground">
+				{m.testimonial_subtitle()}
+			</p>
+		</div>
+
+		<div class="mx-auto max-w-2xl">
+			<div class="rounded-lg border border-muted bg-background p-8 shadow">
+				<div class="mb-6 flex items-center">
+					<div class="mr-4 h-16 w-16 overflow-hidden rounded-full">
+						<img
+							src="/images/testimonials/desmond.jpg"
+							alt="Desmond KH Ip"
+							class="h-full w-full object-cover"
+						/>
+					</div>
+					<div>
+						<h3 class="font-medium">Desmond KH Ip</h3>
+						<p class="text-sm text-muted-foreground">Software Developer</p>
+					</div>
+				</div>
+				<blockquote class="text-lg text-muted-foreground">
+					"Switching to a split ergonomic keyboard drastically reduced the wrist and shoulder pain I
+					experienced from years of heavy typing. While the transition had a learning curve, the
+					long-term comfort and posture improvements made it absolutely worth it. I now type more
+					mindfully and with significantly less strain."
+				</blockquote>
+				<div class="mt-4 text-right">
+					<a
+						href="https://medium.com/@desmond-kh-ip/adopting-a-split-ergonomic-keyboard-to-reduce-keyboard-related-injuries-part-i-cf075e953dfe"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="text-sm text-primary hover:underline"
+					>
+						{m.testimonial_read_more()}
+					</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<!-- Featured Products -->
+<section class="py-16">
+	<div class="mx-auto max-w-screen-xl py-12">
+		<h2 class="mb-4 text-center">{m.featured_products_title()}</h2>
+		<p class="mx-auto mb-12 max-w-xl text-center text-muted-foreground">
+			{m.featured_products_subtitle()}
+		</p>
+
+		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+			{#each products as product}
+				<ProductCard {product} />
+			{/each}
+		</div>
+	</div>
+</section>
 
 <style>
 	/* Hide scrollbars for horizontal carousel on mobile */

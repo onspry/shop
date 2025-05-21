@@ -17,17 +17,15 @@
 	const estimatedDelivery = formatEstimatedDelivery(order.createdAt, 7);
 </script>
 
-<div class="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
-	<!-- Order Confirmation Header -->
-	<div class="text-center mb-12">
-		<div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-			<CheckCircle class="h-8 w-8 text-primary" />
-		</div>
-		<h1 class="text-3xl font-bold mb-2">{m.order_confirmation_thank_you()}</h1>
+<div
+	class="container mx-auto space-y-8 px-4 py-12 transition-opacity duration-500 sm:px-6 lg:px-8 lg:py-16"
+>
+	<div class="text-center">
+		<h1 class="mb-2">{m.order_confirmation_thank_you()}</h1>
 		<p class="text-xl text-muted-foreground">
 			{m.order_confirmation_number({ number: order.orderNumber })}
 		</p>
-		<p class="text-muted-foreground mt-2">
+		<p class="mt-2 text-muted-foreground">
 			{m.order_confirmation_email_sent()}
 		</p>
 	</div>
@@ -41,38 +39,44 @@
 			</CardTitle>
 		</CardHeader>
 		<CardContent>
-			<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-				<div class="flex flex-col items-center p-4 bg-muted/30 rounded-lg">
-					<div class="bg-primary/10 p-3 rounded-full mb-3">
-						<ShoppingBag class="h-6 w-6 text-primary" />
+			<div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+				<div class="flex flex-col items-center rounded-lg bg-muted/30 p-4">
+					<div
+						class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground md:mx-auto"
+					>
+						<span class="text-xl font-bold">1</span>
 					</div>
-					<h3 class="font-medium">{m.order_placed()}</h3>
+					<h3>{m.order_placed()}</h3>
 					<p class="text-sm text-muted-foreground">{formatDateTime(order.createdAt)}</p>
 				</div>
 
-				<div class="flex flex-col items-center p-4 bg-muted/30 rounded-lg">
-					<div class="bg-primary/10 p-3 rounded-full mb-3">
-						<Package class="h-6 w-6 text-primary" />
+				<div class="flex flex-col items-center rounded-lg bg-muted/30 p-4">
+					<div
+						class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground md:mx-auto"
+					>
+						<span class="text-xl font-bold">2</span>
 					</div>
-					<h3 class="font-medium">{m.order_processing()}</h3>
+					<h3>{m.order_processing()}</h3>
 					<p class="text-sm text-muted-foreground">{m.order_processing_message()}</p>
 				</div>
 
-				<div class="flex flex-col items-center p-4 bg-muted/30 rounded-lg">
-					<div class="bg-primary/10 p-3 rounded-full mb-3">
-						<Truck class="h-6 w-6 text-primary" />
+				<div class="flex flex-col items-center rounded-lg bg-muted/30 p-4">
+					<div
+						class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground md:mx-auto"
+					>
+						<span class="text-xl font-bold">3</span>
 					</div>
-					<h3 class="font-medium">{m.order_estimated_delivery()}</h3>
+					<h3>{m.order_estimated_delivery()}</h3>
 					<p class="text-sm text-muted-foreground">{estimatedDelivery}</p>
 				</div>
 			</div>
 
 			<!-- Progress Bar -->
-			<div class="mt-8 mb-4">
-				<div class="h-2 bg-muted rounded-full overflow-hidden">
-					<div class="h-full bg-primary rounded-full" style="width: 33%"></div>
+			<div class="mb-4 mt-8">
+				<div class="h-2 overflow-hidden rounded-full bg-muted">
+					<div class="h-full rounded-full bg-primary" style="width: 33%"></div>
 				</div>
-				<div class="flex justify-between mt-2 text-xs text-muted-foreground">
+				<div class="mt-2 flex justify-between text-xs text-muted-foreground">
 					<span>{m.order_progress_placed()}</span>
 					<span>{m.order_progress_processing()}</span>
 					<span>{m.order_progress_shipped()}</span>
@@ -83,7 +87,7 @@
 	</Card>
 
 	<!-- Order Details -->
-	<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+	<div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
 		<!-- Order Summary -->
 		<div class="lg:col-span-2">
 			<Card>
@@ -96,9 +100,9 @@
 				<CardContent>
 					<div class="space-y-6">
 						{#each order.items as item}
-							<div class="flex justify-between items-start border-b pb-4">
+							<div class="flex items-start justify-between border-b pb-4">
 								<div class="flex gap-4">
-									<div class="w-16 h-16 bg-muted rounded-md flex items-center justify-center">
+									<div class="flex h-16 w-16 items-center justify-center rounded-md bg-muted">
 										<ShoppingBag class="h-8 w-8 text-muted-foreground" />
 									</div>
 									<div>
@@ -111,7 +115,7 @@
 											<div class="mt-2 space-y-1">
 												{#each item.composites as composite}
 													<div class="flex items-center gap-1">
-														<div class="w-1.5 h-1.5 rounded-full bg-muted-foreground/40"></div>
+														<div class="h-1.5 w-1.5 rounded-full bg-muted-foreground/40"></div>
 														<p class="text-sm text-muted-foreground">
 															{composite.name}
 														</p>
@@ -147,7 +151,7 @@
 									<span>-{formatPrice(order.discountAmount)}</span>
 								</div>
 							{/if}
-							<div class="flex justify-between font-medium text-lg pt-4 border-t mt-4">
+							<div class="mt-4 flex justify-between border-t pt-4 text-lg font-medium">
 								<span>{m.total()}</span>
 								<span>{formatPrice(order.total)}</span>
 							</div>
@@ -192,7 +196,7 @@
 	</div>
 
 	<!-- Action Buttons -->
-	<div class="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
+	<div class="mt-12 flex flex-col justify-center gap-4 sm:flex-row">
 		<Button variant="outline" href={localizeHref('/orders')} class="flex items-center gap-2">
 			{m.order_view_all()}
 			<ArrowRight class="h-4 w-4" />

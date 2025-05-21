@@ -22,9 +22,9 @@ Verwenden Sie das **mitgelieferte 25 cm USB-C-Kabel**, um die **linke** und **re
 - Stecken Sie ein Ende des Kabels in den **USB-C-Anschluss der linken Hälfte**.
 - Stecken Sie das andere Ende in den **USB-C-Anschluss der rechten Hälfte**.
 
-![Zero Connected Keyboard](zero-connected.svg)
+![Zero Connected Keyboard](/user-manual/zero-connected.svg)
 
-> 💡 _Tipp: Das Verbindungskabel ist beidseitig verwendbar – es gibt keinen speziellen „In“- oder „Out“-Port auf einer Seite._
+> 💡 _Tipp: Das Verbindungskabel ist beidseitig verwendbar – es gibt keinen speziellen "In" oder "Out" Port auf einer Seite._
 
 ### Schritt 2: Anschluss an Ihren Computer
 
@@ -33,7 +33,7 @@ Verwenden Sie das **1 Meter USB-C-zu-USB-C-Kabel**, um die **linke Hälfte** mit
 - Stecken Sie ein Ende in den **USB-C-Anschluss der linken Hälfte**.
 - Stecken Sie das andere Ende in Ihren **Computer**.
 
-![Zero Connected Keyboard](zero-connected-laptop.svg)
+![Zero Connected Keyboard](/user-manual/zero-connected-laptop.svg)
 
 > 🔌 _Nur die linke Hälfte muss mit dem Computer verbunden werden. Die rechte Hälfte erhält Strom und Daten über das Verbindungskabel._
 
@@ -63,6 +63,38 @@ Die Zero-Tastatur unterstützt erweiterte Anpassungen über **QMK** oder **VIA**
 - Laden Sie Firmware oder Konfigurationstools herunter unter: [onspry.com/firmware](https://onspry.com/firmware)
 
 > ⚠️ _Das Ändern der Firmware ist optional und für fortgeschrittene Nutzer gedacht._
+
+---
+
+## 🎹 Tastenbelegung mit Vial
+
+Die Zero-Tastatur unterstützt die Anpassung der Tastenbelegung über die **Vial**-Anwendung, ein benutzerfreundliches Tool zur Konfiguration Ihrer Tastaturbelegung.
+
+### Vial Web verwenden
+
+1. Besuchen Sie [vial.rocks](https://vial.rocks) in Ihrem Webbrowser
+2. Verbinden Sie Ihre Tastatur mit Ihrem Computer
+3. Die Tastatur muss sich im entsperrten Modus befinden
+4. Halten Sie die angegebenen Tasten gedrückt, bis der Fortschrittsbalken gefüllt ist
+5. Nach der Verbindung können Sie:
+   - Tasten neu zuordnen
+   - Benutzerdefinierte Ebenen erstellen
+   - Makros konfigurieren
+   - Tastatureinstellungen anpassen
+
+> 💡 _Tipp: Für die beste Erfahrung verwenden Sie die neuesten Versionen von Chrome, Chromium oder Edge._
+
+### Vial Desktop-App verwenden
+
+Für Offline-Nutzung oder zusätzliche Funktionen:
+
+1. Laden Sie die eigenständige Vial-Anwendung von [get.vial.today](https://get.vial.today) herunter
+2. Installieren und starten Sie die Anwendung
+3. Verbinden Sie Ihre Tastatur
+4. Folgen Sie dem gleichen Entsperrprozess wie bei der Web-Version
+5. Passen Sie Ihre Tastaturbelegung nach Bedarf an
+
+> ⚠️ _Sicherheitshinweis: Führen Sie die Tastaturanpassung nur auf vertrauenswürdigen Computern durch. Denken Sie daran, Ihre Tastatur nach den Änderungen zu sperren, indem Sie im Menü Sicherheit->Sperren auswählen oder die Tastatur neu einstecken._
 
 ---
 

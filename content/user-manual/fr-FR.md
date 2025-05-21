@@ -22,7 +22,7 @@ Utilisez le **câble USB-C de 25 cm fourni** pour connecter les moitiés **gauch
 - Branchez une extrémité du câble sur le **port USB-C de la moitié gauche**.
 - Branchez l'autre extrémité sur le **port USB-C de la moitié droite**.
 
-![Zero Connected Keyboard](zero-connected.svg)
+![Zero Connected Keyboard](/user-manual/zero-connected.svg)
 
 > 💡 _Astuce : le câble d'interconnexion est réversible — il n'y a pas de port « entrée » ou « sortie » dédié de chaque côté._
 
@@ -33,7 +33,7 @@ Utilisez le **câble USB-C vers USB-C de 1 mètre** pour connecter la **moitié 
 - Branchez une extrémité sur le **port USB-C de la moitié gauche**.
 - Branchez l'autre extrémité sur votre **ordinateur**.
 
-![Zero Connected Keyboard](zero-connected-laptop.svg)
+![Zero Connected Keyboard](/user-manual/zero-connected-laptop.svg)
 
 > 🔌 _Seule la moitié gauche doit être connectée à l'ordinateur. La moitié droite reçoit l'alimentation et les données via le câble d'interconnexion._
 
@@ -63,6 +63,38 @@ Le clavier Zero prend en charge la personnalisation avancée via **QMK** ou **VI
 - Téléchargez le firmware ou les outils de configuration sur : [onspry.com/firmware](https://onspry.com/firmware)
 
 > ⚠️ _La modification du firmware est optionnelle et réservée aux utilisateurs avancés._
+
+---
+
+## 🎹 Personnalisation des touches avec Vial
+
+Le clavier Zero prend en charge la personnalisation des touches via l'application **Vial**, un outil convivial pour configurer votre disposition de clavier.
+
+### Utiliser Vial Web
+
+1. Visitez [vial.rocks](https://vial.rocks) dans votre navigateur web
+2. Connectez votre clavier à votre ordinateur
+3. Le clavier doit être en mode déverrouillé pour continuer
+4. Maintenez les touches spécifiées enfoncées jusqu'à ce que la barre de progression soit remplie
+5. Une fois connecté, vous pouvez :
+   - Réassigner les touches
+   - Créer des couches personnalisées
+   - Configurer des macros
+   - Ajuster les paramètres du clavier
+
+> 💡 _Astuce : Pour une meilleure expérience, utilisez les dernières versions de Chrome, Chromium ou Edge._
+
+### Utiliser l'application Vial Desktop
+
+Pour une utilisation hors ligne ou des fonctionnalités supplémentaires :
+
+1. Téléchargez l'application autonome Vial depuis [get.vial.today](https://get.vial.today)
+2. Installez et lancez l'application
+3. Connectez votre clavier
+4. Suivez le même processus de déverrouillage que la version web
+5. Personnalisez votre disposition de clavier selon vos besoins
+
+> ⚠️ _Note de sécurité : Effectuez toujours la personnalisation du clavier sur des ordinateurs de confiance. N'oubliez pas de verrouiller votre clavier après avoir effectué des modifications en sélectionnant Sécurité->Verrouiller dans le menu ou en débranchant le clavier._
 
 ---
 

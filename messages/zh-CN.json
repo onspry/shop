@@ -1,4 +1,21 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
-	"hello_world": "Hello, {name} from cn!"
+	"hello_world": "Hello, {name} from cn!",
+	"feature_customizable_desc": "更换键帽和轴体，打造完美的打字体验。",
+	"feature_customizable_title": "可定制",
+	"feature_ergonomic_desc": "专为长时间打字设计，减少压力和疲劳。",
+	"feature_ergonomic_title": "人体工程学",
+	"feature_sustainable_desc": "采用回收材料制造，设计注重耐用性和可维修性。",
+	"feature_sustainable_title": "可持续",
+	"featured_products_subtitle": "探索我们最受欢迎的键盘和配件。",
+	"featured_products_title": "精选产品",
+	"features_subtitle": "我们的键盘专为您设计。以下是它们的特别之处。",
+	"features_title": "为什么选择我们的键盘？",
+	"hero_cta_learn": "了解更多",
+	"hero_cta_shop": "立即购买",
+	"hero_description": "为创作者和专业人士打造的符合人体工程学的可持续键盘。为舒适而设计，为性能而打造。",
+	"hero_title": "工作更智能。打字更舒适。",
+	"testimonial_read_more": "阅读完整故事 →",
+	"testimonial_subtitle": "听听那些已经改用人体工程学键盘的人怎么说。",
+	"testimonial_title": "为什么人们选择更换"
 }

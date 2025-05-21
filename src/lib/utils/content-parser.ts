@@ -1,11 +1,30 @@
 import { localizeHref } from '$lib/paraglide/runtime';
 
 /**
- * Parses HTML content from markdown into structured sections
- * @param html HTML content generated from markdown
- * @returns Structured content with title, intro, and sections
+ * Interface for a single content section with support for nesting
  */
-export function parseStructuredContent(html: string) {
+export interface ContentSection {
+    title: string;
+    content: string;
+    level: number;
+    children: ContentSection[];
+}
+
+/**
+ * Interface for the complete structured content
+ */
+export interface StructuredContent {
+    title: string;
+    intro: string;
+    sections: ContentSection[];
+}
+
+/**
+ * Parses HTML content from markdown into structured sections with nested hierarchy
+ * @param html HTML content generated from markdown
+ * @returns Structured content with title, intro, and nested sections
+ */
+export function parseStructuredContent(html: string): StructuredContent {
     // Extract the main title (h1)
     let title = 'Page Title';
     const titleMatch = html.match(/<h1>(.*?)<\/h1>/);
@@ -13,15 +32,12 @@ export function parseStructuredContent(html: string) {
         title = titleMatch[1];
     }
 
-    // Structure the content by sections (h2)
-    const sections = [];
-
-    // Split content by h2 headings
+    // Remove the title from content
     let contentWithoutTitle = html.replace(/<h1>.*?<\/h1>/, '').trim();
 
-    // Extract intro paragraph (content before first h2)
+    // Extract intro paragraph (content before first heading)
     let intro = '';
-    const introMatch = contentWithoutTitle.match(/^(.*?)(?=<h2>|$)/s);
+    const introMatch = contentWithoutTitle.match(/^(.*?)(?=<h[2-6]>|$)/s);
     if (introMatch && introMatch[1]) {
         intro = introMatch[1].trim();
         // Convert plain URLs to links in intro section
@@ -30,27 +46,62 @@ export function parseStructuredContent(html: string) {
         contentWithoutTitle = contentWithoutTitle.replace(introMatch[1], '').trim();
     }
 
-    // Split remaining content by h2 tags
-    const sectionMatches = contentWithoutTitle.matchAll(/<h2>(.*?)<\/h2>(.*?)(?=<h2>|$)/gs);
+    // Find all heading tags (h2, h3, h4, h5, h6) and their content
+    const headingPattern = /<h([2-6])>(.*?)<\/h\1>(.*?)(?=<h[2-6]>|$)/gs;
+    const headings: { level: number; title: string; content: string; index: number }[] = [];
 
-    for (const match of sectionMatches) {
-        if (match.length >= 3) {
-            const sectionTitle = match[1].trim();
-            let sectionContent = match[2].trim();
-            // Convert plain URLs to links in section content
-            sectionContent = convertUrlsToLinks(sectionContent);
-            sectionContent = localizeInternalHrefs(sectionContent);
-            sections.push({
-                title: sectionTitle,
-                content: sectionContent
-            });
-        }
+    let match;
+    while ((match = headingPattern.exec(contentWithoutTitle)) !== null) {
+        const level = parseInt(match[1], 10);
+        const title = match[2].trim();
+        let content = match[3].trim();
+        content = convertUrlsToLinks(content);
+        content = localizeInternalHrefs(content);
+
+        headings.push({
+            level,
+            title,
+            content,
+            index: match.index
+        });
     }
+
+    // Build the hierarchical structure
+    const rootSections: ContentSection[] = [];
+    const sectionStack: ContentSection[] = [];
+
+    headings.forEach((heading) => {
+        const section: ContentSection = {
+            title: heading.title,
+            content: heading.content,
+            level: heading.level,
+            children: []
+        };
+
+        // Find the appropriate parent based on heading level
+        while (
+            sectionStack.length > 0 &&
+            sectionStack[sectionStack.length - 1].level >= heading.level
+        ) {
+            sectionStack.pop();
+        }
+
+        if (sectionStack.length === 0) {
+            // This is a top-level section
+            rootSections.push(section);
+        } else {
+            // This is a child section
+            sectionStack[sectionStack.length - 1].children.push(section);
+        }
+
+        // Push this section to the stack for potential children
+        sectionStack.push(section);
+    });
 
     return {
         title,
         intro,
-        sections
+        sections: rootSections
     };
 }
 
