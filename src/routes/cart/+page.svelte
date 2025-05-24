@@ -71,9 +71,9 @@
 		</div>
 	{:else}
 		<!-- Populated Cart View - Two Column Layout -->
-		<div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
+		<div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
 			<!-- Cart items list -->
-			<div class="lg:col-span-7">
+			<div class="lg:col-span-2">
 				<div class="mb-6 flex w-full items-center justify-between">
 					<h3 class="flex items-center gap-2">
 						<ShoppingCart class="h-5 w-5" />
@@ -81,7 +81,7 @@
 					</h3>
 				</div>
 
-				<div class="space-y-6">
+				<div class="space-y-4 sm:space-y-6">
 					{#each $cart.items as item (item.id)}
 						<CartItem {item} disabled={false} />
 					{/each}
@@ -89,11 +89,11 @@
 			</div>
 
 			<!-- Cart summary -->
-			<div class="lg:sticky lg:top-[calc(var(--header-height)+1rem)] lg:col-span-5 lg:h-fit">
+			<div class="lg:sticky lg:top-[calc(var(--header-height)+1rem)] lg:col-span-1 lg:h-fit">
 				{#if $cart && $cart.items && $cart.items.length > 0}
-					<div class="rounded-lg bg-background">
-						<div class="mb-6 flex w-full items-center justify-between">
-							<h3 class="flex items-center gap-2">
+					<div class="rounded-lg border bg-background p-4 sm:p-6">
+						<div class="mb-4 flex w-full items-center justify-between sm:mb-6">
+							<h3 class="flex items-center gap-2 text-lg font-semibold">
 								<ShoppingCart class="h-5 w-5" />
 								{m.cart_summary()}
 							</h3>

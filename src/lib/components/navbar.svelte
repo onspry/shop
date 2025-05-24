@@ -14,23 +14,12 @@
 
 <nav class="h-full w-full">
 	<div class="flex h-full w-full items-center justify-between">
-		<div class="flex items-center gap-8">
+		<!-- Left side: Logo + Mobile Menu -->
+		<div class="flex items-center gap-4">
 			<a href={localizeHref('/')} class="flex h-full items-center" aria-label={m.shop_title()}>
 				<div class="logo" aria-label={m.shop_title()}></div>
 			</a>
-			<!-- Desktop nav -->
-			<div class="hidden items-center gap-6 md:flex">
-				<a
-					href={localizeHref('/about')}
-					class="text-sm font-medium transition-colors hover:text-primary">{m.navbar_about()}</a
-				>
-			</div>
-			<div class="hidden items-center gap-6 md:flex">
-				<a
-					href={localizeHref('/products')}
-					class="text-sm font-medium transition-colors hover:text-primary">{m.navbar_products()}</a
-				>
-			</div>
+
 			<!-- Mobile hamburger -->
 			<div class="md:hidden">
 				<Sheet bind:open>
@@ -50,27 +39,77 @@
 						</div>
 					</SheetTrigger>
 					<SheetContent side="left" class="p-6">
-						<nav class="flex flex-col gap-4">
-							<a
-								href={localizeHref('/about')}
-								class="text-base font-medium"
-								onclick={() => (open = false)}>{m.navbar_about()}</a
-							>
-							<a
-								href={localizeHref('/products')}
-								class="text-base font-medium"
-								onclick={() => (open = false)}>{m.navbar_products()}</a
-							>
+						<nav class="flex flex-col gap-6">
+							<!-- Main Navigation -->
+							<div class="flex flex-col gap-4">
+								<h3 class="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+									Navigation
+								</h3>
+								<a
+									href={localizeHref('/about')}
+									class="py-2 text-base font-medium"
+									onclick={() => (open = false)}>{m.navbar_about()}</a
+								>
+								<a
+									href={localizeHref('/products')}
+									class="py-2 text-base font-medium"
+									onclick={() => (open = false)}>{m.navbar_products()}</a
+								>
+							</div>
+
+							<!-- Settings -->
+							<div class="flex flex-col gap-4 border-t pt-4">
+								<h3 class="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+									Settings
+								</h3>
+								<div class="flex items-center justify-between py-2">
+									<span class="text-base font-medium">Language</span>
+									<LanguageSwitcher />
+								</div>
+								<div class="flex items-center justify-between py-2">
+									<span class="text-base font-medium">Theme</span>
+									<DarkmodeToggle />
+								</div>
+							</div>
+
+							<!-- Account -->
+							<div class="flex flex-col gap-4 border-t pt-4">
+								<h3 class="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+									Account
+								</h3>
+								<div class="py-2">
+									<AuthSection />
+								</div>
+							</div>
 						</nav>
 					</SheetContent>
 				</Sheet>
 			</div>
 		</div>
+
+		<!-- Center: Desktop Navigation -->
+		<div class="hidden items-center gap-8 md:flex">
+			<a
+				href={localizeHref('/about')}
+				class="text-sm font-medium transition-colors hover:text-primary">{m.navbar_about()}</a
+			>
+			<a
+				href={localizeHref('/products')}
+				class="text-sm font-medium transition-colors hover:text-primary">{m.navbar_products()}</a
+			>
+		</div>
+
+		<!-- Right side: Cart (always visible) + Desktop Settings -->
 		<div class="flex items-center gap-4">
+			<!-- Cart always visible -->
 			<CartIcon />
-			<LanguageSwitcher />
-			<DarkmodeToggle />
-			<AuthSection />
+
+			<!-- Desktop-only settings -->
+			<div class="hidden items-center gap-4 md:flex">
+				<LanguageSwitcher />
+				<DarkmodeToggle />
+				<AuthSection />
+			</div>
 		</div>
 	</div>
 </nav>

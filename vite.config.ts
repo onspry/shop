@@ -29,6 +29,13 @@ export default defineConfig({
 			]
 		})
 	],
+	optimizeDeps: {
+		exclude: [
+			'@inlang/paraglide-js',
+			'@inlang/paraglide-runtime',
+			'@inlang/paraglide-js-adapter-sveltekit'
+		]
+	},
 	build: {
 		rollupOptions: {
 			external: ['crypto', 'fs', 'path', 'buffer']

@@ -325,258 +325,236 @@
 		<div class="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-primary"></div>
 	</div>
 {:else}
-	<div class="py-8">
-		<div class="grid grid-cols-1 items-start gap-x-12 md:grid-cols-5 lg:gap-x-16">
-			<!-- Left Column: Sticky Product Image -->
-			<div class="flex items-start justify-center md:sticky md:top-20 md:col-span-3 md:self-start">
-				<div class="min-h-[400px] w-full max-w-2xl rounded-2xl md:min-h-[500px]">
-					<ProductImageGallery {images} />
+	<div class="w-full py-8">
+		<div class="flex w-full flex-col gap-8 lg:flex-row lg:gap-12">
+			<!-- Left: Gallery + Features + Specs (Mobile: full width, Desktop: 60-67% width) -->
+			<div class="w-full lg:w-3/5 xl:w-2/3">
+				<div class="lg:sticky lg:top-20">
+					<div class="flex flex-col gap-8">
+						<!-- Image Gallery -->
+						<ProductImageGallery {images} />
+
+						<!-- Features and Specifications (Mobile: stacked, Desktop: side by side) -->
+						<div class="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
+							{#if product.features?.length > 0}
+								<div class="rounded-2xl border border-muted/60 bg-background/80 p-6 shadow-lg">
+									<h3 class="mb-4 text-xl font-semibold">{m.product_features()}</h3>
+									<ul class="list-disc space-y-2 pl-5 text-base text-muted-foreground">
+										{#each product.features as feature}
+											<li>{feature}</li>
+										{/each}
+									</ul>
+								</div>
+							{/if}
+							{#if product.specifications && Object.keys(product.specifications).length > 0}
+								<div class="rounded-2xl border border-muted/60 bg-background/80 p-6 shadow-lg">
+									<h3 class="mb-4 text-xl font-semibold">{m.product_specifications()}</h3>
+									<div class="grid grid-cols-2 gap-x-6 gap-y-2 text-base">
+										{#each Object.entries(product.specifications) as [key, value]}
+											<div class="font-medium capitalize">{key.replace(/_/g, ' ')}:</div>
+											<div>{String(value)}</div>
+										{/each}
+									</div>
+								</div>
+							{/if}
+						</div>
+					</div>
 				</div>
 			</div>
 
-			<!-- Right Column: Options and Details -->
-			<div class="flex flex-col space-y-10 pt-8 md:col-span-2 md:pt-0">
-				<!-- Product Info -->
-				<div class="space-y-2">
-					<h1>{product.name}</h1>
-					<p class="text-xl font-medium text-muted-foreground lg:text-2xl">
-						{formatPrice(selectedVariant?.price || basePrice, currentLocale)}
-					</p>
-					{#if product.description}
-						<p class="pt-2 text-base text-muted-foreground">{product.description}</p>
-					{/if}
-				</div>
-
-				<Separator />
-
-				<!-- Keyboard Variants (Model Selection) -->
-				<div class="space-y-4">
-					<h2>
-						{m.product_model()}
-					</h2>
-					<div class="grid grid-cols-1 gap-3">
-						{#each variants || [] as variant}
-							<VariantCard
-								{variant}
-								isSelected={currentVariantId === variant.id}
-								onClick={() => selectVariant(variant.id)}
-								showPrice={true}
-								disabled={isLoading || isAddingToCart}
-							/>
-						{/each}
-					</div>
-				</div>
-
-				<!-- Switch Options -->
-				{#if compatibleSwitches.length > 0}
+			<!-- Right: Content (Mobile: full width, Desktop: 33-40% width) -->
+			<div class="flex w-full flex-col gap-10 lg:w-2/5 xl:w-1/3">
+				<!-- Guided Stepper -->
+				<div class="flex w-full flex-col space-y-10">
+					<!-- Product Info -->
 					<div class="space-y-4">
-						<h2>{m.product_compatible_switches()}</h2>
-						<div class="grid grid-cols-1 gap-3">
-							{#each compatibleSwitches as switchVariant}
-								<VariantCard
-									variant={switchVariant}
-									isSelected={currentSwitchId === switchVariant.id}
-									onClick={() => selectSwitch(switchVariant.id)}
-									showPrice={false}
-									disabled={isLoading || isAddingToCart}
-								/>
-							{/each}
-						</div>
-					</div>
-				{:else if selectedVariant}
-					<div
-						class="flex flex-col items-center justify-center rounded-lg border border-dashed bg-muted/50 p-6"
-					>
-						<p class="text-center text-sm text-muted-foreground">
-							{m.product_no_compatible_switches()}
+						<h1 class="text-4xl font-bold tracking-tight">{product.name}</h1>
+						<p class="text-2xl font-medium text-muted-foreground">
+							{formatPrice(selectedVariant?.price || basePrice, currentLocale)}
 						</p>
+						{#if product.description}
+							<p class="pt-2 text-lg text-muted-foreground">{product.description}</p>
+						{/if}
 					</div>
-				{/if}
+					<Separator class="my-8" />
 
-				<!-- Keycap Options -->
-				{#if compatibleKeycaps.length > 0}
-					<div class="space-y-4">
-						<h2>{m.product_compatible_keycaps()}</h2>
-						<div class="grid grid-cols-1 gap-3">
-							{#each compatibleKeycaps as keycapVariant}
-								<VariantCard
-									variant={keycapVariant}
-									isSelected={currentKeycapId === keycapVariant.id}
-									onClick={() => selectKeycap(keycapVariant.id)}
-									showPrice={false}
-									disabled={isLoading || isAddingToCart}
-								/>
-							{/each}
-						</div>
-					</div>
-				{:else if selectedSwitch}
-					<div
-						class="flex flex-col items-center justify-center rounded-lg border border-dashed bg-muted/50 p-6"
-					>
-						<p class="text-center text-sm text-muted-foreground">
-							{m.product_no_compatible_keycaps()}
-						</p>
-					</div>
-				{/if}
-
-				<!-- Selected Options Summary (Optional, can be integrated or removed) -->
-				{#if selectedVariant}
-					<div class="border-t pt-6">
-						<div class="rounded-md border bg-muted/50 p-4">
-							<h3 class="mb-3">{m.product_configuration_summary()}</h3>
-							<div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-								<div>{m.layout()}:</div>
-								<div>{getVariantAttribute(selectedVariant, 'layout', 'N/A')}</div>
-								<div>{m.keyboard_variant()}:</div>
-								<div>{getVariantAttribute(selectedVariant, 'keyboard_variant', 'N/A')}</div>
-								{#if selectedSwitch}
-									<div>{m.switch_type()}:</div>
-									<div>{getVariantAttribute(selectedSwitch, 'type', 'N/A')}</div>
-									<div>{m.actuation_force()}:</div>
-									<div>{getVariantAttribute(selectedSwitch, 'actuation_force', 'N/A')}</div>
-									<div>{m.feel()}:</div>
-									<div>{getVariantAttribute(selectedSwitch, 'feel', 'N/A')}</div>
-								{/if}
-								{#if selectedKeycap}
-									<div>{m.legend_type()}:</div>
-									<div>{getVariantAttribute(selectedKeycap, 'legend_type', 'N/A')}</div>
-									<div>{m.material()}:</div>
-									<div>{getVariantAttribute(selectedKeycap, 'material', 'N/A')}</div>
-									<div>{m.color()}:</div>
-									<div>{getVariantAttribute(selectedKeycap, 'color', 'N/A')}</div>
-								{/if}
+					<!-- Step 1: Keyboard Model Selection -->
+					<div class="space-y-6">
+						<div class="flex items-center gap-3">
+							<div
+								class="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-white"
+							>
+								1
 							</div>
+							<h2 class="text-2xl font-semibold">{m.product_model()}</h2>
 						</div>
-					</div>
-				{/if}
-
-				<!-- Add to Cart Section -->
-				<div class="space-y-6 border-t pt-4">
-					<div class="flex items-center justify-between">
-						<span class="text-sm font-medium">{m.product_quantity()}</span>
-						<div
-							class="flex items-center space-x-1 rounded-md border bg-muted/30 p-1 dark:bg-muted/20"
-						>
-							<Button
-								variant="ghost"
-								size="icon"
-								class="h-7 w-7"
-								onclick={() => quantity > 1 && (quantity -= 1)}
-								disabled={quantity <= 1 || isAddingToCart}
-								aria-label={m.decrease_quantity()}><Minus class="h-4 w-4" /></Button
-							>
-							<span class="w-8 text-center text-sm font-medium tabular-nums">{quantity}</span>
-							<Button
-								variant="ghost"
-								size="icon"
-								class="h-7 w-7"
-								onclick={() => (quantity += 1)}
-								disabled={isAddingToCart}
-								aria-label={m.increase_quantity()}><Plus class="h-4 w-4" /></Button
-							>
+						<div class="grid grid-cols-1 gap-4">
+							{#each variants || [] as variant}
+								<VariantCard
+									{variant}
+									isSelected={currentVariantId === variant.id}
+									onClick={() => selectVariant(variant.id)}
+									showPrice={true}
+									disabled={isLoading || isAddingToCart}
+								/>
+							{/each}
 						</div>
 					</div>
 
-					<div class="flex items-center justify-between">
-						<span class="text-base font-medium">{m.product_total()}</span>
-						<span class="text-2xl font-bold">
-							{selectedVariant
-								? formatPrice(selectedVariant.price * quantity, currentLocale)
-								: '--'}
-						</span>
-					</div>
-
-					<form
-						method="POST"
-						action="?/addToCart"
-						class="space-y-4"
-						use:enhance={() => {
-							isAddingToCart = true;
-							const toastId = toast.loading(`Adding ${product.name} to cart...`, {
-								duration: 30000
-							});
-							return async ({ result }) => {
-								toast.dismiss(toastId);
-								handleAddToCartResult(result);
-							};
-						}}
-					>
-						<input type="hidden" name="productVariantId" value={selectedVariant?.id || ''} />
-						<input type="hidden" name="quantity" value={quantity} />
-						{#if selectedSwitch}
-							<input type="hidden" name="composites[0][variantId]" value={selectedSwitch.id} />
-							<input type="hidden" name="composites[0][name]" value={selectedSwitch.name} />
-							<input type="hidden" name="composites[0][quantity]" value={quantity} />
-						{/if}
-						{#if selectedKeycap}
-							<input type="hidden" name="composites[1][variantId]" value={selectedKeycap.id} />
-							<input type="hidden" name="composites[1][name]" value={selectedKeycap.name} />
-							<input type="hidden" name="composites[1][quantity]" value={quantity} />
-						{/if}
-
-						<Button
-							type="submit"
-							size="lg"
-							class="w-full"
-							disabled={!canAddToCart || isAddingToCart}
-						>
-							{#if isAddingToCart}
-								<span
-									class="mr-2 block h-5 w-5 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"
-								></span>
-								<span>{m.adding()}</span>
-							{:else if addedToCart}
-								<Check class="mr-2 h-5 w-5" />
-								<span>{m.added_to_cart()}</span>
-							{:else}
-								<ShoppingCart class="mr-2 h-5 w-5" />
-								<span>{getButtonText()}</span>
-							{/if}
-						</Button>
-
-						{#if addedToCart}
-							<div class="mt-3 flex justify-between gap-3">
-								<a href={localizeHref('/cart')} class="flex-1" data-sveltekit-preload-data="hover">
-									<Button variant="outline" class="w-full">{m.view_cart()}</Button>
-								</a>
-								<a
-									href={localizeHref('/checkout')}
-									class="flex-1"
-									data-sveltekit-preload-data="hover"
+					<!-- Step 2: Switch Selection (Only shown after keyboard selection) -->
+					{#if selectedVariant}
+						<div class="space-y-6">
+							<div class="flex items-center gap-3">
+								<div
+									class="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-white"
 								>
-									<Button variant="outline" class="w-full">{m.checkout()}</Button>
-								</a>
+									2
+								</div>
+								<h2 class="text-2xl font-semibold">{m.product_compatible_switches()}</h2>
 							</div>
-						{/if}
-					</form>
-				</div>
-
-				<!-- Features and Specifications (Optional) -->
-				{#if product.features?.length > 0 || (product.specifications && Object.keys(product.specifications).length > 0)}
-					<div class="space-y-6 border-t pt-6">
-						{#if product.features?.length > 0}
-							<div class="space-y-2">
-								<h3>{m.product_features()}</h3>
-								<ul class="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-									{#each product.features as feature}
-										<li>{feature}</li>
-									{/each}
-								</ul>
-							</div>
-						{/if}
-						{#if product.specifications && Object.keys(product.specifications).length > 0}
-							<div class="space-y-2">
-								<h3>{m.product_specifications()}</h3>
-								<div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-muted-foreground">
-									{#each Object.entries(product.specifications) as [key, value]}
-										<div class="capitalize">{key.replace(/_/g, ' ')}:</div>
-										<div>{String(value)}</div>
+							{#if compatibleSwitches.length > 0}
+								<div class="grid grid-cols-1 gap-4">
+									{#each compatibleSwitches as switchVariant}
+										<VariantCard
+											variant={switchVariant}
+											isSelected={currentSwitchId === switchVariant.id}
+											onClick={() => selectSwitch(switchVariant.id)}
+											showPrice={false}
+											disabled={isLoading || isAddingToCart}
+										/>
 									{/each}
 								</div>
+							{:else}
+								<div class="rounded-lg border border-dashed bg-muted/50 p-6">
+									<p class="text-center text-sm text-muted-foreground">
+										{m.product_no_compatible_switches()}
+									</p>
+								</div>
+							{/if}
+						</div>
+					{/if}
+
+					<!-- Step 3: Keycap Selection (Only shown after switch selection) -->
+					{#if selectedSwitch}
+						<div class="space-y-6">
+							<div class="flex items-center gap-3">
+								<div
+									class="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-white"
+								>
+									3
+								</div>
+								<h2 class="text-2xl font-semibold">{m.product_compatible_keycaps()}</h2>
 							</div>
-						{/if}
+							{#if compatibleKeycaps.length > 0}
+								<div class="grid grid-cols-1 gap-4">
+									{#each compatibleKeycaps as keycapVariant}
+										<VariantCard
+											variant={keycapVariant}
+											isSelected={currentKeycapId === keycapVariant.id}
+											onClick={() => selectKeycap(keycapVariant.id)}
+											showPrice={false}
+											disabled={isLoading || isAddingToCart}
+										/>
+									{/each}
+								</div>
+							{:else}
+								<div class="rounded-lg border border-dashed bg-muted/50 p-6">
+									<p class="text-center text-sm text-muted-foreground">
+										{m.product_no_compatible_keycaps()}
+									</p>
+								</div>
+							{/if}
+						</div>
+					{/if}
+
+					<!-- Add to Cart Section (Always visible) -->
+					<div class="mt-8 space-y-6">
+						<!-- Configuration Summary -->
+						<div class="rounded-2xl border border-muted/60 bg-background/80 p-6 shadow-lg">
+							<h3 class="mb-4 text-xl font-semibold">{m.product_configuration_summary()}</h3>
+							{#if selectedVariant || selectedSwitch || selectedKeycap}
+								<div class="grid grid-cols-2 gap-x-6 gap-y-2 text-base">
+									{#if selectedVariant}
+										<div class="font-medium">{m.layout()}:</div>
+										<div>{getVariantAttribute(selectedVariant, 'layout', 'N/A')}</div>
+										<div class="font-medium">{m.keyboard_variant()}:</div>
+										<div>{getVariantAttribute(selectedVariant, 'keyboard_variant', 'N/A')}</div>
+									{/if}
+									{#if selectedSwitch}
+										<div class="font-medium">{m.switch_type()}:</div>
+										<div>{getVariantAttribute(selectedSwitch, 'type', 'N/A')}</div>
+										<div class="font-medium">{m.actuation_force()}:</div>
+										<div>{getVariantAttribute(selectedSwitch, 'actuation_force', 'N/A')}</div>
+										<div class="font-medium">{m.feel()}:</div>
+										<div>{getVariantAttribute(selectedSwitch, 'feel', 'N/A')}</div>
+									{/if}
+									{#if selectedKeycap}
+										<div class="font-medium">{m.legend_type()}:</div>
+										<div>{getVariantAttribute(selectedKeycap, 'legend_type', 'N/A')}</div>
+										<div class="font-medium">{m.material()}:</div>
+										<div>{getVariantAttribute(selectedKeycap, 'material', 'N/A')}</div>
+										<div class="font-medium">{m.color()}:</div>
+										<div>{getVariantAttribute(selectedKeycap, 'color', 'N/A')}</div>
+									{/if}
+								</div>
+							{:else}
+								<p class="text-sm text-muted-foreground">{m.product_configure_prompt()}</p>
+							{/if}
+						</div>
+
+						<!-- Add to Cart Button (Always visible) -->
+						<form
+							method="POST"
+							action="?/addToCart"
+							use:enhance={() => {
+								isAddingToCart = true;
+								return async ({ result }) => {
+									handleAddToCartResult(result);
+								};
+							}}
+							class="space-y-4"
+						>
+							<input type="hidden" name="productVariantId" value={selectedVariant?.id || ''} />
+							<input type="hidden" name="quantity" value={quantity} />
+							{#if selectedSwitch}
+								<input type="hidden" name="composites[0][variantId]" value={selectedSwitch.id} />
+								<input type="hidden" name="composites[0][name]" value={selectedSwitch.name} />
+								<input type="hidden" name="composites[0][quantity]" value={quantity} />
+							{/if}
+							{#if selectedKeycap}
+								<input type="hidden" name="composites[1][variantId]" value={selectedKeycap.id} />
+								<input type="hidden" name="composites[1][name]" value={selectedKeycap.name} />
+								<input type="hidden" name="composites[1][quantity]" value={quantity} />
+							{/if}
+							<Button
+								type="submit"
+								size="lg"
+								class="w-full rounded-xl py-6 text-lg font-semibold shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-orange-400 {canAddToCart
+									? 'bg-orange-500 text-white hover:bg-orange-600 hover:shadow-xl'
+									: 'cursor-not-allowed bg-muted text-muted-foreground'}"
+								disabled={!canAddToCart || isAddingToCart}
+							>
+								{#if isAddingToCart}
+									<span
+										class="mr-2 block h-5 w-5 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"
+									></span>
+									<span>{m.adding()}</span>
+								{:else if addedToCart}
+									<Check class="mr-2 h-5 w-5" />
+									<span>{m.added_to_cart()}</span>
+								{:else}
+									<ShoppingCart class="mr-2 h-5 w-5" />
+									<span>{getButtonText()}</span>
+								{/if}
+							</Button>
+						</form>
 					</div>
-				{/if}
+				</div>
+
+				<!-- Configuration Summary & Details (always below stepper) -->
+				<div class="flex flex-col gap-8">
+					<!-- Configuration Summary moved above add to cart button -->
+				</div>
 			</div>
 		</div>
 	</div>

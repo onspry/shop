@@ -112,34 +112,62 @@
 		</div>
 	{:else}
 		<div class="py-8">
-			<div class="grid grid-cols-1 items-start gap-x-12 md:grid-cols-5 lg:gap-x-16">
-				<!-- Product Images -->
-				<div
-					class="flex items-start justify-center md:sticky md:top-20 md:col-span-3 md:self-start"
-				>
-					<div class="min-h-[400px] w-full max-w-2xl rounded-2xl md:min-h-[500px]">
-						<ProductImageGallery {images} />
+			<div class="flex w-full flex-col gap-8 lg:flex-row lg:gap-12">
+				<!-- Left: Gallery + Features + Specs (Mobile: full width, Desktop: 60-67% width) -->
+				<div class="w-full lg:w-3/5 xl:w-2/3">
+					<div class="lg:sticky lg:top-20">
+						<div class="flex flex-col gap-8">
+							<!-- Image Gallery -->
+							<ProductImageGallery {images} />
+
+							<!-- Features and Specifications (Mobile: stacked, Desktop: side by side) -->
+							{#if product.features?.length > 0 || (product.specifications && Object.keys(product.specifications).length > 0)}
+								<div class="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
+									{#if product.features?.length > 0}
+										<div class="rounded-2xl border border-muted/60 bg-background/80 p-6 shadow-lg">
+											<h3 class="mb-4 text-xl font-semibold">{m.product_features()}</h3>
+											<ul class="list-disc space-y-2 pl-5 text-base text-muted-foreground">
+												{#each product.features as feature}
+													<li>{feature}</li>
+												{/each}
+											</ul>
+										</div>
+									{/if}
+									{#if product.specifications && Object.keys(product.specifications).length > 0}
+										<div class="rounded-2xl border border-muted/60 bg-background/80 p-6 shadow-lg">
+											<h3 class="mb-4 text-xl font-semibold">{m.product_specifications()}</h3>
+											<div class="grid grid-cols-2 gap-x-6 gap-y-2 text-base">
+												{#each Object.entries(product.specifications) as [key, value]}
+													<div class="font-medium capitalize">{key.replace(/_/g, ' ')}:</div>
+													<div>{String(value)}</div>
+												{/each}
+											</div>
+										</div>
+									{/if}
+								</div>
+							{/if}
+						</div>
 					</div>
 				</div>
 
-				<!-- Product Details -->
-				<div class="flex flex-col space-y-10 pt-8 md:col-span-2 md:pt-0">
-					<div class="space-y-2">
-						<h1>{product.name}</h1>
-						<p class="text-xl font-medium text-muted-foreground lg:text-2xl">
+				<!-- Right: Content (Mobile: full width, Desktop: 33-40% width) -->
+				<div class="flex w-full flex-col gap-10 lg:w-2/5 xl:w-1/3">
+					<!-- Product Info -->
+					<div class="space-y-4">
+						<h1 class="text-4xl font-bold tracking-tight">{product.name}</h1>
+						<p class="text-2xl font-medium text-muted-foreground">
 							{formatPrice(selectedVariant?.price || basePrice, currentLocale)}
 						</p>
 						{#if product.description}
-							<p class="pt-2 text-base text-muted-foreground">{product.description}</p>
+							<p class="pt-2 text-lg text-muted-foreground">{product.description}</p>
 						{/if}
 					</div>
-
-					<Separator />
+					<Separator class="my-8" />
 
 					<!-- Accessory Configuration Options -->
-					<div class="space-y-4">
-						<h2>{product.category} {m.options()}</h2>
-						<div class="grid grid-cols-1 gap-3">
+					<div class="space-y-6">
+						<h2 class="text-2xl font-semibold">{product.category} {m.options()}</h2>
+						<div class="grid grid-cols-1 gap-4">
 							{#each variants || [] as variant}
 								<VariantCard
 									{variant}
@@ -152,27 +180,24 @@
 						</div>
 					</div>
 
+					<!-- Selected Option Summary -->
 					{#if selectedVariant}
-						<div class="rounded-md border bg-muted/50 p-4">
-							<h3 class="mb-3">{m.product_selected_option()}</h3>
-							<div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+						<div class="rounded-2xl border border-muted/60 bg-background/80 p-6 shadow-lg">
+							<h3 class="mb-4 text-xl font-semibold">{m.product_selected_option()}</h3>
+							<div class="grid grid-cols-2 gap-x-6 gap-y-2 text-base">
 								{#if product.category === 'SWITCH'}
-									<div>{m.switch_type()}:</div>
+									<div class="font-medium">{m.switch_type()}:</div>
 									<div>{getVariantAttribute(selectedVariant, 'type') || 'N/A'}</div>
-
-									<div>{m.actuation_force()}:</div>
+									<div class="font-medium">{m.actuation_force()}:</div>
 									<div>{getVariantAttribute(selectedVariant, 'actuation_force') || 'N/A'}</div>
-
-									<div>{m.feel()}:</div>
+									<div class="font-medium">{m.feel()}:</div>
 									<div>{getVariantAttribute(selectedVariant, 'feel') || 'N/A'}</div>
 								{:else if product.category === 'KEYCAP'}
-									<div>{m.legend_type()}:</div>
+									<div class="font-medium">{m.legend_type()}:</div>
 									<div>{getVariantAttribute(selectedVariant, 'legend_type') || 'N/A'}</div>
-
-									<div>{m.material()}:</div>
+									<div class="font-medium">{m.material()}:</div>
 									<div>{getVariantAttribute(selectedVariant, 'material') || 'N/A'}</div>
-
-									<div>{m.color()}:</div>
+									<div class="font-medium">{m.color()}:</div>
 									<div>{getVariantAttribute(selectedVariant, 'color') || 'N/A'}</div>
 								{/if}
 							</div>
@@ -180,7 +205,7 @@
 					{/if}
 
 					<!-- Add to cart section -->
-					<div class="space-y-6 border-t pt-4">
+					<div class="space-y-6">
 						<!-- Quantity selector -->
 						<div class="flex items-center justify-between">
 							<span class="text-sm font-medium">{m.product_quantity()}</span>
@@ -244,7 +269,7 @@
 							<Button
 								type="submit"
 								size="lg"
-								class="w-full"
+								class="w-full rounded-xl bg-orange-500 py-6 text-lg font-semibold text-white shadow-lg transition-all hover:bg-orange-600 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-orange-400"
 								disabled={!isVariantAvailable || isAddingToCart}
 							>
 								{#if isAddingToCart}
@@ -279,34 +304,6 @@
 							</div>
 						{/if}
 					</div>
-
-					<!-- Features and Specifications -->
-					{#if product.features?.length > 0 || (product.specifications && Object.keys(product.specifications).length > 0)}
-						<div class="space-y-6 border-t pt-6">
-							{#if product.features?.length > 0}
-								<div class="space-y-2">
-									<h3>{m.product_features()}</h3>
-									<ul class="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-										{#each product.features as feature}
-											<li>{feature}</li>
-										{/each}
-									</ul>
-								</div>
-							{/if}
-
-							{#if product.specifications && Object.keys(product.specifications).length > 0}
-								<div class="space-y-2">
-									<h3>{m.product_specifications()}</h3>
-									<div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-muted-foreground">
-										{#each Object.entries(product.specifications) as [key, value]}
-											<div class="capitalize">{key.replace(/_/g, ' ')}:</div>
-											<div>{String(value)}</div>
-										{/each}
-									</div>
-								</div>
-							{/if}
-						</div>
-					{/if}
 				</div>
 			</div>
 		</div>

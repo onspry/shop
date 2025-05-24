@@ -54,9 +54,9 @@
 </script>
 
 {#if validImageCount > 0}
-	<div class="relative w-full max-w-2xl mx-auto">
+	<div class="relative h-full w-full">
 		<Carousel.Root
-			class="w-full"
+			class="h-full w-full"
 			setApi={(api) => {
 				emblaApi = api;
 			}}
@@ -65,20 +65,18 @@
 				align: 'center'
 			}}
 		>
-			<Carousel.Content class="-ml-4">
+			<Carousel.Content class="h-full w-full">
 				{#each props.images as image, index (image.id)}
-					<Carousel.Item class="pl-4 flex justify-center items-center">
-						<div
-							class="flex items-center justify-center overflow-hidden rounded-lg min-h-[400px] max-h-[calc(100vh-var(--header-height)-var(--footer-height)-8rem)] aspect-square w-full"
-						>
+					<Carousel.Item class="flex h-full w-full items-stretch">
+						<div class="flex h-full w-full items-stretch overflow-hidden rounded-lg">
 							<AppImage
 								src={image.url}
 								alt={image.alt}
 								width="100%"
-								height="auto"
+								height="100%"
 								aspectRatio="auto"
-								objectFit="contain"
-								className="h-full w-full"
+								objectFit="cover"
+								className="w-full h-full"
 							/>
 						</div>
 					</Carousel.Item>
@@ -92,7 +90,7 @@
 	</div>
 {:else}
 	<div
-		class="aspect-square w-full max-w-lg mx-auto flex items-center justify-center rounded-lg bg-muted"
+		class="mx-auto flex aspect-square w-full max-w-lg items-center justify-center rounded-lg bg-muted"
 	>
 		<span class="text-muted-foreground">{m.product_no_image()}</span>
 	</div>

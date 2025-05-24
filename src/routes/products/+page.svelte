@@ -1,6 +1,5 @@
 <script lang="ts">
 	import ProductCard from '$lib/components/product-card.svelte';
-	import * as Carousel from '$lib/components/ui/carousel/index.js';
 	import type { CatalogueViewModel } from '$lib/models/catalogue';
 	import type { ProductViewModel } from '$lib/models/product';
 	import Autoplay from 'embla-carousel-autoplay';
@@ -81,80 +80,95 @@
 	};
 </script>
 
-<div
-	class="transition-opacity duration-500"
-	class:opacity-0={!contentVisible}
-	class:opacity-100={contentVisible}
+<a
+	href="#main-products"
+	class="sr-only absolute left-2 top-2 z-50 rounded bg-orange-500 px-4 py-2 text-white focus:not-sr-only focus:outline-none focus:ring-2 focus:ring-orange-400"
 >
-	<!-- Mobile view (stacked layout) -->
-	<div class="grid grid-cols-1 gap-4 sm:hidden">
-		{#if mainProduct}
-			<div class="aspect-square w-full">
-				<ProductCard product={mainProduct} class="h-full" />
-			</div>
-		{/if}
+	Skip to products
+</a>
 
-		{#if topAccessory}
-			<div class="aspect-square w-full">
-				<ProductCard product={topAccessory} class="h-full" />
-			</div>
-		{/if}
+<div class="py-8 md:py-12">
+	<!-- Main Products Section -->
+	{#snippet productGrid(products: ProductViewModel[])}
+		{@const productCount = products?.length || 0}
+		{@const gridCols =
+			productCount === 1
+				? 'grid-cols-1'
+				: productCount === 2
+					? 'grid-cols-1 sm:grid-cols-2'
+					: productCount === 3
+						? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+						: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4'}
 
-		{#if bottomAccessory}
-			<div class="aspect-square w-full">
-				<ProductCard product={bottomAccessory} class="h-full" />
-			</div>
-		{/if}
-	</div>
-
-	<!-- Desktop layout with right cards matching left card height -->
-	<div class="hidden gap-4 sm:grid sm:grid-cols-3 md:gap-6">
-		<!-- Main product - takes up 2 columns -->
-		<div class="col-span-2 min-h-[600px]">
-			{#if mainProduct}
-				<ProductCard product={mainProduct} class="h-full" />
-			{/if}
-		</div>
-
-		<!-- Right accessory column - takes up 1 column -->
-		<div class="flex flex-col gap-4 md:gap-6">
-			<div class="min-h-[290px] flex-1">
-				{#if topAccessory}
-					<ProductCard product={topAccessory} class="h-full" />
-				{/if}
-			</div>
-
-			<div class="min-h-[290px] flex-1">
-				{#if bottomAccessory}
-					<ProductCard product={bottomAccessory} class="h-full" />
-				{/if}
-			</div>
-		</div>
-	</div>
-
-	<!-- Accessories Carousel -->
-	<div class="mb-6 mt-8 md:mt-12">
-		<h2 class="mb-3 md:mb-4">{m.product_more_accessories()}</h2>
-		<div class="w-full" role="region" aria-label={m.aria_accessories_carousel()}>
-			<Carousel.Root
-				plugins={[createAutoplayPlugin()]}
-				opts={carouselOptions}
-				class="w-full overflow-hidden"
-			>
-				<Carousel.Content
-					class="duration-30000 -ml-4 flex transition-transform ease-linear md:-ml-6"
-				>
-					{#each accessories as product (product.id)}
-						<Carousel.Item
-							class="pl-4 transition-opacity duration-1000 md:basis-1/2 md:pl-6 lg:basis-1/3 xl:basis-1/4"
-						>
-							<div class="h-[350px] p-2">
-								<ProductCard {product} class="h-full" />
-							</div>
-						</Carousel.Item>
+		{#if productCount === 1}
+			<section class="mb-12 w-full md:mb-16" id="main-products">
+				<header class="mb-6 md:mb-8">
+					<h2>Our Products</h2>
+				</header>
+				<div class="grid gap-6 {gridCols}">
+					{#each products as product (product.id)}
+						<article class="flex h-full flex-col" aria-labelledby={'product-title-' + product.id}>
+							<ProductCard {product} class="flex h-full flex-col" {productCount} />
+						</article>
 					{/each}
-				</Carousel.Content>
-			</Carousel.Root>
-		</div>
-	</div>
+				</div>
+			</section>
+		{:else}
+			<section class="layout-container mb-12 md:mb-16" id="main-products">
+				<header class="mb-6 md:mb-8">
+					<h2>Our Products</h2>
+				</header>
+				<div class="grid gap-6 {gridCols}">
+					{#each products as product (product.id)}
+						<article class="flex h-full flex-col" aria-labelledby={'product-title-' + product.id}>
+							<ProductCard {product} class="flex h-full flex-col" {productCount} />
+						</article>
+					{/each}
+				</div>
+			</section>
+		{/if}
+	{/snippet}
+
+	{@render productGrid(
+		data.catalogue.productGroups
+			?.filter(
+				(group: { category?: string | null }) =>
+					(group.category || '').toUpperCase() === m.category_keyboard().toUpperCase()
+			)
+			.flatMap((g: { products?: ProductViewModel[] }) => g.products || []) || []
+	)}
+
+	<!-- Accessories Carousel Section -->
+	<section class="mb-12 md:mb-16" id="accessories">
+		<header class="mb-6 md:mb-8">
+			<h2>{m.product_accessories()}</h2>
+		</header>
+
+		{#if accessories.length <= 2}
+			<!-- Grid layout for 1-2 accessories -->
+			{@const accessoryCount = accessories.length}
+
+			<div class="flex flex-col gap-6">
+				{#each accessories as product, index (product.id)}
+					<article class="flex h-full flex-col" aria-labelledby={'accessory-title-' + product.id}>
+						<ProductCard
+							{product}
+							class="flex h-full flex-col"
+							productCount={1}
+							imagePosition={index % 2 === 0 ? 'right' : 'left'}
+						/>
+					</article>
+				{/each}
+			</div>
+		{:else}
+			<!-- Carousel layout for 3+ accessories -->
+			<div class="w-full" role="region" aria-label={m.aria_accessories_carousel()}>
+				{#each accessories as product (product.id)}
+					<div class="h-[350px] p-2">
+						<ProductCard {product} class="h-full" />
+					</div>
+				{/each}
+			</div>
+		{/if}
+	</section>
 </div>

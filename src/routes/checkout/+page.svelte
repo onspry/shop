@@ -345,18 +345,26 @@
 
 	// Functions to navigate between steps
 	async function goToNextStep() {
-		window.scrollTo({ top: 0, behavior: 'smooth' });
 		if (activeStep === 1 && checkout.emailValidated) {
 			activeStep = 2;
+			// Scroll to shipping section after step change
+			await new Promise((resolve) => setTimeout(resolve, 50)); // Small delay for DOM update
+			scrollToActiveSection();
 		} else if (activeStep === 2 && checkout.shippingValidated) {
 			activeStep = 3;
+			// Scroll to payment section after step change
+			await new Promise((resolve) => setTimeout(resolve, 50)); // Small delay for DOM update
+			scrollToActiveSection();
 		}
 	}
 
 	function goToPreviousStep() {
-		window.scrollTo({ top: 0, behavior: 'smooth' });
 		if (activeStep > 1) {
 			activeStep--;
+			// Scroll to the new active section after step change
+			setTimeout(() => {
+				scrollToActiveSection();
+			}, 50); // Small delay for DOM update
 		}
 	}
 
@@ -364,11 +372,23 @@
 		// Only allow going to a step if previous steps are validated
 		if (step === 1) {
 			activeStep = 1;
+			setTimeout(() => scrollToActiveSection(), 50);
 		} else if (step === 2 && checkout.emailValidated) {
 			activeStep = 2;
+			setTimeout(() => scrollToActiveSection(), 50);
 		} else if (step === 3 && checkout.emailValidated && checkout.shippingValidated) {
 			activeStep = 3;
+			setTimeout(() => scrollToActiveSection(), 50);
 		}
+	}
+
+	// Helper function to scroll to the currently active section
+	function scrollToActiveSection() {
+		// Always scroll to the top of the page to show the full progress indicator
+		window.scrollTo({
+			top: 0,
+			behavior: 'smooth'
+		});
 	}
 
 	// Handle country change with proper field reset
@@ -559,15 +579,16 @@
 								<!-- No back button on first step -->
 							</div>
 							<Button
-								class="w-full md:w-auto"
+								class="group relative min-w-[160px] overflow-hidden bg-gradient-to-r from-primary to-primary/90 transition-all duration-300 hover:from-primary/90 hover:to-primary hover:shadow-lg hover:shadow-primary/25 disabled:from-muted-foreground disabled:to-muted-foreground md:w-auto"
 								onclick={goToNextStep}
 								disabled={!checkout.emailValidated}
+								size="lg"
 							>
-								<span class="flex items-center gap-2">
+								<span class="relative z-10 flex items-center gap-2 font-medium">
 									{m.checkout_continue_to_shipping()}
 									<svg
 										xmlns="http://www.w3.org/2000/svg"
-										class="h-5 w-5"
+										class="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"
 										viewBox="0 0 20 20"
 										fill="currentColor"
 									>
@@ -578,6 +599,10 @@
 										/>
 									</svg>
 								</span>
+								<!-- Shimmer effect -->
+								<div
+									class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 group-hover:translate-x-full"
+								></div>
 							</Button>
 						</div>
 					</div>
@@ -876,12 +901,17 @@
 
 				<!-- Navigation Buttons -->
 				<div class="mt-8 border-t pt-6">
-					<div class="flex items-center justify-between">
-						<Button variant="outline" class="md:w-auto" onclick={goToPreviousStep}>
-							<span class="flex items-center gap-2">
+					<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+						<Button
+							variant="outline"
+							class="group relative min-w-[140px] border-2 transition-all duration-300 hover:border-primary/50 hover:bg-primary/5 hover:shadow-md md:w-auto"
+							onclick={goToPreviousStep}
+							size="lg"
+						>
+							<span class="flex items-center gap-2 font-medium">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
-									class="h-5 w-5"
+									class="h-5 w-5 transition-transform duration-300 group-hover:-translate-x-1"
 									viewBox="0 0 20 20"
 									fill="currentColor"
 								>
@@ -894,12 +924,17 @@
 								{m.back_to_contact()}
 							</span>
 						</Button>
-						<Button class="md:w-auto" onclick={goToNextStep} disabled={!checkout.shippingValidated}>
-							<span class="flex items-center gap-2">
+						<Button
+							class="group relative min-w-[160px] overflow-hidden bg-gradient-to-r from-primary to-primary/90 transition-all duration-300 hover:from-primary/90 hover:to-primary hover:shadow-lg hover:shadow-primary/25 disabled:from-muted-foreground disabled:to-muted-foreground disabled:shadow-none md:w-auto"
+							onclick={goToNextStep}
+							disabled={!checkout.shippingValidated}
+							size="lg"
+						>
+							<span class="relative z-10 flex items-center gap-2 font-medium">
 								{m.continue_to_payment()}
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
-									class="h-5 w-5"
+									class="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"
 									viewBox="0 0 20 20"
 									fill="currentColor"
 								>
@@ -910,7 +945,24 @@
 									/>
 								</svg>
 							</span>
+							<!-- Shimmer effect -->
+							<div
+								class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 group-hover:translate-x-full group-disabled:hidden"
+							></div>
+							<!-- Disabled state overlay -->
+							{#if !checkout.shippingValidated}
+								<div class="absolute inset-0 bg-muted-foreground/10"></div>
+							{/if}
 						</Button>
+					</div>
+					<div class="mt-4 text-center">
+						<p class="text-sm text-muted-foreground">
+							{#if !checkout.shippingValidated}
+								Complete all shipping information to continue
+							{:else}
+								Your shipping details look good! Continue to payment.
+							{/if}
+						</p>
 					</div>
 				</div>
 			</div>
@@ -1160,12 +1212,17 @@
 
 				<!-- Navigation Buttons -->
 				<div class="mt-8 border-t pt-6">
-					<div class="flex items-center justify-between">
-						<Button variant="outline" class="md:w-auto" onclick={goToPreviousStep}>
-							<span class="flex items-center gap-2">
+					<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+						<Button
+							variant="outline"
+							class="group relative min-w-[140px] border-2 transition-all duration-300 hover:border-primary/50 hover:bg-primary/5 hover:shadow-md md:w-auto"
+							onclick={goToPreviousStep}
+							size="lg"
+						>
+							<span class="flex items-center gap-2 font-medium">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
-									class="h-5 w-5"
+									class="h-5 w-5 transition-transform duration-300 group-hover:-translate-x-1"
 									viewBox="0 0 20 20"
 									fill="currentColor"
 								>
@@ -1178,6 +1235,61 @@
 								{m.back_to_shipping()}
 							</span>
 						</Button>
+						<div class="flex items-center gap-3">
+							<!-- Payment validation indicator -->
+							<div class="flex items-center gap-2">
+								{#if checkout.paymentValidated}
+									<div
+										class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30"
+									>
+										<svg
+											class="h-4 w-4 text-green-600 dark:text-green-400"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M5 13l4 4L19 7"
+											></path>
+										</svg>
+									</div>
+									<span class="text-sm font-medium text-green-600 dark:text-green-400"
+										>Ready to place order</span
+									>
+								{:else}
+									<div
+										class="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30"
+									>
+										<svg
+											class="h-4 w-4 text-amber-600 dark:text-amber-400"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.99-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z"
+											></path>
+										</svg>
+									</div>
+									<span class="text-sm text-muted-foreground">Complete payment details</span>
+								{/if}
+							</div>
+						</div>
+					</div>
+					<div class="mt-4 text-center">
+						<p class="text-sm text-muted-foreground">
+							{#if checkout.paymentValidated}
+								All set! Review your order in the summary and place your order when ready.
+							{:else}
+								Please complete your payment information to proceed with your order.
+							{/if}
+						</p>
 					</div>
 				</div>
 			</div>
@@ -1421,7 +1533,10 @@
 							</div>
 						</div>
 					{/if}
+				</div>
 
+				<!-- Always visible Order Form and Place Order Button -->
+				<div class="mt-6 rounded-lg border border-muted/50 bg-background p-4 shadow-sm">
 					<!-- Order Form -->
 					<form
 						id="order-form"
@@ -1539,17 +1654,84 @@
 
 						<Button
 							type="submit"
-							class="group relative w-full overflow-hidden transition-all duration-300 hover:shadow-lg"
+							class="group relative w-full overflow-hidden bg-gradient-to-r from-primary to-primary/90 py-4 text-lg font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:from-primary/90 hover:to-primary hover:shadow-xl hover:shadow-primary/30 disabled:transform-none disabled:from-muted-foreground disabled:to-muted-foreground disabled:shadow-none"
 							size="lg"
 							disabled={!checkout.emailValidated ||
 								!checkout.shippingValidated ||
 								!checkout.paymentValidated}
 						>
-							{m.checkout_place_order()}
+							<span class="relative z-10 flex items-center justify-center gap-3">
+								<!-- Security Shield Icon -->
+								<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+									></path>
+								</svg>
+								<span>{m.checkout_place_order()}</span>
+								<!-- Credit Card Icon -->
+								<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+									></path>
+								</svg>
+							</span>
+							<!-- Enhanced shimmer effect -->
+							<div
+								class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-1000 group-hover:translate-x-full group-disabled:hidden"
+							></div>
+							<!-- Success state background pulse (when all fields are valid) -->
+							{#if checkout.emailValidated && checkout.shippingValidated && checkout.paymentValidated}
+								<div
+									class="duration-2000 absolute inset-0 animate-pulse bg-gradient-to-r from-green-500/20 to-primary/20"
+								></div>
+							{/if}
 						</Button>
-						<p class="mt-2 text-center text-xs text-muted-foreground/60">
-							{m.checkout_secure_transaction()}
-						</p>
+						<div class="mt-3 flex items-center justify-center gap-2 text-center">
+							<!-- Security badges -->
+							<div class="flex items-center gap-1">
+								<svg
+									class="h-4 w-4 text-green-600 dark:text-green-400"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+									></path>
+								</svg>
+								<span class="text-xs font-medium text-green-600 dark:text-green-400">SSL</span>
+							</div>
+							<span class="text-xs text-muted-foreground/40">•</span>
+							<p class="text-xs text-muted-foreground/60">
+								{m.checkout_secure_transaction()}
+							</p>
+							<span class="text-xs text-muted-foreground/40">•</span>
+							<div class="flex items-center gap-1">
+								<svg
+									class="h-4 w-4 text-primary"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+									></path>
+								</svg>
+								<span class="text-xs font-medium text-primary">Verified</span>
+							</div>
+						</div>
 					</form>
 
 					<!-- Moved Terms Agreement -->
