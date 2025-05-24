@@ -43,13 +43,10 @@ export function parseStructuredContent(html: string): StructuredContent {
         // Convert plain URLs to links in intro section
         intro = convertUrlsToLinks(intro);
         intro = localizeInternalHrefs(intro);
-        // Add enhanced styling to intro with modern e-commerce design
+        // Clean intro styling - subtle and readable
         intro = `
-            <div class="relative">
-                <div class="absolute inset-0 bg-gradient-to-r from-orange-50 to-transparent dark:from-orange-950/20 dark:to-transparent rounded-2xl"></div>
-                <div class="relative prose prose-orange dark:prose-invert max-w-none text-lg leading-relaxed text-muted-foreground p-6 md:p-8">
-                    ${intro}
-                </div>
+            <div class="prose max-w-none text-lg leading-relaxed text-muted-foreground mb-12">
+                ${intro}
             </div>
         `;
         contentWithoutTitle = contentWithoutTitle.replace(introMatch[1], '').trim();
@@ -66,15 +63,10 @@ export function parseStructuredContent(html: string): StructuredContent {
         let content = match[3].trim();
         content = convertUrlsToLinks(content);
         content = localizeInternalHrefs(content);
-        // Add enhanced styling to content sections with modern e-commerce design
+        // Clean content section styling - focus on readability
         content = `
-            <div class="group relative overflow-hidden rounded-2xl border border-muted/50 bg-background/80 p-6 md:p-8 shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-orange-200/50 hover:shadow-lg dark:bg-background/80 dark:hover:border-orange-900/50">
-                <div class="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] opacity-30 dark:bg-[radial-gradient(#404040_1px,transparent_1px)]"></div>
-                <div class="relative">
-                    <div class="prose prose-orange dark:prose-invert max-w-none">
-                        ${content}
-                    </div>
-                </div>
+            <div class="prose max-w-none">
+                ${content}
             </div>
         `;
 
@@ -135,11 +127,11 @@ function localizeInternalHrefs(content: string): string {
     // but exclude links that are already external (http://, https://, mailto:, etc.)
     const internalLinkRegex = /<a\s+(?:[^>]*?\s+)?href=["'](?!https?:\/\/|mailto:|tel:|#)([^'"]+)["']([^>]*)>/gi;
 
-    // Replace internal hrefs with localized versions
+    // Replace internal hrefs with localized versions - clean link styling
     return content.replace(internalLinkRegex, (match, path, rest) => {
         // Make sure path starts with / for localizeHref
         const internalPath = path.startsWith('/') ? path : `/${path}`;
-        return `<a href="${localizeHref(internalPath)}" class="inline-flex items-center gap-1 text-orange-600 transition-colors hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300"${rest}>`;
+        return `<a href="${localizeHref(internalPath)}"${rest}>`;
     });
 }
 
@@ -153,43 +145,45 @@ function convertUrlsToLinks(content: string): string {
     // This matches URLs starting with http://, https://, or www.
     const urlRegex = /(?<!["'=])(https?:\/\/|www\.)[^\s<>]+\.[^\s<>]+(?!["'>])/g;
 
-    // Replace plain URLs with HTML links
+    // Replace plain URLs with HTML links - clean external link styling
     let processedContent = content.replace(urlRegex, (url) => {
         // Add https:// prefix if the URL starts with www.
         const fullUrl = url.startsWith('www.') ? `https://${url}` : url;
-        return `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-orange-600 transition-colors hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300">${url}</a>`;
+        return `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer">${url}</a>`;
     });
 
-    // Add enhanced styling to images with modern e-commerce design
+    // Clean image styling - simple and elegant
     processedContent = processedContent.replace(
         /<img([^>]*)>/g,
-        '<div class="group relative overflow-hidden rounded-2xl bg-muted/50"><img$1 class="w-full object-cover transition-transform duration-500 group-hover:scale-105"></div>'
+        '<img$1 class="rounded-lg max-w-full h-auto my-6 shadow-sm">'
     );
 
-    // Add enhanced styling to blockquotes with modern e-commerce design
+    // Clean blockquote styling - minimal left border like Svelte blog
     processedContent = processedContent.replace(
         /<blockquote([^>]*)>/g,
-        '<blockquote$1 class="relative rounded-2xl border-l-4 border-orange-200 bg-orange-50/50 p-6 dark:border-orange-800 dark:bg-orange-950/20">'
+        '<blockquote$1 class="border-l-2 border-muted-foreground/20 pl-6 my-6 italic text-muted-foreground">'
     );
 
-    // Add enhanced styling to code blocks with modern e-commerce design
+    // Clean code styling - simple and readable
     processedContent = processedContent.replace(
         /<code([^>]*)>/g,
-        '<code$1 class="rounded-lg bg-muted px-2 py-1 text-sm font-medium text-foreground">'
+        '<code$1 class="bg-muted/50 px-1.5 py-0.5 rounded text-sm font-mono">'
     );
+
+    // Clean pre and code block styling
     processedContent = processedContent.replace(
         /<pre([^>]*)>/g,
-        '<pre$1 class="rounded-2xl border border-muted bg-muted/50 p-6 shadow-sm">'
+        '<pre$1 class="bg-muted/30 border border-muted rounded-lg p-4 my-6 overflow-x-auto">'
     );
     processedContent = processedContent.replace(
         /<pre[^>]*><code([^>]*)>/g,
-        '<pre class="rounded-2xl border border-muted bg-muted/50 p-6 shadow-sm"><code$1 class="bg-transparent p-0 text-sm">'
+        '<pre class="bg-muted/30 border border-muted rounded-lg p-4 my-6 overflow-x-auto"><code$1 class="bg-transparent p-0 text-sm font-mono">'
     );
 
-    // Add enhanced styling to tables with modern e-commerce design
+    // Clean table styling - simple borders
     processedContent = processedContent.replace(
         /<table([^>]*)>/g,
-        '<div class="overflow-x-auto rounded-2xl border border-muted"><table$1 class="w-full border-collapse">'
+        '<div class="overflow-x-auto my-6"><table$1 class="w-full border-collapse border border-muted rounded-lg">'
     );
     processedContent = processedContent.replace(
         /<\/table>/g,
@@ -197,25 +191,53 @@ function convertUrlsToLinks(content: string): string {
     );
     processedContent = processedContent.replace(
         /<th([^>]*)>/g,
-        '<th$1 class="border-b border-muted bg-muted/50 px-6 py-4 text-left font-medium text-foreground">'
+        '<th$1 class="border-b border-muted bg-muted/20 px-4 py-3 text-left font-medium">'
     );
     processedContent = processedContent.replace(
         /<td([^>]*)>/g,
-        '<td$1 class="border-b border-muted px-6 py-4 text-muted-foreground">'
+        '<td$1 class="border-b border-muted px-4 py-3">'
     );
 
-    // Add enhanced styling to lists with modern e-commerce design
+    // Clean list styling - using CSS from app.css
     processedContent = processedContent.replace(
         /<ul([^>]*)>/g,
-        '<ul$1 class="space-y-2">'
+        '<ul$1 class="my-6 space-y-2">'
     );
     processedContent = processedContent.replace(
         /<ol([^>]*)>/g,
-        '<ol$1 class="space-y-2">'
+        '<ol$1 class="my-6 space-y-2 list-decimal list-inside">'
     );
     processedContent = processedContent.replace(
         /<li([^>]*)>/g,
-        '<li$1 class="relative pl-6 before:absolute before:left-0 before:top-2 before:h-1.5 before:w-1.5 before:rounded-full before:bg-orange-500">'
+        '<li$1 class="leading-relaxed">'
+    );
+
+    // Add better spacing for paragraphs
+    processedContent = processedContent.replace(
+        /<p([^>]*)>/g,
+        '<p$1 class="my-4 leading-relaxed">'
+    );
+
+    // Clean heading styling within content
+    processedContent = processedContent.replace(
+        /<h2([^>]*)>/g,
+        '<h2$1 class="text-2xl font-semibold mt-12 mb-4 first:mt-0">'
+    );
+    processedContent = processedContent.replace(
+        /<h3([^>]*)>/g,
+        '<h3$1 class="text-xl font-medium mt-10 mb-3 first:mt-0">'
+    );
+    processedContent = processedContent.replace(
+        /<h4([^>]*)>/g,
+        '<h4$1 class="text-lg font-medium mt-8 mb-3 first:mt-0">'
+    );
+    processedContent = processedContent.replace(
+        /<h5([^>]*)>/g,
+        '<h5$1 class="text-base font-medium mt-6 mb-2 first:mt-0">'
+    );
+    processedContent = processedContent.replace(
+        /<h6([^>]*)>/g,
+        '<h6$1 class="text-sm font-medium mt-6 mb-2 first:mt-0">'
     );
 
     return processedContent;

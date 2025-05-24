@@ -14,14 +14,29 @@
 
 <nav class="h-full w-full">
 	<div class="flex h-full w-full items-center justify-between">
-		<!-- Left side: Logo + Mobile Menu -->
-		<div class="flex items-center gap-4">
+		<!-- Left side: Logo + Desktop Navigation -->
+		<div class="flex items-center gap-6">
 			<a href={localizeHref('/')} class="flex h-full items-center" aria-label={m.shop_title()}>
 				<div class="logo" aria-label={m.shop_title()}></div>
 			</a>
 
-			<!-- Mobile hamburger -->
-			<div class="md:hidden">
+			<!-- Navigation Links - hidden on mobile, visible on sm+ screens -->
+			<div class="hidden items-center gap-6 sm:flex">
+				<a
+					href={localizeHref('/about')}
+					class="text-sm font-medium transition-colors hover:text-primary">{m.navbar_about()}</a
+				>
+				<a
+					href={localizeHref('/products')}
+					class="text-sm font-medium transition-colors hover:text-primary">{m.navbar_products()}</a
+				>
+			</div>
+		</div>
+
+		<!-- Right side: Mobile Menu + Cart + Desktop Settings -->
+		<div class="flex items-center gap-4">
+			<!-- Mobile hamburger menu (navigation + settings) -->
+			<div class="sm:hidden">
 				<Sheet bind:open>
 					<SheetTrigger>
 						<div
@@ -85,27 +100,12 @@
 					</SheetContent>
 				</Sheet>
 			</div>
-		</div>
 
-		<!-- Center: Desktop Navigation -->
-		<div class="hidden items-center gap-8 md:flex">
-			<a
-				href={localizeHref('/about')}
-				class="text-sm font-medium transition-colors hover:text-primary">{m.navbar_about()}</a
-			>
-			<a
-				href={localizeHref('/products')}
-				class="text-sm font-medium transition-colors hover:text-primary">{m.navbar_products()}</a
-			>
-		</div>
-
-		<!-- Right side: Cart (always visible) + Desktop Settings -->
-		<div class="flex items-center gap-4">
 			<!-- Cart always visible -->
 			<CartIcon />
 
 			<!-- Desktop-only settings -->
-			<div class="hidden items-center gap-4 md:flex">
+			<div class="hidden items-center gap-4 sm:flex">
 				<LanguageSwitcher />
 				<DarkmodeToggle />
 				<AuthSection />
